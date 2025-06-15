@@ -93,19 +93,33 @@ namespace DarkMode
 		dark
 	};
 
-	enum class LibInfo : unsigned char // std::uint8_t
+	/**
+	 * @brief Describes metadata fields and compile-time features of the dark mode library.
+	 *
+	 * Values of this enum are used with getLibInfo() to retrieve version numbers and
+	 * determine whether specific features were enabled during compilation.
+	 */
+	enum class LibInfo : unsigned char
 	{
-		featureCheck,
-		verMajor,
-		verMinor,
-		verRevision,
-		iathookExternal,
-		iniConfigUsed,
-		allowOldOS,
-		useDlgProcCtl,
-		maxValue // don't use, for internal checks
+		featureCheck,     ///< Returns maxValue to verify enum coverage.
+		verMajor,         ///< Major version number of the library.
+		verMinor,         ///< Minor version number of the library.
+		verRevision,      ///< Revision/patch number of the library.
+		iathookExternal,  ///< Indicates if external IAT hooking is used.
+		iniConfigUsed,    ///< True if `.ini` file configuration is supported.
+		allowOldOS,       ///< True if older Windows versions are allowed.
+		useDlgProcCtl,    ///< True if WM_CTLCOLORxxx can be handled directly in dialog procedure.
+		maxValue          ///< Sentinel value for internal validation (not intended for use).
 	};
 
+	/**
+	 * @brief Returns library version information or compile-time feature flags.
+	 *
+	 * @param libInfoType The type of information to query.
+	 * @return Integer representing the requested value or feature flag.
+	 *
+	 * @see LibInfo
+	 */
 	[[nodiscard]] int getLibInfo(LibInfo libInfoType);
 
 	// enum DarkModeType { light = 0, dark = 1, classic = 3 }; values
@@ -129,8 +143,8 @@ namespace DarkMode
 
 	[[nodiscard]] bool isWindowsModeEnabled();
 
-	[[nodiscard]] bool isWindows10();
-	[[nodiscard]] bool isWindows11();
+	[[nodiscard]] bool isAtLeastWindows10();
+	[[nodiscard]] bool isAtLeastWindows11();
 	[[nodiscard]] DWORD getWindowsBuildNumber();
 
 	// handle events
@@ -251,6 +265,9 @@ namespace DarkMode
 	void setTabCtrlSubclass(HWND hWnd);
 	void removeTabCtrlSubclass(HWND hWnd);
 
+	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd);
+	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd);
+
 	void setComboBoxCtrlSubclass(HWND hWnd);
 	void removeComboBoxCtrlSubclass(HWND hWnd);
 
@@ -314,15 +331,32 @@ namespace DarkMode
 	void setDarkDlgNotifySafe(HWND hWnd, bool useWin11Features = true);
 
 	// only if g_dmType == DarkModeType::classic
-	inline void enableThemeDialogTexture(HWND hWnd, bool theme);
+	void enableThemeDialogTexture(HWND hWnd, bool theme);
+
 	void disableVisualStyle(HWND hWnd, bool doDisable);
+
+	/// Calculates perceptual lightness of a COLORREF color.
 	[[nodiscard]] double calculatePerceivedLightness(COLORREF clr);
+
+	/// Retrieves the current TreeView style configuration.
+	[[nodiscard]] const TreeViewStyle& getTreeViewStyle();
+
+	/// Determines appropriate TreeView style based on background perceived lightness.
 	void calculateTreeViewStyle();
-	void updatePrevTreeViewStyle();
-	[[nodiscard]] TreeViewStyle getTreeViewStyle();
-	void setTreeViewStyle(HWND hWnd, bool force = false);
+
+	/// Applies the appropriate window theme style to the specified TreeView.
+	void setTreeViewWindowTheme(HWND hWnd, bool force = false);
+
+	/// Retrieves the previous TreeView style configuration.
+	[[nodiscard]] const TreeViewStyle& getPrevTreeViewStyle();
+
+	/// Stores the current TreeView style as the previous style for later comparison.
+	void setPrevTreeViewStyle();
+
+	/// Checks whether the current theme is dark.
 	[[nodiscard]] bool isThemeDark();
-	inline void redrawWindowFrame(HWND hWnd);
+
+	void redrawWindowFrame(HWND hWnd);
 	void setWindowStyle(HWND hWnd, bool setStyle, LONG_PTR styleFlag);
 	void setWindowExStyle(HWND hWnd, bool setExStyle, LONG_PTR exStyleFlag);
 	void replaceExEdgeWithBorder(HWND hWnd, bool replace, LONG_PTR exStyleFlag);

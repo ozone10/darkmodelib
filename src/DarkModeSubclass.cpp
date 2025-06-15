@@ -76,16 +76,27 @@ static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum
 //#define WM_GETDPISCALEDSIZE 0x02E4
 //#endif
 
+/// Converts 0xRRGGBB to COLORREF (0xBBGGRR) for GDI usage.
 static constexpr COLORREF HEXRGB(DWORD rrggbb)
 {
-	// from 0xRRGGBB like natural #RRGGBB
-	// to the little-endian 0xBBGGRR
 	return
 		((rrggbb & 0xFF0000) >> 16) |
 		((rrggbb & 0x00FF00)) |
 		((rrggbb & 0x0000FF) << 16);
 }
 
+/**
+ * @brief Retrieves the class name of a given window.
+ *
+ * This function wraps the Win32 API `GetClassNameW` to return the class name
+ * of a window as a wide string (`std::wstring`).
+ *
+ * @param hWnd Handle to the target window.
+ * @return The class name of the window as a `std::wstring`.
+ *
+ * @note The maximum length is capped at 32 characters (including the null terminator),
+ *       which suffices for standard Windows window classes.
+ */
 static std::wstring getWndClassName(HWND hWnd)
 {
 	static constexpr int strLen = 32;
@@ -94,12 +105,35 @@ static std::wstring getWndClassName(HWND hWnd)
 	return className;
 }
 
+/**
+ * @brief Compares the class name of a window with a specified string.
+ *
+ * This function retrieves the class name of the given window handle
+ * and compares it to the provided class name.
+ *
+ * @param hWnd Handle to the window whose class name is to be checked.
+ * @param classNameToCmp Pointer to a null-terminated wide string representing the class name to compare against.
+ * @return `true` if the window's class name matches the specified string; otherwise `false`.
+ *
+ * @see getWndClassName()
+ */
 static bool cmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
 {
 	return (getWndClassName(hWnd) == classNameToCmp);
 }
 
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
+/**
+ * @brief Constructs a full path to an `.ini` file located next to the executable.
+ *
+ * Retrieves the directory of the current module (executable or DLL) and appends
+ * the specified `.ini` filename to it.
+ *
+ * @param iniFilename The base name of the `.ini` file (without path or extension).
+ * @return Full path to the `.ini` file as a wide string, or an empty string on failure.
+ *
+ * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
+ */
 static std::wstring getIniPath(const std::wstring& iniFilename)
 {
 	std::array<wchar_t, MAX_PATH> buffer{};
@@ -121,12 +155,34 @@ static std::wstring getIniPath(const std::wstring& iniFilename)
 	return iniPath;
 }
 
+/**
+ * @brief Checks whether a file exists at the specified path.
+ *
+ * Determines if the given file path exists and refers to a regular file.
+ *
+ * @param filePath Path to the file to check.
+ * @return `true` if the file exists and is not a directory, otherwise `false`.
+ */
 static bool fileExists(const std::wstring& filePath)
 {
 	const DWORD dwAttrib = ::GetFileAttributesW(filePath.c_str());
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY));
 }
 
+/**
+ * @brief Reads a color value from an `.ini` file and converts it to a `COLORREF`.
+ *
+ * Reads a 6-digit hex color string from the specified section and key, then parses
+ * it as a Windows GDI `COLORREF` value.
+ *
+ * @param sectionName Section within the `.ini` file.
+ * @param keyName Key name containing the hex RGB value (e.g., "E0E2E4").
+ * @param iniFilePath Full path to the `.ini` file.
+ * @param clr Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
+ * @return `true` if a valid 6-digit hex color was read and parsed, otherwise `false`.
+ *
+ * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.
+ */
 static bool setClrFromIni(const std::wstring& sectionName, const std::wstring& keyName, const std::wstring& iniFilePath, COLORREF* clr)
 {
 	static constexpr size_t maxStrLen = 6;
@@ -171,6 +227,23 @@ static bool setClrFromIni(const std::wstring& sectionName, const std::wstring& k
 
 namespace DarkMode
 {
+	/**
+	 * @brief Returns library version information or compile-time feature flags.
+	 *
+	 * Responds to the specified query by returning either:
+	 * - Version numbers (`verMajor`, `verMinor`, `verRevision`)
+	 * - Build configuration flags (returns `TRUE` or `FALSE`)
+	 * - A constant value (`featureCheck`, `maxValue`) used for validation
+	 *
+	 * @param libInfoType Enum value specifying which piece of information to retrieve.
+	 * @return Integer value:
+	 * - Version: as defined by `DM_VERSION_MAJOR`, etc.
+	 * - Boolean flags: `TRUE` (1) if the feature is enabled, `FALSE` (0) otherwise.
+	 * - `featureCheck`, `maxValue`: returns the numeric max enum value.
+	 * - `-1`: for invalid or unhandled enum cases (should not occur in correct usage).
+	 *
+	 * @see LibInfo
+	 */
 	int getLibInfo(LibInfo libInfoType)
 	{
 		switch (libInfoType)
@@ -279,33 +352,36 @@ namespace DarkMode
 
 	static constexpr int kWin11CornerRoundness = 4;
 
-	static struct
+	namespace
 	{
-		DWM_WINDOW_CORNER_PREFERENCE _roundCorner = DWMWCP_DEFAULT;
-		COLORREF _borderColor = DWMWA_COLOR_DEFAULT;
-		DWM_SYSTEMBACKDROP_TYPE _mica = DWMSBT_AUTO;
-		TreeViewStyle _treeViewStyle = TreeViewStyle::classic;
-		bool _micaExtend = false;
-		DarkModeType _dmType = DarkModeType::dark;
-		WinMode _windowsMode = WinMode::disabled;
-		bool _isInit = false;
-		bool _isInitExperimental = false;
+		static struct
+		{
+			DWM_WINDOW_CORNER_PREFERENCE _roundCorner = DWMWCP_DEFAULT;
+			COLORREF _borderColor = DWMWA_COLOR_DEFAULT;
+			DWM_SYSTEMBACKDROP_TYPE _mica = DWMSBT_AUTO;
+			TreeViewStyle _treeViewStyle = TreeViewStyle::classic;
+			bool _micaExtend = false;
+			DarkModeType _dmType = DarkModeType::dark;
+			WinMode _windowsMode = WinMode::disabled;
+			bool _isInit = false;
+			bool _isInitExperimental = false;
 
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
-		bool _isIniNameSet = false;
-		std::wstring _iniName;
+			bool _isIniNameSet = false;
+			std::wstring _iniName;
 #endif
-	} g_dmCfg;
+		} g_dmCfg;
 
-	// range to determine when it should be better to use classic style for tree view
-	static constexpr double MiddleGrayRange = 2.0;
+		/// Threshold range around 50.0 where TreeView uses classic style instead of light/dark.
+		static constexpr double kMiddleGrayRange = 2.0;
 
-	static struct
-	{
-		double _lightness = 50.0;
-		COLORREF _background = RGB(41, 49, 52);
-		TreeViewStyle _stylePrev = TreeViewStyle::classic;
-	} g_tvCfg;
+		static struct
+		{
+			double _lightness = 50.0;
+			COLORREF _background = RGB(41, 49, 52);
+			TreeViewStyle _stylePrev = TreeViewStyle::classic;
+		} g_tvCfg;
+	}
 
 	struct Brushes
 	{
@@ -1167,7 +1243,7 @@ namespace DarkMode
 #if defined(_DARKMODELIB_ALLOW_OLD_OS)
 		return g_dmCfg._dmType != DarkModeType::classic;
 #else
-		return DarkMode::isWindows10() && g_dmCfg._dmType != DarkModeType::classic;
+		return DarkMode::isAtLeastWindows10() && g_dmCfg._dmType != DarkModeType::classic;
 #endif
 	}
 
@@ -1186,12 +1262,12 @@ namespace DarkMode
 		return g_dmCfg._windowsMode != WinMode::disabled;
 	}
 
-	bool isWindows10()
+	bool isAtLeastWindows10()
 	{
 		return ::IsWindows10();
 	}
 
-	bool isWindows11()
+	bool isAtLeastWindows11()
 	{
 		return ::IsWindows11();
 	}
@@ -2067,7 +2143,7 @@ namespace DarkMode
 					break;
 				}
 
-				if (DarkMode::isWindows11() && p._theme)
+				if (DarkMode::isAtLeastWindows11() && p._theme)
 				{
 					::SetWindowTheme(hWnd, p._themeClassName, nullptr);
 				}
@@ -2121,7 +2197,7 @@ namespace DarkMode
 		UpDownData() = delete;
 
 		explicit UpDownData(HWND hWnd)
-			: _cornerRoundness((DarkMode::isWindows11() && cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL)) ? (kWin11CornerRoundness + 1) : 0)
+			: _cornerRoundness((DarkMode::isAtLeastWindows11() && cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL)) ? (kWin11CornerRoundness + 1) : 0)
 			, _isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
 		{
 			updateRect(hWnd);
@@ -2893,15 +2969,15 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	static void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
+	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, kCustomBorderSubclassID);
 	}
 
-	//void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
-	//{
-	//	DarkMode::removeCtrlSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, kCustomBorderSubclassID);
-	//}
+	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
+	{
+		DarkMode::removeSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, kCustomBorderSubclassID);
+	}
 
 	static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p, bool isListBox)
 	{
@@ -3113,7 +3189,7 @@ namespace DarkMode
 			::FillRect(hdc, &rcInner, isDisabled ? DarkMode::getDlgBackgroundBrush() : DarkMode::getCtrlBackgroundBrush());
 		}
 
-		static const int roundness = DarkMode::isWindows11() ? kWin11CornerRoundness : 0;
+		static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness : 0;
 		DarkMode::paintRoundFrameRect(hdc, rcClient, hPen, roundness, roundness);
 
 		::SelectObject(hdc, holdPen);
@@ -4429,7 +4505,7 @@ namespace DarkMode
 			TreeView_SetTextColor(hWnd, DarkMode::getViewTextColor());
 			TreeView_SetBkColor(hWnd, DarkMode::getViewBackgroundColor());
 
-			DarkMode::setTreeViewStyle(hWnd, p._theme);
+			DarkMode::setTreeViewWindowTheme(hWnd, p._theme);
 			DarkMode::setDarkTooltips(hWnd, DarkMode::ToolTipsType::treeview);
 		}
 	}
@@ -4595,7 +4671,7 @@ namespace DarkMode
 #if defined(_DARKMODELIB_ALLOW_OLD_OS)
 		DarkMode::setChildCtrlsSubclassAndTheme(hParent, false, true);
 #else
-		DarkMode::setChildCtrlsSubclassAndTheme(hParent, false, DarkMode::isWindows10());
+		DarkMode::setChildCtrlsSubclassAndTheme(hParent, false, DarkMode::isAtLeastWindows10());
 #endif
 	}
 
@@ -4788,7 +4864,7 @@ namespace DarkMode
 			rcItem.right = rcDrop.left;
 		}
 
-		static const int roundness = DarkMode::isWindows11() ? kWin11CornerRoundness + 1 : 0;
+		static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
 
 		if (isHot)
 		{
@@ -5033,7 +5109,7 @@ namespace DarkMode
 			lptvcd->clrText = DarkMode::getTextColor();
 			lptvcd->clrTextBk = DarkMode::getHotBackgroundColor();
 
-			if (DarkMode::isWindows10() || g_dmCfg._treeViewStyle == TreeViewStyle::light)
+			if (DarkMode::isAtLeastWindows10() || DarkMode::getTreeViewStyle() == TreeViewStyle::light)
 			{
 				::FillRect(lptvcd->nmcd.hdc, &lptvcd->nmcd.rc, DarkMode::getHotBackgroundBrush());
 				retVal |= CDRF_NOTIFYPOSTPAINT;
@@ -5163,7 +5239,7 @@ namespace DarkMode
 		if ((rbBand.fStyle & RBBS_USECHEVRON) == RBBS_USECHEVRON
 			&& (rbBand.rcChevronLocation.right - rbBand.rcChevronLocation.left) > 0)
 		{
-			static const int roundness = DarkMode::isWindows11() ? kWin11CornerRoundness + 1 : 0;
+			static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
 
 			const bool isHot = (rbBand.uChevronState & STATE_SYSTEM_HOTTRACKED) == STATE_SYSTEM_HOTTRACKED;
 			const bool isPressed = (rbBand.uChevronState & STATE_SYSTEM_PRESSED) == STATE_SYSTEM_PRESSED;
@@ -5581,7 +5657,7 @@ namespace DarkMode
 			const BOOL useDark = DarkMode::isExperimentalActive() ? TRUE : FALSE;
 			::DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDark, sizeof(useDark));
 
-			if (useWin11Features && DarkMode::isWindows11())
+			if (useWin11Features && DarkMode::isAtLeastWindows11())
 			{
 				::DwmSetWindowAttribute(hWnd, DWMWA_WINDOW_CORNER_PREFERENCE, &g_dmCfg._roundCorner, sizeof(g_dmCfg._roundCorner));
 				::DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &g_dmCfg._borderColor, sizeof(g_dmCfg._borderColor));
@@ -5690,7 +5766,7 @@ namespace DarkMode
 
 	void setDarkListViewCheckboxes(HWND hWnd)
 	{
-		if (!DarkMode::isWindows11())
+		if (!DarkMode::isAtLeastWindows11())
 		{
 			return;
 		}
@@ -5842,7 +5918,16 @@ namespace DarkMode
 		}
 	}
 
-	// adapted from https://stackoverflow.com/a/56678483
+	/**
+	 * @brief Calculates perceptual lightness of a COLORREF color.
+	 *
+	 * Converts the RGB color to linear space and calculates perceived lightness.
+	 *
+	 * @param clr COLORREF in 0xBBGGRR format.
+	 * @return Lightness value as a double.
+	 *
+	 * @note Based on: https://stackoverflow.com/a/56678483
+	 */
 	double calculatePerceivedLightness(COLORREF clr)
 	{
 		auto linearValue = [](double colorChannel) -> double {
@@ -5886,6 +5971,32 @@ namespace DarkMode
 		return ((std::pow(luminance, oneThird) * scalingFactor) - offset);
 	}
 
+	/**
+	 * @brief Retrieves the current TreeView style configuration.
+	 *
+	 * @return Reference to the current `TreeViewStyle`.
+	 */
+	const TreeViewStyle& getTreeViewStyle()
+	{
+		return g_dmCfg._treeViewStyle;
+	}
+
+	/// Set TreeView style
+	static void setTreeViewStyle(TreeViewStyle tvStyle)
+	{
+		g_dmCfg._treeViewStyle = tvStyle;
+	}
+
+	/**
+	 * @brief Determines appropriate TreeView style based on background perceived lightness.
+	 *
+	 * Checks the perceived lightness of the current view background and
+	 * selects a corresponding style: dark, light, or classic. Style selection
+	 * is based on how far the lightness deviates from the middle gray threshold range
+	 * around the midpoint value (50.0).
+	 *
+	 * @see calculatePerceivedLightness()
+	 */
 	void calculateTreeViewStyle()
 	{
 		static constexpr double middle = 50.0;
@@ -5893,44 +6004,55 @@ namespace DarkMode
 
 		if (g_tvCfg._background != bgColor || g_tvCfg._lightness == middle)
 		{
-			g_tvCfg._lightness = calculatePerceivedLightness(bgColor);
+			g_tvCfg._lightness = DarkMode::calculatePerceivedLightness(bgColor);
 			g_tvCfg._background = bgColor;
 		}
 
-		if (g_tvCfg._lightness < (middle - MiddleGrayRange))
+		if (g_tvCfg._lightness < (middle - kMiddleGrayRange))
 		{
-			g_dmCfg._treeViewStyle = TreeViewStyle::dark;
+			DarkMode::setTreeViewStyle(TreeViewStyle::dark);
 		}
-		else if (g_tvCfg._lightness > (middle + MiddleGrayRange))
+		else if (g_tvCfg._lightness > (middle + kMiddleGrayRange))
 		{
-			g_dmCfg._treeViewStyle = TreeViewStyle::light;
+			DarkMode::setTreeViewStyle(TreeViewStyle::light);
 		}
 		else
 		{
-			g_dmCfg._treeViewStyle = TreeViewStyle::classic;
+			DarkMode::setTreeViewStyle(TreeViewStyle::classic);
 		}
 	}
 
-	void updatePrevTreeViewStyle()
+	/**
+	 * @brief Applies the appropriate window theme style to the specified TreeView.
+	 *
+	 * Updates the TreeView's visual behavior and theme based on the currently selected
+	 * style @ref getTreeViewStyle(). It conditionally adjusts the `TVS_TRACKSELECT`
+	 * style flag and applies a matching visual theme using `SetWindowTheme()`.
+	 *
+	 * If `force` is `true`, the style is applied regardless of previous state.
+	 * Otherwise, the update occurs only if the style has changed since the last update.
+	 *
+	 * - `light`: Enables `TVS_TRACKSELECT`, applies "Explorer" theme.
+	 * - `dark`: If supported, enables `TVS_TRACKSELECT`, applies "DarkMode_Explorer" theme.
+	 * - `classic`: Disables `TVS_TRACKSELECT`, clears the theme.
+	 *
+	 * @param hWnd Handle to the TreeView control.
+	 * @param force Whether to forcibly reapply the style even if unchanged.
+	 *
+	 * @see TreeViewStyle
+	 * @see getTreeViewStyle()
+	 * @see getPrevTreeViewStyle()
+	 */
+	void setTreeViewWindowTheme(HWND hWnd, bool force)
 	{
-		g_tvCfg._stylePrev = g_dmCfg._treeViewStyle;
-	}
-
-	TreeViewStyle getTreeViewStyle()
-	{
-		return g_dmCfg._treeViewStyle;
-	}
-
-	void setTreeViewStyle(HWND hWnd, bool force)
-	{
-		if (force || g_tvCfg._stylePrev != g_dmCfg._treeViewStyle)
+		if (force || DarkMode::getPrevTreeViewStyle() != DarkMode::getTreeViewStyle())
 		{
 			auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
 			const bool hasHotStyle = (nStyle & TVS_TRACKSELECT) == TVS_TRACKSELECT;
 			bool change = false;
 			std::wstring strSubAppName;
 
-			switch (g_dmCfg._treeViewStyle)
+			switch (DarkMode::getTreeViewStyle())
 			{
 				case TreeViewStyle::light:
 				{
@@ -5979,9 +6101,36 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Retrieves the previous TreeView style configuration.
+	 *
+	 * @return Reference to the previous `TreeViewStyle`.
+	 */
+	const TreeViewStyle& getPrevTreeViewStyle()
+	{
+		return g_tvCfg._stylePrev;
+	}
+
+	/**
+	 * @brief Stores the current TreeView style as the previous style for later comparison.
+	 */
+	void setPrevTreeViewStyle()
+	{
+		g_tvCfg._stylePrev = DarkMode::getTreeViewStyle();
+	}
+
+	/**
+	 * @brief Checks whether the current theme is dark.
+	 *
+	 * Internally it use TreeView style to determine if dark theme is used.
+	 *
+	 * @return `true` if the active style is `TreeViewStyle::dark`, otherwise `false`.
+	 *
+	 * @see DarkMode::getTreeViewStyle()
+	 */
 	bool isThemeDark()
 	{
-		return g_dmCfg._treeViewStyle == TreeViewStyle::dark;
+		return DarkMode::getTreeViewStyle() == TreeViewStyle::dark;
 	}
 
 	void redrawWindowFrame(HWND hWnd)
