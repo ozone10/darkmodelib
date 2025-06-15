@@ -86,11 +86,21 @@ namespace DarkMode
 		max     = 7 // don't use, for internal checks
 	};
 
-	enum class TreeViewStyle : unsigned char // std::uint8_t
+	/**
+	 * @brief Defines the available visual styles for TreeView controls.
+	 *
+	 * Used to control theming behavior for TreeViews:
+	 * - `classic`: Legacy style without theming.
+	 * - `light`: Light mode appearance.
+	 * - `dark`: Dark mode appearance.
+	 *
+	 * Set via configuration and used by style evaluators (e.g. @ref calculateTreeViewStyle).
+	 */
+	enum class TreeViewStyle : unsigned char
 	{
-		classic,
-		light,
-		dark
+		classic,  ///< Non-themed legacy appearance.
+		light,    ///< Light mode.
+		dark      ///< Dark mode.
 	};
 
 	/**
@@ -122,47 +132,108 @@ namespace DarkMode
 	 */
 	[[nodiscard]] int getLibInfo(LibInfo libInfoType);
 
-	// enum DarkModeType { light = 0, dark = 1, classic = 3 }; values
+	// ========================================================================
+	// Config
+	// ========================================================================
+
+	/**
+	 * @brief Initializes the dark mode configuration based on the selected mode.
+	 *
+	 * @param dmType Configuration mode:
+	 *        - 0: Light mode (manual)
+	 *        - 1: Dark mode (manual)
+	 *        - 3: Classic mode (manual)
+	 *
+	 * @note Values 2 and 4 are reserved for internal use only.
+	 */
 	void initDarkModeConfig(UINT dmType);
-	// DWM_WINDOW_CORNER_PREFERENCE values
+
+	/// Sets the preferred window corner style on Windows 11. (DWM_WINDOW_CORNER_PREFERENCE values)
 	void setRoundCornerConfig(UINT roundCornerStyle);
+
+	/// Sets the preferred border color for window edge on Windows 11.
 	void setBorderColorConfig(COLORREF clr);
-	// DWM_SYSTEMBACKDROP_TYPE values
+
+	// Sets the Mica effects on Windows 11. (DWM_SYSTEMBACKDROP_TYPE values)
 	void setMicaConfig(UINT mica);
+
+	/// Applies Mica effects on the full window.
 	void setMicaExtendedConfig(bool extendMica);
-	// enum DarkModeType { light = 0, dark = 1, classic = 3 }; values
+
+	/// Applies dark mode settings based on the given configuration type. (initDarkModeConfig values)
 	void setDarkModeConfig(UINT dmType);
+
+	/// Applies dark mode settings based on system mode preference.
 	void setDarkModeConfig();
 
+	/// Initializes dark mode experimental features, colors, and other settings.
 	void initDarkMode(const wchar_t* iniName);
+
+	///Initializes dark mode without INI settings.
 	void initDarkMode();
 
+	// ========================================================================
+	// Basic checks
+	// ========================================================================
+
+	/// Checks if non-classic mode is enabled.
 	[[nodiscard]] bool isEnabled();
+
+	/// Checks if experimental dark mode features are currently active.
 	[[nodiscard]] bool isExperimentalActive();
+
+	/// Checks if experimental dark mode features are supported by the system.
 	[[nodiscard]] bool isExperimentalSupported();
 
+	/// Checks if follow the system mode behavior is enabled.
 	[[nodiscard]] bool isWindowsModeEnabled();
 
+	/// Checks if the host OS is at least Windows 10.
 	[[nodiscard]] bool isAtLeastWindows10();
+
+	/// Checks if the host OS is at least Windows 11.
 	[[nodiscard]] bool isAtLeastWindows11();
+
+	/// Retrieves the current Windows build number.
 	[[nodiscard]] DWORD getWindowsBuildNumber();
 
-	// handle events
+	// ========================================================================
+	// System Events
+	// ========================================================================
 
+	/// Handles system setting changes related to dark mode.
 	bool handleSettingChange(LPARAM lParam);
+
+	/// Checks if dark mode is enabled in the Windows registry.
 	[[nodiscard]] bool isDarkModeReg();
 
-	// from DarkMode.h
+	// ========================================================================
+	// From DarkMode.h
+	// ========================================================================
 
+	/**
+	 * @brief Overrides a specific system color with a custom color.
+	 *
+	 * Currently supports:
+	 * - `COLOR_WINDOW`: Background of ComboBoxEx list.
+	 * - `COLOR_WINDOWTEXT`: Text color of ComboBoxEx list.
+	 * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
+	 *
+	 * @param nIndex One of the supported system color indices.
+	 * @param color Custom `COLORREF` value to apply.
+	 */
 	void setSysColor(int nIndex, COLORREF color);
-	bool hookSysColor();
-	void unhookSysColor();
 
-	// enhancements to DarkMode.h
+	// ========================================================================
+	// Enhancements to DarkMode.h
+	// ========================================================================
 
+	/// Makes scrollbars on the specified window and all its children consistent.
 	void enableDarkScrollBarForWindowAndChildren(HWND hWnd);
 
-	// colors
+	// ========================================================================
+	// Colors
+	// ========================================================================
 
 	void setToneColors(ColorTone colorTone);
 	[[nodiscard]] ColorTone getColorTone();
@@ -244,12 +315,19 @@ namespace DarkMode
 
 	[[nodiscard]] HPEN getHeaderEdgePen();
 
-	// paint helper
+	// ========================================================================
+	// Paint Helpers
+	// ========================================================================
 
+	/// Paints a rounded rectangle using the specified pen and brush.
 	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width = 0, int height = 0);
+
+	/// Paints an unfilled rounded rectangle (frame only).
 	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width = 0, int height = 0);
 
-	// control subclassing
+	// ========================================================================
+	// Control Subclassing
+	// ========================================================================
 
 	void setCheckboxOrRadioBtnCtrlSubclass(HWND hWnd);
 	void removeCheckboxOrRadioBtnCtrlSubclass(HWND hWnd);
@@ -289,12 +367,16 @@ namespace DarkMode
 	void setStaticTextCtrlSubclass(HWND hWnd);
 	void removeStaticTextCtrlSubclass(HWND hWnd);
 
-	// child subclassing
+	// ========================================================================
+	// Child Subclassing
+	// ========================================================================
 
 	void setChildCtrlsSubclassAndTheme(HWND hParent, bool subclass = true, bool theme = true);
 	void setChildCtrlsTheme(HWND hParent);
 
-	// window, parent, and other subclassing
+	// ========================================================================
+	// Window, Parent, And Other Subclassing
+	// ========================================================================
 
 	void setWindowEraseBgSubclass(HWND hWnd);
 	void removeWindowEraseBgSubclass(HWND hWnd);
@@ -311,7 +393,9 @@ namespace DarkMode
 	void setWindowSettingChangeSubclass(HWND hWnd);
 	void removeWindowSettingChangeSubclass(HWND hWnd);
 
-	// theme and helper
+	// ========================================================================
+	// Theme And Helpers
+	// ========================================================================
 
 	void enableSysLinkCtrlCtlColor(HWND hWnd);
 
@@ -330,9 +414,10 @@ namespace DarkMode
 	void setDarkDlgSafe(HWND hWnd, bool useWin11Features = true);
 	void setDarkDlgNotifySafe(HWND hWnd, bool useWin11Features = true);
 
-	// only if g_dmType == DarkModeType::classic
+	/// Enables or disables theme-based dialog background textures in classic mode.
 	void enableThemeDialogTexture(HWND hWnd, bool theme);
 
+	/// Enables or disables visual styles for a window.
 	void disableVisualStyle(HWND hWnd, bool doDisable);
 
 	/// Calculates perceptual lightness of a COLORREF color.
@@ -363,7 +448,9 @@ namespace DarkMode
 	void replaceClientEdgeWithBorderSafe(HWND hWnd);
 	void setProgressBarClassicTheme(HWND hWnd);
 
-	// ctl color
+	// ========================================================================
+	// Ctl Color
+	// ========================================================================
 
 	[[nodiscard]] LRESULT onCtlColor(HDC hdc);
 	[[nodiscard]] LRESULT onCtlColorCtrl(HDC hdc);
@@ -373,7 +460,9 @@ namespace DarkMode
 	[[nodiscard]] LRESULT onCtlColorDlgLinkText(HDC hdc, bool isTextEnabled = true);
 	[[nodiscard]] LRESULT onCtlColorListbox(WPARAM wParam, LPARAM lParam);
 
-	// hook callback dialog procedure for font, color chooser,... dialogs
+	// ========================================================================
+	// Hook Callback Dialog Procedure
+	// ========================================================================
 
 	/**
 	 * @brief Hook procedure for customizing common dialogs with dark mode.

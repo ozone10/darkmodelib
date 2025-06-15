@@ -97,7 +97,7 @@ static constexpr COLORREF HEXRGB(DWORD rrggbb)
  * @note The maximum length is capped at 32 characters (including the null terminator),
  *       which suffices for standard Windows window classes.
  */
-static std::wstring getWndClassName(HWND hWnd)
+static std::wstring GetWndClassName(HWND hWnd)
 {
 	static constexpr int strLen = 32;
 	std::wstring className(strLen, L'\0');
@@ -115,11 +115,11 @@ static std::wstring getWndClassName(HWND hWnd)
  * @param classNameToCmp Pointer to a null-terminated wide string representing the class name to compare against.
  * @return `true` if the window's class name matches the specified string; otherwise `false`.
  *
- * @see getWndClassName()
+ * @see GetWndClassName()
  */
-static bool cmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
+static bool CmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
 {
-	return (getWndClassName(hWnd) == classNameToCmp);
+	return (GetWndClassName(hWnd) == classNameToCmp);
 }
 
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
@@ -134,7 +134,7 @@ static bool cmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
  *
  * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
  */
-static std::wstring getIniPath(const std::wstring& iniFilename)
+static std::wstring GetIniPath(const std::wstring& iniFilename)
 {
 	std::array<wchar_t, MAX_PATH> buffer{};
 	const auto strLen = static_cast<size_t>(::GetModuleFileNameW(nullptr, buffer.data(), MAX_PATH));
@@ -163,7 +163,7 @@ static std::wstring getIniPath(const std::wstring& iniFilename)
  * @param filePath Path to the file to check.
  * @return `true` if the file exists and is not a directory, otherwise `false`.
  */
-static bool fileExists(const std::wstring& filePath)
+static bool FileExists(const std::wstring& filePath)
 {
 	const DWORD dwAttrib = ::GetFileAttributesW(filePath.c_str());
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY));
@@ -183,7 +183,7 @@ static bool fileExists(const std::wstring& filePath)
  *
  * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.
  */
-static bool setClrFromIni(const std::wstring& sectionName, const std::wstring& keyName, const std::wstring& iniFilePath, COLORREF* clr)
+static bool SetClrFromIni(const std::wstring& sectionName, const std::wstring& keyName, const std::wstring& iniFilePath, COLORREF* clr)
 {
 	static constexpr size_t maxStrLen = 6;
 	std::wstring buffer(maxStrLen + 1, L'\0');
@@ -308,20 +308,32 @@ namespace DarkMode
 		return -1; // should never happen
 	}
 
+	/**
+	 * @brief Defines the available dark mode types.
+	 *
+	 * Used internally to distinguish between light, dark, and classic modes.
+	 */
 	enum class DarkModeType : std::uint8_t
 	{
-		light   = 0,
-		dark    = 1,
+		light   = 0,  ///< Light mode appearance.
+		dark    = 1,  ///< Dark mode appearance.
 		//windows = 2, // never used
-
-		classic = 3
+		classic = 3   ///< Classic (non-themed or system) appearance.
 	};
 
+	/**
+	 * @brief Describes how the application responds to the system theme.
+	 *
+	 * Used to determine behavior when following the system's light/dark mode setting.
+	 * - `disabled`: Do not follow system; use manually selected appearance.
+	 * - `light`: Follow system mode; apply light theme when system is in light mode.
+	 * - `classic`: Follow system mode; apply classic style when system is in light mode.
+	 */
 	enum class WinMode : std::uint8_t
 	{
-		disabled,
-		light,
-		classic
+		disabled,  ///< Manual — system mode is ignored.
+		light,     ///< Use light theme if system is in light mode.
+		classic    ///< Use classic style if system is in light mode.
 	};
 
 	static constexpr UINT_PTR kButtonSubclassID                 = 42;
@@ -494,7 +506,6 @@ namespace DarkMode
 			_hotEdge = ::CreatePen(PS_SOLID, 1, colors.hotEdge);
 			_disabledEdge = ::CreatePen(PS_SOLID, 1, colors.disabledEdge);
 		}
-
 	};
 
 	// black (default)
@@ -962,6 +973,22 @@ namespace DarkMode
 
 	HPEN getHeaderEdgePen()                 { return DarkMode::getThemeView().getViewBrushesAndPens()._headerEdge; }
 
+	/**
+	 * @brief Initializes the dark mode configuration based on the selected mode.
+	 *
+	 * Sets the active dark mode rendering and system-following behavior according to the specified `dmType`:
+	 * - `0`: Light mode, do not follow system.
+	 * - `1` or default: Dark mode, do not follow system.
+	 * - `2`: *[Internal]* Follow system — light or dark depending on registry (see `DarkMode::isDarkModeReg()`).
+	 * - `3`: Classic mode, do not follow system.
+	 * - `4`: *[Internal]* Follow system — classic or dark depending on registry.
+	 *
+	 * @param dmType Integer representing the desired mode.
+	 *
+	 * @see DarkModeType
+	 * @see WinMode
+	 * @see DarkMode::isDarkModeReg()
+	 */
 	void initDarkModeConfig(UINT dmType)
 	{
 		switch (dmType)
@@ -1004,6 +1031,16 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Sets the preferred window corner style on Windows 11.
+	 *
+	 * Assigns a valid `DWM_WINDOW_CORNER_PREFERENCE` value to the config,
+	 * falling back to `DWMWCP_DEFAULT` if the input is out of range.
+	 *
+	 * @param roundCornerStyle Integer value representing a `DWM_WINDOW_CORNER_PREFERENCE`.
+	 *
+	 * @see https://learn.microsoft.com/windows/win32/api/dwmapi/ne-dwmapi-dwm_window_corner_preference
+	 */
 	void setRoundCornerConfig(UINT roundCornerStyle)
 	{
 		const auto cornerStyle = static_cast<DWM_WINDOW_CORNER_PREFERENCE>(roundCornerStyle);
@@ -1019,6 +1056,16 @@ namespace DarkMode
 
 	static constexpr DWORD kDwmwaClrDefaultRGBCheck = 0x00FFFFFF;
 
+	/**
+	 * @brief Sets the preferred border color for window edge on Windows 11.
+	 *
+	 * Assigns the given `COLORREF` to the configuration. If the value matches
+	 * `kDwmwaClrDefaultRGBCheck`, the color is reset to `DWMWA_COLOR_DEFAULT`.
+	 *
+	 * @param clr Border color value, or sentinel to reset to system default.
+	 *
+	 * @see DWMWA_BORDER_COLOR
+	 */
 	void setBorderColorConfig(COLORREF clr)
 	{
 		if (clr == kDwmwaClrDefaultRGBCheck)
@@ -1031,6 +1078,16 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Sets the Mica effects on Windows 11.
+	 *
+	 * Assigns a valid `DWM_SYSTEMBACKDROP_TYPE` to the configuration. If the value exceeds
+	 * `DWMSBT_TABBEDWINDOW`, it falls back to `DWMSBT_AUTO`.
+	 *
+	 * @param mica Integer value representing a `DWM_SYSTEMBACKDROP_TYPE`.
+	 *
+	 * @see DWM_SYSTEMBACKDROP_TYPE
+	 */
 	void setMicaConfig(UINT mica)
 	{
 		const auto micaType = static_cast<DWM_SYSTEMBACKDROP_TYPE>(mica);
@@ -1044,12 +1101,37 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies Mica effects on the full window.
+	 *
+	 * Controls whether Mica should be applied to the entire window
+	 * or limited to the title bar only.
+	 *
+	 * @param extendMica `true` to apply Mica to the full window, `false` for title bar only.
+	 */
 	void setMicaExtendedConfig(bool extendMica)
 	{
 		g_dmCfg._micaExtend = extendMica;
 	}
 
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
+	 /**
+	  * @brief Initializes dark mode configuration and colors from an INI file.
+	  *
+	  * Loads configuration values from the specified INI file path and applies them to the
+	  * current dark mode settings. This includes:
+	  * - Base appearance (`DarkModeType`) and system-following mode (`WinMode`)
+	  * - Optional Mica and rounded corner styling
+	  * - Custom colors for background, text, borders, and headers (if present)
+	  * - Tone settings for dark theme (`ColorTone`)
+	  *
+	  * If the INI file does not exist, default dark mode behavior is applied via
+	  * @ref setDarkModeConfig.
+	  *
+	  * @param iniName Name of INI file (resolved via @ref GetIniPath).
+	  *
+	  * @note When `DarkModeType::classic` is set, system colors are used instead of themed ones.
+	  */
 	static void initOptions(const std::wstring& iniName)
 	{
 		if (iniName.empty())
@@ -1057,8 +1139,8 @@ namespace DarkMode
 			return;
 		}
 
-		const std::wstring iniPath = getIniPath(iniName);
-		if (fileExists(iniPath))
+		const std::wstring iniPath = GetIniPath(iniName);
+		if (FileExists(iniPath))
 		{
 			DarkMode::initDarkModeConfig(::GetPrivateProfileIntW(L"main", L"mode", 1, iniPath.c_str()));
 			if (g_dmCfg._dmType == DarkModeType::classic)
@@ -1076,7 +1158,7 @@ namespace DarkMode
 
 			DarkMode::setMicaConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"mica", 0, iniPath.c_str()));
 			DarkMode::setRoundCornerConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"roundCorner", 0, iniPath.c_str()));
-			setClrFromIni(sectionBase, L"borderColor", iniPath, &g_dmCfg._borderColor);
+			SetClrFromIni(sectionBase, L"borderColor", iniPath, &g_dmCfg._borderColor);
 			if (g_dmCfg._borderColor == kDwmwaClrDefaultRGBCheck)
 			{
 				g_dmCfg._borderColor = DWMWA_COLOR_DEFAULT;
@@ -1107,28 +1189,28 @@ namespace DarkMode
 				DarkMode::getThemeView()._clrView = DarkMode::lightColorsView;
 			}
 
-			setClrFromIni(sectionColorsView, L"backgroundView", iniPath, &DarkMode::getThemeView()._clrView.background);
-			setClrFromIni(sectionColorsView, L"textView", iniPath, &DarkMode::getThemeView()._clrView.text);
-			setClrFromIni(sectionColorsView, L"gridlines", iniPath, &DarkMode::getThemeView()._clrView.gridlines);
-			setClrFromIni(sectionColorsView, L"backgroundHeader", iniPath, &DarkMode::getThemeView()._clrView.headerBackground);
-			setClrFromIni(sectionColorsView, L"backgroundHotHeader", iniPath, &DarkMode::getThemeView()._clrView.headerHotBackground);
-			setClrFromIni(sectionColorsView, L"textHeader", iniPath, &DarkMode::getThemeView()._clrView.headerText);
-			setClrFromIni(sectionColorsView, L"edgeHeader", iniPath, &DarkMode::getThemeView()._clrView.headerEdge);
+			SetClrFromIni(sectionColorsView, L"backgroundView", iniPath, &DarkMode::getThemeView()._clrView.background);
+			SetClrFromIni(sectionColorsView, L"textView", iniPath, &DarkMode::getThemeView()._clrView.text);
+			SetClrFromIni(sectionColorsView, L"gridlines", iniPath, &DarkMode::getThemeView()._clrView.gridlines);
+			SetClrFromIni(sectionColorsView, L"backgroundHeader", iniPath, &DarkMode::getThemeView()._clrView.headerBackground);
+			SetClrFromIni(sectionColorsView, L"backgroundHotHeader", iniPath, &DarkMode::getThemeView()._clrView.headerHotBackground);
+			SetClrFromIni(sectionColorsView, L"textHeader", iniPath, &DarkMode::getThemeView()._clrView.headerText);
+			SetClrFromIni(sectionColorsView, L"edgeHeader", iniPath, &DarkMode::getThemeView()._clrView.headerEdge);
 
-			setClrFromIni(sectionColors, L"background", iniPath, &DarkMode::getTheme()._colors.background);
-			setClrFromIni(sectionColors, L"backgroundCtrl", iniPath, &DarkMode::getTheme()._colors.ctrlBackground);
-			setClrFromIni(sectionColors, L"backgroundHot", iniPath, &DarkMode::getTheme()._colors.hotBackground);
-			setClrFromIni(sectionColors, L"backgroundDlg", iniPath, &DarkMode::getTheme()._colors.dlgBackground);
-			setClrFromIni(sectionColors, L"backgroundError", iniPath, &DarkMode::getTheme()._colors.errorBackground);
+			SetClrFromIni(sectionColors, L"background", iniPath, &DarkMode::getTheme()._colors.background);
+			SetClrFromIni(sectionColors, L"backgroundCtrl", iniPath, &DarkMode::getTheme()._colors.ctrlBackground);
+			SetClrFromIni(sectionColors, L"backgroundHot", iniPath, &DarkMode::getTheme()._colors.hotBackground);
+			SetClrFromIni(sectionColors, L"backgroundDlg", iniPath, &DarkMode::getTheme()._colors.dlgBackground);
+			SetClrFromIni(sectionColors, L"backgroundError", iniPath, &DarkMode::getTheme()._colors.errorBackground);
 
-			setClrFromIni(sectionColors, L"text", iniPath, &DarkMode::getTheme()._colors.text);
-			setClrFromIni(sectionColors, L"textItem", iniPath, &DarkMode::getTheme()._colors.darkerText);
-			setClrFromIni(sectionColors, L"textDisabled", iniPath, &DarkMode::getTheme()._colors.disabledText);
-			setClrFromIni(sectionColors, L"textLink", iniPath, &DarkMode::getTheme()._colors.linkText);
+			SetClrFromIni(sectionColors, L"text", iniPath, &DarkMode::getTheme()._colors.text);
+			SetClrFromIni(sectionColors, L"textItem", iniPath, &DarkMode::getTheme()._colors.darkerText);
+			SetClrFromIni(sectionColors, L"textDisabled", iniPath, &DarkMode::getTheme()._colors.disabledText);
+			SetClrFromIni(sectionColors, L"textLink", iniPath, &DarkMode::getTheme()._colors.linkText);
 
-			setClrFromIni(sectionColors, L"edge", iniPath, &DarkMode::getTheme()._colors.edge);
-			setClrFromIni(sectionColors, L"edgeHot", iniPath, &DarkMode::getTheme()._colors.hotEdge);
-			setClrFromIni(sectionColors, L"edgeDisabled", iniPath, &DarkMode::getTheme()._colors.disabledEdge);
+			SetClrFromIni(sectionColors, L"edge", iniPath, &DarkMode::getTheme()._colors.edge);
+			SetClrFromIni(sectionColors, L"edgeHot", iniPath, &DarkMode::getTheme()._colors.hotEdge);
+			SetClrFromIni(sectionColors, L"edgeDisabled", iniPath, &DarkMode::getTheme()._colors.disabledEdge);
 
 			DarkMode::updateThemeBrushesAndPens();
 			DarkMode::updateViewBrushesAndPens();
@@ -1177,18 +1259,56 @@ namespace DarkMode
 		return ::IsHighContrast();
 	}
 
+	/**
+	 * @brief Applies dark mode settings based on the given configuration type.
+	 *
+	 * Initializes the dark mode mode and system-following behavior, then enables
+	 * or disables dark mode depending on whether `DarkModeType::dark` is selected.
+	 *
+	 * @param dmType Dark mode configuration type; see @ref DarkMode::initDarkModeConfig for values.
+	 *
+	 * @see DarkMode::initDarkModeConfig()
+	 */
 	void setDarkModeConfig(UINT dmType)
 	{
 		DarkMode::initDarkModeConfig(dmType);
 		DarkMode::setDarkMode(g_dmCfg._dmType == DarkModeType::dark, true);
 	}
 
+	/**
+	 * @brief Applies dark mode settings based on system mode preference.
+	 *
+	 * Determines the appropriate mode using @ref DarkMode::isDarkModeReg and forwards
+	 * the result to @ref DarkMode::setDarkModeConfig.
+	 *
+	 * Uses:
+	 * - `DarkModeType::dark` if registry prefers dark mode.
+	 * - `DarkModeType::classic` otherwise.
+	 */
 	void setDarkModeConfig()
 	{
 		const auto dmType = static_cast<UINT>(DarkMode::isDarkModeReg() ? DarkModeType::dark : DarkModeType::classic);
 		DarkMode::setDarkModeConfig(dmType);
 	}
 
+	/**
+	 * @brief Initializes dark mode experimental features, colors, and other settings.
+	 *
+	 * Performs one-time setup for dark mode, including:
+	 * - Initializing experimental features if not yet done.
+	 * - Optionally loading settings from an INI file (if INI config is enabled).
+	 * - Initializing TreeView style and applying dark mode settings.
+	 * - Preparing system colors (e.g. `COLOR_WINDOW`, `COLOR_WINDOWTEXT`, `COLOR_BTNFACE`)
+	 *   for hooking.
+	 *
+	 * @param iniName Optional path to an INI file for dark mode settings (ignored if already set).
+	 *
+	 * @note This function is only run once per session;
+	 *       subsequent calls have no effect, unless follow system mode is used,
+	 *       then only colors are updated each time system changes mode.
+	 *
+	 * @see DarkMode::calculateTreeViewStyle()
+	 */
 	void initDarkMode([[maybe_unused]] const wchar_t* iniName)
 	{
 		if (!g_dmCfg._isInit)
@@ -1233,11 +1353,24 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Initializes dark mode without INI settings.
+	 *
+	 * Forwards to @ref DarkMode::initDarkMode with an empty INI path, effectively disabling INI settings.
+	 */
 	void initDarkMode()
 	{
 		DarkMode::initDarkMode(L"");
 	}
 
+	/**
+	 * @brief Checks if non-classic mode is enabled.
+	 *
+	 * If `_DARKMODELIB_ALLOW_OLD_OS` is defined, this skips Windows version checks.
+	 * Otherwise, dark mode is only enabled on Windows 10 or newer.
+	 *
+	 * @return `true` if a supported dark mode type is active, otherwise `false`.
+	 */
 	bool isEnabled()
 	{
 #if defined(_DARKMODELIB_ALLOW_OLD_OS)
@@ -1247,36 +1380,81 @@ namespace DarkMode
 #endif
 	}
 
+	/**
+	 * @brief Checks if experimental dark mode features are currently active.
+	 *
+	 * @return `true` if experimental dark mode is enabled.
+	 */
 	bool isExperimentalActive()
 	{
 		return g_darkModeEnabled;
 	}
 
+	/**
+	 * @brief Checks if experimental dark mode features are supported by the system.
+	 *
+	 * @return `true` if dark mode experimental APIs are available.
+	 */
 	bool isExperimentalSupported()
 	{
 		return g_darkModeSupported;
 	}
 
+	/**
+	 * @brief Checks if follow the system mode behavior is enabled.
+	 *
+	 * @return `true` if "mode" is not `WinMode::disabled`, i.e. system mode is followed.
+	 */
 	bool isWindowsModeEnabled()
 	{
 		return g_dmCfg._windowsMode != WinMode::disabled;
 	}
 
+	/**
+	 * @brief Checks if the host OS is at least Windows 10.
+	 *
+	 * @return `true` if running on Windows 10 or newer.
+	 */
 	bool isAtLeastWindows10()
 	{
 		return ::IsWindows10();
 	}
-
+	/**
+	 * @brief Checks if the host OS is at least Windows 11.
+	 *
+	 * @return `true` if running on Windows 11 or newer.
+	 */
 	bool isAtLeastWindows11()
 	{
 		return ::IsWindows11();
 	}
 
+	/**
+	 * @brief Retrieves the current Windows build number.
+	 *
+	 * @return Windows build number reported by the system.
+	 */
 	DWORD getWindowsBuildNumber()
 	{
 		return GetWindowsBuildNumber();
 	}
 
+	/**
+	 * @brief Handles system setting changes related to dark mode.
+	 *
+	 * Responds to system messages indicating a color scheme change. If the current
+	 * dark mode state no longer matches the system registry preference, dark mode is
+	 * re-initialized.
+	 *
+	 * - Skips processing if experimental dark mode is unsupported.
+	 * - Relies on @ref DarkMode::isDarkModeReg for theme preference and skips during high contrast.
+	 *
+	 * @param lParam Message parameter (typically from `WM_SETTINGCHANGE`).
+	 * @return `true` if a dark mode change was handled; otherwise `false`.
+	 *
+	 * @see DarkMode::isDarkModeReg
+	 * @see DarkMode::initDarkMode
+	 */
 	bool handleSettingChange(LPARAM lParam)
 	{
 		if (DarkMode::isExperimentalSupported() && DarkMode::isColorSchemeChangeMessage(lParam))
@@ -1296,6 +1474,13 @@ namespace DarkMode
 		return false;
 	}
 
+	/**
+	 * @brief Checks if dark mode is enabled in the Windows registry.
+	 *
+	 * Queries `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme`.
+	 *
+	 * @return `true` if dark mode is preferred (value is `0`); otherwise `false`.
+	 */
 	bool isDarkModeReg()
 	{
 		DWORD data{};
@@ -1315,25 +1500,69 @@ namespace DarkMode
 
 	// from DarkMode.h
 
+	/**
+	 * @brief Overrides a specific system color with a custom color.
+	 *
+	 * Currently supports:
+	 * - `COLOR_WINDOW`: Background of ComboBoxEx list.
+	 * - `COLOR_WINDOWTEXT`: Text color of ComboBoxEx list.
+	 * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
+	 *
+	 * @param nIndex One of the supported system color indices.
+	 * @param color Custom `COLORREF` value to apply.
+	 */
 	void setSysColor(int nIndex, COLORREF color)
 	{
 		::SetMySysColor(nIndex, color);
 	}
 
-	bool hookSysColor()
+	/**
+	 * @brief Hooks system color to support runtime customization.
+	 *
+	 * @return `true` if the hook was installed successfully.
+	 */
+	static bool hookSysColor()
 	{
 		return ::HookSysColor();
 	}
-	void unhookSysColor()
+
+	/**
+	 * @brief Unhooks system color overrides and restores default color behavior.
+	 *
+	 * This function is safe to call even if no color hook is currently installed.
+	 * It ensures that system colors return to normal without requiring
+	 * prior state checks.
+	 */
+	static void unhookSysColor()
 	{
 		::UnhookSysColor();
 	}
 
+	/**
+	 * @brief Makes scrollbars on the specified window and all its children consistent.
+	 *
+	 * Currently not widely used by default.
+	 *
+	 * @param hWnd Handle to the parent window.
+	 */
 	void enableDarkScrollBarForWindowAndChildren(HWND hWnd)
 	{
 		::EnableDarkScrollBarForWindowAndChildren(hWnd);
 	}
 
+	/**
+	 * @brief Paints a rounded rectangle using the specified pen and brush.
+	 *
+	 * Draws a rounded rectangle defined by `rect`, using the provided pen (`hpen`) and brush (`hBrush`)
+	 * for the edge and fill, respectively. Preserves previous GDI object selections.
+	 *
+	 * @param hdc Handle to the device context.
+	 * @param rect Rectangle bounds for the shape.
+	 * @param hpen Pen used to draw the edge.
+	 * @param hBrush Brush used to inner fill.
+	 * @param width Horizontal corner radius.
+	 * @param height Vertical corner radius.
+	 */
 	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height)
 	{
 		auto holdBrush = ::SelectObject(hdc, hBrush);
@@ -1343,6 +1572,17 @@ namespace DarkMode
 		::SelectObject(hdc, holdPen);
 	}
 
+	/**
+	 * @brief Paints an unfilled rounded rectangle (frame only).
+	 *
+	 * Uses a `NULL_BRUSH` to omit the inner fill, drawing only the rounded frame.
+	 *
+	 * @param hdc Handle to the device context.
+	 * @param rect Rectangle bounds for the frame.
+	 * @param hpen Pen used to draw the edge.
+	 * @param width Horizontal corner radius.
+	 * @param height Vertical corner radius.
+	 */
 	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width, int height)
 	{
 		DarkMode::paintRoundRect(hdc, rect, hpen, static_cast<HBRUSH>(::GetStockObject(NULL_BRUSH)), width, height);
@@ -1608,6 +1848,24 @@ namespace DarkMode
 		}
 	};
 
+	/**
+	 * @brief Draws a themed checkbox or radio button (excluding push-like buttons).
+	 *
+	 * Internally used by @ref DarkMode::paintButton to draw visual elements such as checkbox glyphs
+	 * or radio indicators alongside styled text. Not used for buttons with `BS_PUSHLIKE`,
+	 * which require different handling and theming logic.
+	 *
+	 * - Retrieves themed or fallback font for consistent appearance.
+	 * - Handles alignment, word wrapping, and prefix visibility per style flags.
+	 * - Draws themed background and glyph using `DrawThemeBackground`.
+	 * - Uses dark mode-aware text rendering and applies focus cue when needed.
+	 *
+	 * @param hWnd Handle to the button control.
+	 * @param hdc Device context for drawing.
+	 * @param hTheme Active visual style theme handle.
+	 * @param iPartID Part ID (`BP_CHECKBOX`, `BP_RADIOBUTTON`, etc.).
+	 * @param iStateID State ID (`CBS_CHECKEDHOT`, `RBS_UNCHECKEDNORMAL`, etc.).
+	 */
 	static void renderButton(HWND hWnd, HDC hdc, HTHEME hTheme, int iPartID, int iStateID)
 	{
 		HFONT hFont = nullptr;
@@ -1719,6 +1977,24 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Paints a themed checkbox or radio button with state-based visuals.
+	 *
+	 * Determines the appropriate themed part and state ID based on the control’s
+	 * style (e.g. `BS_CHECKBOX`, `BS_RADIOBUTTON`) and current button state flags
+	 * such as `BST_CHECKED`, `BST_PUSHED`, or `BST_HOT`.
+	 *
+	 * - Uses buffered animation (if available) to smoothly transition between states.
+	 * - Falls back to direct drawing via @ref renderButton if animation is not used.
+	 * - Internally updates the `buttonData._iStateID` to preserve the last rendered state.
+	 * - Not used for `BS_PUSHLIKE` buttons.
+	 *
+	 * @param hWnd Handle to the checkbox or radio button control.
+	 * @param hdc Device context used for rendering.
+	 * @param buttonData Theming and state info, including current theme and last state.
+	 *
+	 * @see DarkMode::renderButton
+	 */
 	static void paintButton(HWND hWnd, HDC hdc, ButtonData& buttonData)
 	{
 		const auto& hTheme = buttonData._themeData.getHTheme();
@@ -1817,6 +2093,9 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Window subclass procedure for themed checkbox and radio buttons.
+	 */
 	static LRESULT CALLBACK ButtonSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -2197,7 +2476,7 @@ namespace DarkMode
 		UpDownData() = delete;
 
 		explicit UpDownData(HWND hWnd)
-			: _cornerRoundness((DarkMode::isAtLeastWindows11() && cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL)) ? (kWin11CornerRoundness + 1) : 0)
+			: _cornerRoundness((DarkMode::isAtLeastWindows11() && CmpWndClassName(::GetParent(hWnd), WC_TABCONTROL)) ? (kWin11CornerRoundness + 1) : 0)
 			, _isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
 		{
 			updateRect(hWnd);
@@ -2754,7 +3033,7 @@ namespace DarkMode
 				if (LOWORD(wParam) == WM_CREATE)
 				{
 					auto hUpDown = reinterpret_cast<HWND>(lParam);
-					if (cmpWndClassName(hUpDown, UPDOWN_CLASS))
+					if (CmpWndClassName(hUpDown, UPDOWN_CLASS))
 					{
 						DarkMode::setUpDownCtrlSubclass(hUpDown);
 						return 0;
@@ -3357,7 +3636,7 @@ namespace DarkMode
 			if (p._subclass)
 			{
 				HWND hParent = ::GetParent(hWnd);
-				if ((hParent == nullptr || getWndClassName(hParent) != WC_COMBOBOXEX))
+				if ((hParent == nullptr || GetWndClassName(hParent) != WC_COMBOBOXEX))
 				{
 					DarkMode::setComboBoxCtrlSubclass(hWnd);
 				}
@@ -4538,7 +4817,7 @@ namespace DarkMode
 	static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 	{
 		const auto& p = *reinterpret_cast<DarkModeParams*>(lParam);
-		const std::wstring className = getWndClassName(hWnd);
+		const std::wstring className = GetWndClassName(hWnd);
 
 		if (className == WC_BUTTON)
 		{
@@ -4777,7 +5056,7 @@ namespace DarkMode
 
 				auto hChild = reinterpret_cast<HWND>(lParam);
 				const bool isChildEnabled = ::IsWindowEnabled(hChild) == TRUE;
-				const std::wstring className = getWndClassName(hChild);
+				const std::wstring className = GetWndClassName(hChild);
 
 				auto hdc = reinterpret_cast<HDC>(wParam);
 
@@ -5301,7 +5580,7 @@ namespace DarkMode
 				auto* lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
 				if (lpnmhdr->code == NM_CUSTOMDRAW)
 				{
-					const std::wstring className = getWndClassName(lpnmhdr->hwndFrom);
+					const std::wstring className = GetWndClassName(lpnmhdr->hwndFrom);
 
 					if (className == TOOLBARCLASSNAME)
 					{
@@ -5901,11 +6180,34 @@ namespace DarkMode
 		DarkMode::setWindowNotifyCustomDrawSubclass(hWnd, true);
 	}
 
+	/**
+	 * @brief Enables or disables theme-based dialog background textures in classic mode.
+	 *
+	 * Applies `ETDT_ENABLETAB` only when `theme` is `true` and the current mode is classic.
+	 * This replaces the default classic gray background with a lighter themed texture.
+	 * Otherwise disables themed dialog textures with `ETDT_DISABLE`.
+	 *
+	 * @param hWnd Handle to the target dialog window.
+	 * @param theme `true` to enable themed tab textures in classic mode.
+	 *
+	 * @see EnableThemeDialogTexture
+	 */
 	void enableThemeDialogTexture(HWND hWnd, bool theme)
 	{
 		::EnableThemeDialogTexture(hWnd, theme && (g_dmCfg._dmType == DarkModeType::classic) ? ETDT_ENABLETAB : ETDT_DISABLE);
 	}
 
+	/**
+	 * @brief Enables or disables visual styles for a window.
+	 *
+	 * Applies `SetWindowTheme(hWnd, L"", L"")` when `doDisable` is `true`, effectively removing
+	 * the current theme. Restores default theming when `doDisable` is `false`.
+	 *
+	 * @param hWnd Handle to the window.
+	 * @param doDisable `true` to strip visual styles, `false` to re-enable them.
+	 *
+	 * @see SetWindowTheme
+	 */
 	void disableVisualStyle(HWND hWnd, bool doDisable)
 	{
 		if (doDisable)
