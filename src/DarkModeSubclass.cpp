@@ -5917,6 +5917,17 @@ namespace DarkMode
 		DarkMode::removeSubclass(hWnd, WindowSettingChangeSubclass, kWindowSettingChangeSubclassID);
 	}
 
+	/**
+	 * @brief Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
+	 *
+	 * Configures the first hyperlink item (index 0)
+	 * to either use default system link colors if in classic mode, 
+	 * or to be affected by `WM_CTLCOLORSTATIC` message from its parent.
+	 *
+	 * @param hWnd Handle to the SysLink control.
+	 *
+	 * @note Currently affects only the first link (index 0).
+	 */
 	void enableSysLinkCtrlCtlColor(HWND hWnd)
 	{
 		LITEM item{};
@@ -6435,11 +6446,31 @@ namespace DarkMode
 		return DarkMode::getTreeViewStyle() == TreeViewStyle::dark;
 	}
 
+	/**
+	 * @brief Forces a window to redraw its non-client frame.
+	 *
+	 * Triggers a non-client area update by using `SWP_FRAMECHANGED` without changing
+	 * size, position, or Z-order.
+	 *
+	 * @param hWnd Handle to the target window.
+	 */
 	void redrawWindowFrame(HWND hWnd)
 	{
 		::SetWindowPos(hWnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 
+	/**
+	 * @brief Sets or clears a specific window style or extended style.
+	 *
+	 * Checks if the specified `dwFlag` is already set and toggles it if needed.
+	 * Only valid for `GWL_STYLE` or `GWL_EXSTYLE`.
+	 *
+	 * @param hWnd Handle to the window.
+	 * @param setFlag `true` to set the flag, `false` to clear it.
+	 * @param dwFlag Style bitmask to apply.
+	 * @param gwlIdx Either `GWL_STYLE` or `GWL_EXSTYLE`.
+	 * @return `TRUE` if modified, `FALSE` if unchanged, `-1` if invalid index.
+	 */
 	static int setWindowLongPtrStyle(HWND hWnd, bool setFlag, LONG_PTR dwFlag, int gwlIdx)
 	{
 		if ((gwlIdx != GWL_STYLE) && (gwlIdx != GWL_EXSTYLE))
@@ -6459,6 +6490,16 @@ namespace DarkMode
 		return FALSE;
 	}
 
+	/**
+	 * @brief Sets a window's standard style flags and redraws window if needed.
+	 *
+	 * Wraps @ref DarkMode::setWindowLongPtrStyle with `GWL_STYLE`
+	 * and calls @ref DarkMode::redrawWindowFrame if a change occurs.
+	 *
+	 * @param hWnd Handle to the target window.
+	 * @param setStyle `true` to set the flag, `false` to remove it.
+	 * @param styleFlag Style bit to modify.
+	 */
 	void setWindowStyle(HWND hWnd, bool setStyle, LONG_PTR styleFlag)
 	{
 		if (DarkMode::setWindowLongPtrStyle(hWnd, setStyle, styleFlag, GWL_STYLE) == TRUE)
@@ -6467,6 +6508,16 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Sets a window's extended style flags and redraws window if needed.
+	 *
+	 * Wraps @ref DarkMode::setWindowLongPtrStyle with `GWL_EXSTYLE`
+	 * and calls @ref DarkMode::redrawWindowFrame if a change occurs.
+	 *
+	 * @param hWnd Handle to the target window.
+	 * @param setExStyle `true` to set the flag, `false` to remove it.
+	 * @param exStyleFlag Extended style bit to modify.
+	 */
 	void setWindowExStyle(HWND hWnd, bool setExStyle, LONG_PTR exStyleFlag)
 	{
 		if (DarkMode::setWindowLongPtrStyle(hWnd, setExStyle, exStyleFlag, GWL_EXSTYLE) == TRUE)
@@ -6475,12 +6526,37 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Replaces an extended edge (e.g. client edge) with a standard window border.
+	 *
+	 * The given `exStyleFlag` must be a valid edge-related extended window style:
+	 * - `WS_EX_CLIENTEDGE`
+	 * - `WS_EX_DLGMODALFRAME`
+	 * - `WS_EX_STATICEDGE`
+	 * - `WS_EX_WINDOWEDGE`
+	 * ...or any combination of these.
+	 *
+	 * If `replace` is `true`, the specified extended edge style(s) are removed and
+	 * `WS_BORDER` is applied. If `false`, the edge style(s) are restored and `WS_BORDER` is cleared.
+	 *
+	 * @param hWnd Handle to the target window.
+	 * @param replace `true` to apply standard border; `false` to restore extended edge(s).
+	 * @param exStyleFlag One or more valid edge-related extended styles.
+	 */
 	void replaceExEdgeWithBorder(HWND hWnd, bool replace, LONG_PTR exStyleFlag)
 	{
 		DarkMode::setWindowExStyle(hWnd, !replace, exStyleFlag);
 		DarkMode::setWindowStyle(hWnd, replace, WS_BORDER);
 	}
 
+	/**
+	 * @brief Safely toggles `WS_EX_CLIENTEDGE` with `WS_BORDER` based on dark mode state.
+	 *
+	 * If dark mode is enabled, removes `WS_EX_CLIENTEDGE` and applies `WS_BORDER`.
+	 * Otherwise restores the extended edge style.
+	 *
+	 * @param hWnd Handle to the target window. No action is taken if `hWnd` is `nullptr`.
+	 */
 	void replaceClientEdgeWithBorderSafe(HWND hWnd)
 	{
 		if (hWnd != nullptr)
@@ -6489,6 +6565,23 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies classic-themed styling to a progress bar in non-classic mode.
+	 *
+	 * When dark mode is enabled, applies `WS_DLGFRAME`, removes visual styles
+	 * to allow to set custom background and fill colors using:
+	 * - Background: `DarkMode::getBackgroundColor()`
+	 * - Fill: Hardcoded green `0x06B025` via `PBM_SETBARCOLOR`
+	 *
+	 * Typically used as a fallback when standard visual styles fail to apply correctly.
+	 * 
+	 * @param hWnd Handle to the progress bar control.
+	 *
+	 * @see disableVisualStyle
+	 * @see setWindowStyle
+	 * @see PBM_SETBKCOLOR
+	 * @see PBM_SETBARCOLOR
+	 */
 	void setProgressBarClassicTheme(HWND hWnd)
 	{
 		DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled(), WS_DLGFRAME);

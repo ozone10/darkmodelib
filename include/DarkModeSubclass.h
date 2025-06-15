@@ -65,16 +65,28 @@ namespace DarkMode
 		COLORREF headerEdge = 0;
 	};
 
-	enum class ToolTipsType : unsigned char // std::uint8_t
+	// unsigned char == std::uint8_t
+
+	/**
+	 * @brief Represents tooltip from different controls.
+	 */
+	enum class ToolTipsType : unsigned char
 	{
-		tooltip,
-		toolbar,
-		listview,
-		treeview,
-		tabbar
+		tooltip,   ///< Standard tooltip control.
+		toolbar,   ///< Tooltips associated with toolbar buttons.
+		listview,  ///< Tooltips associated with list views.
+		treeview,  ///< Tooltips associated with tree view.
+		tabbar     ///< Tooltips associated with tab controls.
 	};
 
-	enum class ColorTone : unsigned char // std::uint8_t
+	/**
+	 * @brief Defines dark mode preset color tones.
+	 *
+	 * Used as preset to choose default colors in dark mode.
+	 * Value `max` is reserved for internal range checking,
+	 * do not use in application code.
+	 */
+	enum class ColorTone : unsigned char
 	{
 		black   = 0,
 		red     = 1,
@@ -397,6 +409,7 @@ namespace DarkMode
 	// Theme And Helpers
 	// ========================================================================
 
+	/// Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
 	void enableSysLinkCtrlCtlColor(HWND hWnd);
 
 	void setDarkTitleBarEx(HWND hWnd, bool useWin11Features);
@@ -441,11 +454,22 @@ namespace DarkMode
 	/// Checks whether the current theme is dark.
 	[[nodiscard]] bool isThemeDark();
 
+	/// Forces a window to redraw its non-client frame.
 	void redrawWindowFrame(HWND hWnd);
+
+	/// Sets a window’s standard style flags and redraws window if needed.
 	void setWindowStyle(HWND hWnd, bool setStyle, LONG_PTR styleFlag);
+
+	/// Sets a window’s extended style flags and redraws window if needed.
 	void setWindowExStyle(HWND hWnd, bool setExStyle, LONG_PTR exStyleFlag);
+
+	/// Replaces an extended edge (e.g. client edge) with a standard window border.
 	void replaceExEdgeWithBorder(HWND hWnd, bool replace, LONG_PTR exStyleFlag);
+
+	/// Safely toggles `WS_EX_CLIENTEDGE` with `WS_BORDER` based on dark mode state.
 	void replaceClientEdgeWithBorderSafe(HWND hWnd);
+
+	/// Applies classic-themed styling to a progress bar in non-classic mode.
 	void setProgressBarClassicTheme(HWND hWnd);
 
 	// ========================================================================
