@@ -76,7 +76,8 @@ namespace DarkMode
 		toolbar,   ///< Tooltips associated with toolbar buttons.
 		listview,  ///< Tooltips associated with list views.
 		treeview,  ///< Tooltips associated with tree view.
-		tabbar     ///< Tooltips associated with tab controls.
+		tabbar,    ///< Tooltips associated with tab controls.
+		trackbar   ///< Tooltips associated with trackbar (slider) controls.
 	};
 
 	/**
@@ -95,7 +96,7 @@ namespace DarkMode
 		purple  = 4,  ///< Purple
 		cyan    = 5,  ///< Cyan
 		olive   = 6,  ///< Olive
-		max     = 7 ///< Don't use, for internal checks
+		max     = 7   ///< Don't use, for internal checks
 	};
 
 	/**
@@ -131,6 +132,7 @@ namespace DarkMode
 		iniConfigUsed,    ///< True if `.ini` file configuration is supported.
 		allowOldOS,       ///< True if older Windows versions are allowed.
 		useDlgProcCtl,    ///< True if WM_CTLCOLORxxx can be handled directly in dialog procedure.
+		preferTheme,      ///< True if theme is supported and can be used over subclass, e.g. combo box on Windows 10+.
 		maxValue          ///< Sentinel value for internal validation (not intended for use).
 	};
 
@@ -157,6 +159,7 @@ namespace DarkMode
 	 *        - 3: Classic mode (manual)
 	 *
 	 * @note Values 2 and 4 are reserved for internal use only.
+	 *       Using them can cause visual glitches.
 	 */
 	void initDarkModeConfig(UINT dmType);
 
@@ -240,7 +243,7 @@ namespace DarkMode
 	// Enhancements to DarkMode.h
 	// ========================================================================
 
-	/// Makes scrollbars on the specified window and all its children consistent.
+	/// Makes scroll bars on the specified window and all its children consistent.
 	void enableDarkScrollBarForWindowAndChildren(HWND hWnd);
 
 	// ========================================================================
@@ -424,7 +427,7 @@ namespace DarkMode
 	/// Applies "DarkMode_Explorer" visual style if experimental mode is active.
 	void setDarkExplorerTheme(HWND hWnd);
 
-	/// Applies "DarkMode_Explorer" visual style to scrollbars.
+	/// Applies "DarkMode_Explorer" visual style to scroll bars.
 	void setDarkScrollBar(HWND hWnd);
 
 	/// Applies "DarkMode_Explorer" visual style to tooltip controls based on context.
@@ -432,9 +435,6 @@ namespace DarkMode
 
 	/// Sets the color of line above a toolbar control for non-classic mode.
 	void setDarkLineAbovePanelToolbar(HWND hWnd);
-
-	/// Wrapper for header control subclassing.
-	void setDarkHeader(HWND hWnd);
 
 	/// Applies an experimental Explorer visual style to a list view.
 	void setDarkListView(HWND hWnd);
@@ -521,7 +521,7 @@ namespace DarkMode
 	/// Handles text and background colorizing for syslink controls.
 	[[nodiscard]] LRESULT onCtlColorDlgLinkText(HDC hdc, bool isTextEnabled = true);
 
-	/// Handles text and background colorizing for listbox controls.
+	/// Handles text and background colorizing for list box controls.
 	[[nodiscard]] LRESULT onCtlColorListbox(WPARAM wParam, LPARAM lParam);
 
 	// ========================================================================
@@ -538,9 +538,9 @@ namespace DarkMode
 	 * - When a hook is used with `ChooseFont`, Windows **automatically falls back**
 	 *   to an **older template**, losing modern UI elements.
 	 * - To prevent this forced downgrade, a **modified template** (based on Font.dlg) is used.
-	 * - **CBS_OWNERDRAWFIXED should be removed** from the **Size** and **Script** comboboxes
+	 * - **CBS_OWNERDRAWFIXED should be removed** from the **Size** and **Script** combo boxes
 	 *   to restore proper visualization.
-	 * - **Custom owner-draw visuals remain** for other font comboboxes to allow font preview.
+	 * - **Custom owner-draw visuals remain** for other font combo boxes to allow font preview.
 	 * - Same for the `"AaBbYyZz"` sample text.
 	 * - However **Automatic system translation for captions and static texts is lost** in this workaround.
 	 *
@@ -605,7 +605,7 @@ namespace DarkMode
 	 * 
 	 * CHOOSEFONT cf{};
 	 * cf.Flags |= CF_ENABLEHOOK | CF_ENABLETEMPLATE;
-	 * cf.lpfnHook = static_cast<LPCFHOOKPROC>(HookDlgProc);
+	 * cf.lpfnHook = static_cast<LPCFHOOKPROC>(DarkMode::HookDlgProc);
 	 * cf.hInstance = GetModuleHandle(nullptr);
 	 * cf.lpTemplateName = MAKEINTRESOURCE(IDD_DARK_FONT_DIALOG);
 	 * ```
