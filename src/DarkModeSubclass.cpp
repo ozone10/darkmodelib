@@ -371,6 +371,7 @@ namespace DarkMode
 		bool _theme = false;
 	};
 
+	/// Base roundness value for various controls, such as toolbar iconic buttons and combo boxes
 	static constexpr int kWin11CornerRoundness = 4;
 
 	/// Threshold range around 50.0 where TreeView uses classic style instead of light/dark.
@@ -378,6 +379,7 @@ namespace DarkMode
 
 	namespace // anonymous
 	{
+		/// Global struct 
 		struct
 		{
 			DWM_WINDOW_CORNER_PREFERENCE _roundCorner = DWMWCP_DEFAULT;
@@ -806,10 +808,9 @@ namespace DarkMode
 		ColorTone _tone = DarkMode::ColorTone::black;
 	};
 
-	static Theme tMain;
-
 	static Theme& getTheme()
 	{
+		static Theme tMain{};
 		return tMain;
 	}
 
@@ -818,6 +819,7 @@ namespace DarkMode
 		return DarkMode::getTheme().getColorTone();
 	}
 
+	/// Dark views colors
 	static constexpr ColorsView darkColorsView{
 		HEXRGB(0x293134),   // background
 		HEXRGB(0xE0E2E4),   // text
@@ -828,6 +830,7 @@ namespace DarkMode
 		HEXRGB(0x646464)    // header divider
 	};
 
+	/// Light views colors
 	static constexpr ColorsView lightColorsView{
 		HEXRGB(0xFFFFFF),   // background
 		HEXRGB(0x000000),   // text
@@ -927,10 +930,9 @@ namespace DarkMode
 		BrushesAndPensView _hbrPnView;
 	};
 
-	static ThemeView tView;
-
 	static ThemeView& getThemeView()
 	{
+		static ThemeView tView{};
 		return tView;
 	}
 
@@ -1027,6 +1029,62 @@ namespace DarkMode
 	HBRUSH getHeaderHotBackgroundBrush()    { return DarkMode::getThemeView().getViewBrushesAndPens()._headerHotBackground; }
 
 	HPEN getHeaderEdgePen()                 { return DarkMode::getThemeView().getViewBrushesAndPens()._headerEdge; }
+
+	/**
+	 * @brief Initializes default color set based on the current mode type.
+	 *
+	 * Sets up control and view colors depending on the active theme:
+	 * - `dark`: Applies dark tone color set and view dark color set.
+	 * - `light`: Applies the predefined light color set and view light color set.
+	 * - `classic`: Applies only system color on views, other controls are not affected
+	 *              by theme colors.
+	 *
+	 * If `updateBrushesAndOther` is `true`, also updates
+	 * brushes, pens, and view styles (unless in classic mode).
+	 *
+	 * @param updateBrushesAndOther Whether to refresh GDI brushes and pens, and tree view styling.
+	 *
+	 * @see DarkMode::setToneColors
+	 * @see DarkMode::updateThemeBrushesAndPens
+	 * @see DarkMode::calculateTreeViewStyle
+	 */
+	void setDefaultColors(bool updateBrushesAndOther)
+	{
+		switch (g_dmCfg._dmType)
+		{
+			case DarkModeType::dark:
+			{
+				DarkMode::getTheme().setToneColors();
+				DarkMode::getThemeView()._clrView = DarkMode::darkColorsView;
+				break;
+			}
+
+			case DarkModeType::light:
+			{
+				DarkMode::getTheme()._colors = DarkMode::getLightColors();
+				DarkMode::getThemeView()._clrView = DarkMode::lightColorsView;
+				break;
+			}
+
+			case DarkModeType::classic:
+			{
+				DarkMode::setViewBackgroundColor(::GetSysColor(COLOR_WINDOW));
+				DarkMode::setViewTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+				break;
+			}
+		}
+
+		if (updateBrushesAndOther)
+		{
+			if (g_dmCfg._dmType != DarkModeType::classic)
+			{
+				DarkMode::updateThemeBrushesAndPens();
+				DarkMode::updateViewBrushesAndPens();
+			}
+
+			DarkMode::calculateTreeViewStyle();
+		}
+	}
 
 	/**
 	 * @brief Initializes the dark mode configuration based on the selected mode.
@@ -1169,6 +1227,45 @@ namespace DarkMode
 		g_dmCfg._micaExtend = extendMica;
 	}
 
+	static void initExperimentalDarkMode()
+	{
+		::InitDarkMode();
+	}
+
+	static void setDarkMode(bool useDark, bool fixDarkScrollbar)
+	{
+		::SetDarkMode(useDark, fixDarkScrollbar);
+	}
+
+	static bool allowDarkModeForWindow(HWND hWnd, bool allow)
+	{
+		return ::AllowDarkModeForWindow(hWnd, allow);
+	}
+
+#if defined(_DARKMODELIB_ALLOW_OLD_OS)
+	static void setTitleBarThemeColor(HWND hWnd)
+	{
+		::RefreshTitleBarThemeColor(hWnd);
+	}
+#endif
+
+	[[nodiscard]] static bool isColorSchemeChangeMessage(LPARAM lParam)
+	{
+		return ::IsColorSchemeChangeMessage(lParam);
+	}
+
+	static bool isHighContrast()
+	{
+		return ::IsHighContrast();
+	}
+
+	static bool isThemePrefered()
+	{
+		return (DarkMode::getLibInfo(LibInfo::preferTheme) == TRUE)
+			&& DarkMode::isAtLeastWindows10()
+			&& DarkMode::isExperimentalSupported();
+	}
+
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 	 /**
 	  * @brief Initializes dark mode configuration and colors from an INI file.
@@ -1181,7 +1278,7 @@ namespace DarkMode
 	  * - Tone settings for dark theme (`ColorTone`)
 	  *
 	  * If the INI file does not exist, default dark mode behavior is applied via
-	  * @ref setDarkModeConfig.
+	  * @ref DarkMode::setDarkModeConfig().
 	  *
 	  * @param iniName Name of INI file (resolved via @ref GetIniPath).
 	  *
@@ -1269,68 +1366,29 @@ namespace DarkMode
 
 			DarkMode::updateThemeBrushesAndPens();
 			DarkMode::updateViewBrushesAndPens();
+			DarkMode::calculateTreeViewStyle();
+
+			DarkMode::setDarkMode(g_dmCfg._dmType == DarkModeType::dark, true);
 		}
 		else
 		{
-			DarkMode::setDarkModeConfig();
-			if (g_dmCfg._dmType == DarkModeType::classic)
-			{
-				DarkMode::setViewBackgroundColor(::GetSysColor(COLOR_WINDOW));
-				DarkMode::setViewTextColor(::GetSysColor(COLOR_WINDOWTEXT));
-			}
+			DarkMode::setDarkModeConfig(static_cast<UINT>(DarkModeType::dark));
+			DarkMode::setDefaultColors(true);
 		}
 	}
 #endif // !defined(_DARKMODELIB_NO_INI_CONFIG)
-
-	static void initExperimentalDarkMode()
-	{
-		::InitDarkMode();
-	}
-
-	static void setDarkMode(bool useDark, bool fixDarkScrollbar)
-	{
-		::SetDarkMode(useDark, fixDarkScrollbar);
-	}
-
-	static bool allowDarkModeForWindow(HWND hWnd, bool allow)
-	{
-		return ::AllowDarkModeForWindow(hWnd, allow);
-	}
-
-#if defined(_DARKMODELIB_ALLOW_OLD_OS)
-	static void setTitleBarThemeColor(HWND hWnd)
-	{
-		::RefreshTitleBarThemeColor(hWnd);
-	}
-#endif
-
-	[[nodiscard]] static bool isColorSchemeChangeMessage(LPARAM lParam)
-	{
-		return ::IsColorSchemeChangeMessage(lParam);
-	}
-
-	static bool isHighContrast()
-	{
-		return ::IsHighContrast();
-	}
-
-	static bool isThemePrefered()
-	{
-		return (DarkMode::getLibInfo(LibInfo::preferTheme) == TRUE)
-			&& DarkMode::isAtLeastWindows10()
-			&& DarkMode::isExperimentalSupported();
-	}
 
 	/**
 	 * @brief Applies dark mode settings based on the given configuration type.
 	 *
 	 * Initializes the dark mode type settings and system-following behavior.
 	 * Enables or disables dark mode depending on whether `DarkModeType::dark` is selected.
-	 * Sets colors according to mode type.
+	 * It is recommended to use together with @ref DarkMode::setDefaultColors() to also set colors.
 	 *
 	 * @param dmType Dark mode configuration type; see @ref DarkMode::initDarkModeConfig for values.
 	 *
 	 * @see DarkMode::initDarkModeConfig()
+	 * @see DarkMode::setDefaultColors()
 	 */
 	void setDarkModeConfig(UINT dmType)
 	{
@@ -1338,30 +1396,6 @@ namespace DarkMode
 
 		const bool useDark = g_dmCfg._dmType == DarkModeType::dark;
 		DarkMode::setDarkMode(useDark, true);
-
-		if (useDark)
-		{
-			DarkMode::getTheme().setToneColors();
-			DarkMode::getThemeView()._clrView = DarkMode::darkColorsView;
-		}
-		else if (g_dmCfg._dmType == DarkModeType::light)
-		{
-			DarkMode::getTheme()._colors = DarkMode::getLightColors();
-			DarkMode::getThemeView()._clrView = DarkMode::lightColorsView;
-		}
-		else
-		{
-			DarkMode::setViewBackgroundColor(::GetSysColor(COLOR_WINDOW));
-			DarkMode::setViewTextColor(::GetSysColor(COLOR_WINDOWTEXT));
-		}
-
-		if (g_dmCfg._dmType != DarkModeType::classic)
-		{
-			DarkMode::updateThemeBrushesAndPens();
-			DarkMode::updateViewBrushesAndPens();
-		}
-
-		DarkMode::calculateTreeViewStyle();
 	}
 
 	/**
@@ -1369,10 +1403,13 @@ namespace DarkMode
 	 *
 	 * Determines the appropriate mode using @ref DarkMode::isDarkModeReg and forwards
 	 * the result to @ref DarkMode::setDarkModeConfig.
+	 * It is recommended to use together with @ref DarkMode::setDefaultColors() to also set colors.
 	 *
 	 * Uses:
 	 * - `DarkModeType::dark` if registry prefers dark mode.
 	 * - `DarkModeType::classic` otherwise.
+	 *
+	 * @see DarkMode::setDefaultColors()
 	 */
 	void setDarkModeConfig()
 	{
@@ -1408,29 +1445,22 @@ namespace DarkMode
 				g_dmCfg._isInitExperimental = true;
 			}
 
-			const bool useDark = g_dmCfg._dmType == DarkModeType::dark;
-			if (useDark)
-			{
-				DarkMode::getTheme()._colors = DarkMode::darkColors;
-				DarkMode::getThemeView()._clrView = DarkMode::darkColorsView;
-			}
-			else
-			{
-				DarkMode::getTheme()._colors = DarkMode::getLightColors();
-				DarkMode::getThemeView()._clrView = DarkMode::lightColorsView;
-			}
-
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 			if (!g_dmCfg._isIniNameSet)
 			{
 				g_dmCfg._iniName = iniName;
 				g_dmCfg._isIniNameSet = true;
+
+				if (g_dmCfg._iniName.empty())
+				{
+					DarkMode::setDarkModeConfig(static_cast<UINT>(DarkModeType::dark));
+					DarkMode::setDefaultColors(true);
+				}
 			}
 			DarkMode::initOptions(g_dmCfg._iniName);
-			DarkMode::setDarkMode(g_dmCfg._dmType == DarkModeType::dark, true);
-			DarkMode::calculateTreeViewStyle();
 #else
 			DarkMode::setDarkModeConfig();
+			DarkMode::setDefaultColors(true);
 #endif
 
 			DarkMode::setSysColor(COLOR_WINDOW, DarkMode::getBackgroundColor());

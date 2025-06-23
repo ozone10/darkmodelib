@@ -330,6 +330,9 @@ namespace DarkMode
 
 	[[nodiscard]] HPEN getHeaderEdgePen();
 
+	/// Initializes default color set based on the current mode type.
+	void setDefaultColors(bool updateBrushesAndOther);
+
 	// ========================================================================
 	// Paint Helpers
 	// ========================================================================
