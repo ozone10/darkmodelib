@@ -75,9 +75,10 @@ namespace DarkMode
 		tooltip,   ///< Standard tooltip control.
 		toolbar,   ///< Tooltips associated with toolbar buttons.
 		listview,  ///< Tooltips associated with list views.
-		treeview,  ///< Tooltips associated with tree view.
+		treeview,  ///< Tooltips associated with tree views.
 		tabbar,    ///< Tooltips associated with tab controls.
-		trackbar   ///< Tooltips associated with trackbar (slider) controls.
+		trackbar,  ///< Tooltips associated with trackbar (slider) controls.
+		rebar      ///< Tooltips associated with rebar controls.
 	};
 
 	/**

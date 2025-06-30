@@ -2510,7 +2510,7 @@ namespace DarkMode
 					break;
 				}
 
-				// skip the button's normal wndproc so it won't redraw out of wm_paint
+				// Skip the button's normal wndproc so it won't redraw out of wm_paint
 				const LRESULT retVal = ::DefWindowProc(hWnd, uMsg, wParam, lParam);
 				::InvalidateRect(hWnd, nullptr, FALSE);
 				return retVal;
@@ -2660,7 +2660,7 @@ namespace DarkMode
 		::GetThemeBackgroundContentRect(hTheme, hdc, BP_GROUPBOX, iStateID, &rcBackground, &rcContent);
 		::ExcludeClipRect(hdc, rcContent.left, rcContent.top, rcContent.right, rcContent.bottom);
 
-		DarkMode::paintRoundFrameRect(hdc, rcBackground, DarkMode::getEdgePen()); // Main frame
+		DarkMode::paintRoundFrameRect(hdc, rcBackground, DarkMode::getEdgePen()); // main frame
 
 		::SelectClipRgn(hdc, nullptr);
 
@@ -2693,19 +2693,18 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Window subclass procedure for owner drawn groupbox buttons.
+	 * @brief Window subclass procedure for owner drawn groupbox button control.
 	 *
 	 * @param hWnd Window handle being subclassed.
 	 * @param uMsg Message identifier.
 	 * @param wParam Message-specific data.
 	 * @param lParam Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData ButtonData instance .
+	 * @param dwRefData ButtonData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setGroupboxCtrlSubclass()
 	 * @see DarkMode::removeGroupboxCtrlSubclass()
-	 * 
 	 */
 	static LRESULT CALLBACK GroupboxSubclass(
 		HWND hWnd,
@@ -3096,7 +3095,6 @@ namespace DarkMode
 	 *
 	 * @see DarkMode::setUpDownCtrlSubclass()
 	 * @see DarkMode::removeUpDownCtrlSubclass()
-	 *
 	 */
 	static LRESULT CALLBACK UpDownSubclass(
 		HWND hWnd,
@@ -3430,6 +3428,20 @@ namespace DarkMode
 		::SelectObject(hdc, holdPen);
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn tab control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData BufferData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setTabCtrlPaintSubclass()
+	 * @see DarkMode::removeTabCtrlPaintSubclass()
+	 */
 	static LRESULT CALLBACK TabPaintSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -3545,6 +3557,20 @@ namespace DarkMode
 		DarkMode::removeSubclass<BufferData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
 	}
 
+	/**
+	 * @brief Window subclass procedure for tab control's updown control subclassing.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData Reserved data (unused).
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setTabCtrlUpDownSubclass()
+	 * @see DarkMode::removeTabCtrlUpDownSubclass()
+	 */
 	static LRESULT CALLBACK TabUpDownSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -3671,6 +3697,20 @@ namespace DarkMode
 		::ReleaseDC(hWnd, hdc);
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn border for list box and edit control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData BorderMetricsData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass()
+	 * @see DarkMode::removeCustomBorderForListBoxOrEditCtrlSubclass()
+	 */
 	static LRESULT CALLBACK CustomBorderSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -3888,6 +3928,8 @@ namespace DarkMode
 
 		HBRUSH hBrush = getBrush();
 
+		// Text part
+
 		// CBS_DROPDOWN and CBS_SIMPLE text is handled by parent by WM_CTLCOLOREDIT
 		if (comboBoxData._cbStyle == CBS_DROPDOWNLIST)
 		{
@@ -3949,6 +3991,7 @@ namespace DarkMode
 		}
 		auto holdPen = static_cast<HPEN>(::SelectObject(hdc, hPen));
 
+		// Drop down arrow part
 		if (comboBoxData._cbStyle != CBS_SIMPLE)
 		{
 			if (hasTheme)
@@ -3976,6 +4019,7 @@ namespace DarkMode
 			}
 		}
 
+		// Frame part
 		if (comboBoxData._cbStyle == CBS_DROPDOWNLIST)
 		{
 			::ExcludeClipRect(hdc, rcClient.left + 1, rcClient.top + 1, rcClient.right - 1, rcClient.bottom - 1);
@@ -4020,6 +4064,20 @@ namespace DarkMode
 		::SelectObject(hdc, holdPen);
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn combo box control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData ComboBoxData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setComboBoxCtrlSubclass()
+	 * @see DarkMode::removeComboBoxCtrlSubclass()
+	 */
 	static LRESULT CALLBACK ComboBoxSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -4202,6 +4260,20 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Window subclass procedure for custom color for combo box ex' list box and edit control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData Reserved data (unused).
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setComboBoxExCtrlSubclass()
+	 * @see DarkMode::removeComboBoxExCtrlSubclass()
+	 */
 	static LRESULT CALLBACK ComboboxExSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -4310,6 +4382,20 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Window subclass procedure for custom color for list view's gridlines and edit control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData Reserved data (unused).
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setListViewCtrlSubclass()
+	 * @see DarkMode::removeListViewCtrlSubclass()
+	 */
 	static LRESULT CALLBACK ListViewSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -4611,6 +4697,20 @@ namespace DarkMode
 		::SelectObject(hdc, holdPen);
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn header control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData HeaderData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setHeaderCtrlSubclass()
+	 * @see DarkMode::removeHeaderCtrlSubclass()
+	 */
 	static LRESULT CALLBACK HeaderSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -4888,11 +4988,13 @@ namespace DarkMode
 			}
 		}
 
-		/*POINT edgeHor[]{
+#if 0 // for horizontal edge
+		POINT edgeHor[]{
 			{rcClient.left, rcClient.top},
 			{rcClient.right, rcClient.top}
 		};
-		Polyline(hdc, edgeHor, _countof(edgeHor));*/
+		Polyline(hdc, edgeHor, _countof(edgeHor));
+#endif
 
 		if (hasSizeGrip)
 		{
@@ -4914,6 +5016,20 @@ namespace DarkMode
 		::SelectObject(hdc, holdPen);
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn status bar control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData StatusBarData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setStatusBarCtrlSubclass()
+	 * @see DarkMode::removeStatusBarCtrlSubclass()
+	 */
 	static LRESULT CALLBACK StatusBarSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -5006,7 +5122,7 @@ namespace DarkMode
 				LOGFONT lf{};
 				NONCLIENTMETRICS ncm{};
 				ncm.cbSize = sizeof(NONCLIENTMETRICS);
-				if (::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
+				if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
 				{
 					lf = ncm.lfStatusFont;
 					pStatusBarData->_fontData.setFont(::CreateFontIndirect(&lf));
@@ -5032,7 +5148,7 @@ namespace DarkMode
 		LOGFONT lf{};
 		NONCLIENTMETRICS ncm{};
 		ncm.cbSize = sizeof(NONCLIENTMETRICS);
-		if (::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
+		if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
 		{
 			lf = ncm.lfStatusFont;
 		}
@@ -5103,6 +5219,20 @@ namespace DarkMode
 		::FillRect(hdc, &rcClient, DarkMode::getCtrlBackgroundBrush());
 	}
 
+	/**
+	 * @brief Window subclass procedure for owner drawn progress bar control.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData ProgressBarData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setProgressBarCtrlSubclass()
+	 * @see DarkMode::removeProgressBarCtrlSubclass()
+	 */
 	static LRESULT CALLBACK ProgressBarSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -5273,6 +5403,20 @@ namespace DarkMode
 		{}
 	};
 
+	/**
+	 * @brief Window subclass procedure for better disabled state appearence for static control with text.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData StaticTextData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setStaticTextCtrlSubclass()
+	 * @see DarkMode::removeStaticTextCtrlSubclass()
+	 */
 	static LRESULT CALLBACK StaticTextSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -5517,13 +5661,12 @@ namespace DarkMode
 			return TRUE;
 		}
 
-		/*
-		// for debugging
-		if (className == L"#32770")
+#if 0 // for debugging
+		if (className == L"#32770") // dialog
 		{
 			return TRUE;
 		}
-		*/
+#endif
 
 		return TRUE;
 	}
@@ -5997,7 +6140,9 @@ namespace DarkMode
 
 		if (isFocused)
 		{
-			//::DrawFocusRect(lplvcd->nmcd.hdc, &lplvcd->nmcd.rc);
+#if 0 // for testing
+			::DrawFocusRect(lplvcd->nmcd.hdc, &lplvcd->nmcd.rc);
+#endif
 		}
 		else if (!isSelected && isHot && !hasGridlines)
 		{
@@ -6337,6 +6482,135 @@ namespace DarkMode
 		DarkMode::removeSubclass(hWnd, WindowNotifySubclass, kWindowNotifySubclassID);
 	}
 
+	static void paintMenuBar(HWND hWnd, HDC hdc)
+	{
+		// get the menubar rect
+		MENUBARINFO mbi{};
+		mbi.cbSize = sizeof(MENUBARINFO);
+		::GetMenuBarInfo(hWnd, OBJID_MENU, 0, &mbi);
+
+		RECT rcWindow{};
+		::GetWindowRect(hWnd, &rcWindow);
+
+		// the rcBar is offset by the window rect
+		RECT rcBar{ mbi.rcBar };
+		::OffsetRect(&rcBar, -rcWindow.left, -rcWindow.top);
+
+		rcBar.top -= 1;
+
+		::FillRect(hdc, &rcBar, DarkMode::getDlgBackgroundBrush());
+	}
+
+	static void paintMenuBarItems(UAHDRAWMENUITEM& UDMI, const HTHEME& hTheme)
+	{
+		// get the menu item string
+		std::wstring buffer(MAX_PATH, L'\0');
+		MENUITEMINFO mii{};
+		mii.cbSize = sizeof(MENUITEMINFO);
+		mii.fMask = MIIM_STRING;
+		mii.dwTypeData = buffer.data();
+		mii.cch = MAX_PATH - 1;
+
+		::GetMenuItemInfo(UDMI.um.hmenu, static_cast<UINT>(UDMI.umi.iPosition), TRUE, &mii);
+
+		// get the item state for drawing
+
+		DWORD dwFlags = DT_CENTER | DT_SINGLELINE | DT_VCENTER;
+
+		int iTextStateID = MBI_NORMAL;
+		int iBackgroundStateID = MBI_NORMAL;
+		if ((UDMI.dis.itemState & ODS_SELECTED) == ODS_SELECTED)
+		{
+			// clicked
+			iTextStateID = MBI_PUSHED;
+			iBackgroundStateID = MBI_PUSHED;
+		}
+		else if ((UDMI.dis.itemState & ODS_HOTLIGHT) == ODS_HOTLIGHT)
+		{
+			// hot tracking
+			iTextStateID = ((UDMI.dis.itemState & ODS_INACTIVE) == ODS_INACTIVE) ? MBI_DISABLEDHOT : MBI_HOT;
+			iBackgroundStateID = MBI_HOT;
+		}
+		else if (((UDMI.dis.itemState & ODS_GRAYED) == ODS_GRAYED)
+			|| ((UDMI.dis.itemState & ODS_DISABLED) == ODS_DISABLED)
+			|| ((UDMI.dis.itemState & ODS_INACTIVE) == ODS_INACTIVE))
+		{
+			// disabled / grey text / inactive
+			iTextStateID = MBI_DISABLED;
+			iBackgroundStateID = MBI_DISABLED;
+		}
+		else if ((UDMI.dis.itemState & ODS_DEFAULT) == ODS_DEFAULT)
+		{
+			// normal display
+			iTextStateID = MBI_NORMAL;
+			iBackgroundStateID = MBI_NORMAL;
+		}
+
+		if ((UDMI.dis.itemState & ODS_NOACCEL) == ODS_NOACCEL)
+		{
+			dwFlags |= DT_HIDEPREFIX;
+		}
+
+		switch (iBackgroundStateID)
+		{
+			case MBI_NORMAL:
+			case MBI_DISABLED:
+			{
+				::FillRect(UDMI.um.hdc, &UDMI.dis.rcItem, DarkMode::getDlgBackgroundBrush());
+				break;
+			}
+
+			case MBI_HOT:
+			case MBI_DISABLEDHOT:
+			{
+				::FillRect(UDMI.um.hdc, &UDMI.dis.rcItem, DarkMode::getHotBackgroundBrush());
+				break;
+			}
+
+			case MBI_PUSHED:
+			case MBI_DISABLEDPUSHED:
+			{
+				::FillRect(UDMI.um.hdc, &UDMI.dis.rcItem, DarkMode::getCtrlBackgroundBrush());
+				break;
+			}
+
+			default:
+			{
+				::DrawThemeBackground(hTheme, UDMI.um.hdc, MENU_BARITEM, iBackgroundStateID, &UDMI.dis.rcItem, nullptr);
+				break;
+			}
+		}
+
+		DTTOPTS dttopts{};
+		dttopts.dwSize = sizeof(DTTOPTS);
+		dttopts.dwFlags = DTT_TEXTCOLOR;
+		switch (iTextStateID)
+		{
+			case MBI_NORMAL:
+			case MBI_HOT:
+			case MBI_PUSHED:
+			{
+				dttopts.crText = DarkMode::getTextColor();
+				break;
+			}
+
+			case MBI_DISABLED:
+			case MBI_DISABLEDHOT:
+			case MBI_DISABLEDPUSHED:
+			{
+				dttopts.crText = DarkMode::getDisabledTextColor();
+				break;
+			}
+
+			default:
+			{
+				break;
+			}
+		}
+
+		::DrawThemeTextEx(hTheme, UDMI.um.hdc, MENU_BARITEM, iTextStateID, buffer.c_str(), static_cast<int>(mii.cch), dwFlags, &UDMI.dis.rcItem, &dttopts);
+	}
+
 	static void drawUAHMenuNCBottomLine(HWND hWnd)
 	{
 		MENUBARINFO mbi{};
@@ -6366,6 +6640,22 @@ namespace DarkMode
 		::ReleaseDC(hWnd, hdc);
 	}
 
+	/**
+	 * @brief Window subclass procedure for custom color for themed menu bar.
+	 *
+	 * Applies custom colors for menu bar, but not for popup menus.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData ThemeData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setWindowMenuBarSubclass()
+	 * @see DarkMode::removeWindowMenuBarSubclass()
+	 */
 	static LRESULT CALLBACK WindowMenuBarSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -6394,22 +6684,7 @@ namespace DarkMode
 			case WM_UAHDRAWMENU:
 			{
 				auto* pUDM = reinterpret_cast<UAHMENU*>(lParam);
-
-				// get the menubar rect
-				MENUBARINFO mbi{};
-				mbi.cbSize = sizeof(MENUBARINFO);
-				::GetMenuBarInfo(hWnd, OBJID_MENU, 0, &mbi);
-
-				RECT rcWindow{};
-				::GetWindowRect(hWnd, &rcWindow);
-
-				// the rcBar is offset by the window rect
-				RECT rcBar{ mbi.rcBar };
-				::OffsetRect(&rcBar, -rcWindow.left, -rcWindow.top);
-
-				rcBar.top -= 1;
-
-				::FillRect(pUDM->hdc, &rcBar, DarkMode::getDlgBackgroundBrush());
+				DarkMode::paintMenuBar(hWnd, pUDM->hdc);
 
 				return 0;
 			}
@@ -6417,124 +6692,19 @@ namespace DarkMode
 			case WM_UAHDRAWMENUITEM:
 			{
 				const auto& hTheme = pMenuThemeData->getHTheme();
-
 				auto* pUDMI = reinterpret_cast<UAHDRAWMENUITEM*>(lParam);
-
-				// get the menu item string
-				std::wstring buffer(MAX_PATH, L'\0');
-				MENUITEMINFO mii{};
-				mii.cbSize = sizeof(MENUITEMINFO);
-				mii.fMask = MIIM_STRING;
-				mii.dwTypeData = buffer.data();
-				mii.cch = MAX_PATH - 1;
-
-				::GetMenuItemInfo(pUDMI->um.hmenu, static_cast<UINT>(pUDMI->umi.iPosition), TRUE, &mii);
-
-				// get the item state for drawing
-
-				DWORD dwFlags = DT_CENTER | DT_SINGLELINE | DT_VCENTER;
-
-				int iTextStateID = MBI_NORMAL;
-				int iBackgroundStateID = MBI_NORMAL;
-				if ((pUDMI->dis.itemState & ODS_SELECTED) == ODS_SELECTED)
-				{
-					// clicked
-					iTextStateID = MBI_PUSHED;
-					iBackgroundStateID = MBI_PUSHED;
-				}
-				else if ((pUDMI->dis.itemState & ODS_HOTLIGHT) == ODS_HOTLIGHT)
-				{
-					// hot tracking
-					iTextStateID = ((pUDMI->dis.itemState & ODS_INACTIVE) == ODS_INACTIVE) ? MBI_DISABLEDHOT : MBI_HOT;
-					iBackgroundStateID = MBI_HOT;
-				}
-				else if (((pUDMI->dis.itemState & ODS_GRAYED) == ODS_GRAYED)
-					|| ((pUDMI->dis.itemState & ODS_DISABLED) == ODS_DISABLED)
-					|| ((pUDMI->dis.itemState & ODS_INACTIVE) == ODS_INACTIVE))
-				{
-					// disabled / grey text / inactive
-					iTextStateID = MBI_DISABLED;
-					iBackgroundStateID = MBI_DISABLED;
-				}
-				else if ((pUDMI->dis.itemState & ODS_DEFAULT) == ODS_DEFAULT)
-				{
-					// normal display
-					iTextStateID = MBI_NORMAL;
-					iBackgroundStateID = MBI_NORMAL;
-				}
-
-				if ((pUDMI->dis.itemState & ODS_NOACCEL) == ODS_NOACCEL)
-				{
-					dwFlags |= DT_HIDEPREFIX;
-				}
-
-				switch (iBackgroundStateID)
-				{
-					case MBI_NORMAL:
-					case MBI_DISABLED:
-					{
-						::FillRect(pUDMI->um.hdc, &pUDMI->dis.rcItem, DarkMode::getDlgBackgroundBrush());
-						break;
-					}
-
-					case MBI_HOT:
-					case MBI_DISABLEDHOT:
-					{
-						::FillRect(pUDMI->um.hdc, &pUDMI->dis.rcItem, DarkMode::getHotBackgroundBrush());
-						break;
-					}
-
-					case MBI_PUSHED:
-					case MBI_DISABLEDPUSHED:
-					{
-						::FillRect(pUDMI->um.hdc, &pUDMI->dis.rcItem, DarkMode::getCtrlBackgroundBrush());
-						break;
-					}
-
-					default:
-					{
-						::DrawThemeBackground(hTheme, pUDMI->um.hdc, MENU_BARITEM, iBackgroundStateID, &pUDMI->dis.rcItem, nullptr);
-						break;
-					}
-				}
-
-				DTTOPTS dttopts{};
-				dttopts.dwSize = sizeof(DTTOPTS);
-				dttopts.dwFlags = DTT_TEXTCOLOR;
-				switch (iTextStateID)
-				{
-					case MBI_NORMAL:
-					case MBI_HOT:
-					case MBI_PUSHED:
-					{
-						dttopts.crText = DarkMode::getTextColor();
-						break;
-					}
-
-					case MBI_DISABLED:
-					case MBI_DISABLEDHOT:
-					case MBI_DISABLEDPUSHED:
-					{
-						dttopts.crText = DarkMode::getDisabledTextColor();
-						break;
-					}
-
-					default:
-					{
-						break;
-					}
-				}
-
-				::DrawThemeTextEx(hTheme, pUDMI->um.hdc, MENU_BARITEM, iTextStateID, buffer.c_str(), static_cast<int>(mii.cch), dwFlags, &pUDMI->dis.rcItem, &dttopts);
+				DarkMode::paintMenuBarItems(*pUDMI, hTheme);
 
 				return 0;
 			}
 
+#if 0 // for debugging
 			case WM_UAHMEASUREMENUITEM:
 			{
-				//auto pMMI = reinterpret_cast<UAHMEASUREMENUITEM*>(lParam);
+				auto* pMMI = reinterpret_cast<UAHMEASUREMENUITEM*>(lParam);
 				return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 			}
+#endif
 
 			case WM_DPICHANGED:
 			case WM_DPICHANGED_AFTERPARENT:
@@ -6570,6 +6740,22 @@ namespace DarkMode
 		DarkMode::removeSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, kWindowMenuBarSubclassID);
 	}
 
+	/**
+	 * @brief Window subclass procedure for handling `WM_SETTINGCHANGE` message.
+	 *
+	 * Handles `WM_SETTINGCHANGE` to perform changes for dark mode based on system setting.
+	 *
+	 * @param hWnd Window handle being subclassed.
+	 * @param uMsg Message identifier.
+	 * @param wParam Message-specific data.
+	 * @param lParam Message-specific data.
+	 * @param uIdSubclass Subclass identifier.
+	 * @param dwRefData Reserved data (unused).
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setWindowSettingChangeSubclass()
+	 * @see DarkMode::removeWindowSettingChangeSubclass()
+	 */
 	static LRESULT CALLBACK WindowSettingChangeSubclass(
 		HWND hWnd,
 		UINT uMsg,
@@ -6805,6 +6991,12 @@ namespace DarkMode
 			case DarkMode::ToolTipsType::trackbar:
 			{
 				msg = TBM_GETTOOLTIPS;
+				break;
+			}
+
+			case DarkMode::ToolTipsType::rebar:
+			{
+				msg = RB_GETTOOLTIPS;
 				break;
 			}
 
