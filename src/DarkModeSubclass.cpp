@@ -5354,6 +5354,14 @@ namespace DarkMode
 		}
 	}
 
+	static void setRebarCtrlSubclass(HWND hWnd, DarkModeParams p)
+	{
+		if (p._subclass)
+		{
+			DarkMode::setWindowEraseBgSubclass(hWnd);
+		}
+	}
+
 	static void setToolbarCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -5440,6 +5448,12 @@ namespace DarkMode
 		if (className == WC_TREEVIEW)
 		{
 			DarkMode::setTreeViewCtrlTheme(hWnd, p);
+			return TRUE;
+		}
+
+		if (className == REBARCLASSNAMEW)
+		{
+			DarkMode::setRebarCtrlSubclass(hWnd, p);
 			return TRUE;
 		}
 
@@ -6172,39 +6186,60 @@ namespace DarkMode
 		}
 
 		::FillRect(lpnmcd->hdc, &lpnmcd->rc, DarkMode::getDlgBackgroundBrush());
+
 		REBARBANDINFO rbBand{};
 		rbBand.cbSize = sizeof(REBARBANDINFO);
 		rbBand.fMask = RBBIM_STYLE | RBBIM_CHEVRONLOCATION | RBBIM_CHEVRONSTATE;
-		::SendMessage(lpnmcd->hdr.hwndFrom, RB_GETBANDINFO, 0, reinterpret_cast<LPARAM>(&rbBand));
 
-		LRESULT retVal = CDRF_DODEFAULT;
-
-		if ((rbBand.fStyle & RBBS_USECHEVRON) == RBBS_USECHEVRON
-			&& (rbBand.rcChevronLocation.right - rbBand.rcChevronLocation.left) > 0)
+		const auto nBands = static_cast<UINT>(::SendMessage(lpnmcd->hdr.hwndFrom, RB_GETBANDCOUNT, 0, 0));
+		for (UINT i = 0; i < nBands; ++i)
 		{
-			static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
+			::SendMessage(lpnmcd->hdr.hwndFrom, RB_GETBANDINFO, static_cast<WPARAM>(i), reinterpret_cast<LPARAM>(&rbBand));
 
-			const bool isHot = (rbBand.uChevronState & STATE_SYSTEM_HOTTRACKED) == STATE_SYSTEM_HOTTRACKED;
-			const bool isPressed = (rbBand.uChevronState & STATE_SYSTEM_PRESSED) == STATE_SYSTEM_PRESSED;
-
-			if (isHot)
+			if ((rbBand.fStyle & RBBS_USECHEVRON) == RBBS_USECHEVRON
+				&& (rbBand.rcChevronLocation.right - rbBand.rcChevronLocation.left) > 0)
 			{
-				DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
+				static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
+
+				const bool isHot = (rbBand.uChevronState & STATE_SYSTEM_HOTTRACKED) == STATE_SYSTEM_HOTTRACKED;
+				const bool isPressed = (rbBand.uChevronState & STATE_SYSTEM_PRESSED) == STATE_SYSTEM_PRESSED;
+
+				if (isHot)
+				{
+					DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
+				}
+				else if (isPressed)
+				{
+					DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
+				}
+
+				::SetTextColor(lpnmcd->hdc, isHot ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
+				::SetBkMode(lpnmcd->hdc, TRANSPARENT);
+
+				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP;
+				::DrawText(lpnmcd->hdc, L"»", -1, &rbBand.rcChevronLocation, dtFlags);
 			}
-			else if (isPressed)
+
+			if ((rbBand.fStyle & RBBS_GRIPPERALWAYS) == RBBS_GRIPPERALWAYS
+				&& ((rbBand.fStyle & RBBS_FIXEDSIZE) != RBBS_FIXEDSIZE
+					|| (rbBand.fStyle & RBBS_NOGRIPPER) != RBBS_NOGRIPPER))
 			{
-				DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
+				auto holdPen = static_cast<HPEN>(::SelectObject(lpnmcd->hdc, DarkMode::getDarkerTextPen()));
+
+				RECT rcBand{};
+				::SendMessage(lpnmcd->hdr.hwndFrom, RB_GETRECT, static_cast<WPARAM>(i), reinterpret_cast<LPARAM>(&rcBand));
+
+				static constexpr LONG offset = 5;
+				const std::array<POINT, 2> edges{ {
+					{ rcBand.left, rcBand.top + offset},
+					{ rcBand.left, rcBand.bottom - offset}
+				} };
+				::Polyline(lpnmcd->hdc, edges.data(), static_cast<int>(edges.size()));
+
+				::SelectObject(lpnmcd->hdc, holdPen);
 			}
-
-			::SetTextColor(lpnmcd->hdc, isHot ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
-			::SetBkMode(lpnmcd->hdc, TRANSPARENT);
-
-			static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP;
-			::DrawText(lpnmcd->hdc, L"»", -1, &rbBand.rcChevronLocation, dtFlags);
-
-			retVal = CDRF_SKIPDEFAULT;
 		}
-		return retVal;
+		return CDRF_SKIPDEFAULT;
 	}
 
 	[[nodiscard]] static LRESULT darkRebarNotifyCustomDraw(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
