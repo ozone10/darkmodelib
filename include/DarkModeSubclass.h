@@ -108,7 +108,9 @@ namespace DarkMode
 	 * - `light`: Light mode appearance.
 	 * - `dark`: Dark mode appearance.
 	 *
-	 * Set via configuration and used by style evaluators (e.g. @ref calculateTreeViewStyle).
+	 * Set via configuration and used by style evaluators (e.g. @ref DarkMode::calculateTreeViewStyle).
+	 *
+	 * @see DarkMode::calculateTreeViewStyle()
 	 */
 	enum class TreeViewStyle : unsigned char
 	{
@@ -120,8 +122,10 @@ namespace DarkMode
 	/**
 	 * @brief Describes metadata fields and compile-time features of the dark mode library.
 	 *
-	 * Values of this enum are used with getLibInfo() to retrieve version numbers and
+	 * Values of this enum are used with @ref DarkMode::getLibInfo to retrieve version numbers and
 	 * determine whether specific features were enabled during compilation.
+	 *
+	 * @see DarkMode::getLibInfo()
 	 */
 	enum class LibInfo : unsigned char
 	{
@@ -135,6 +139,24 @@ namespace DarkMode
 		useDlgProcCtl,    ///< True if WM_CTLCOLORxxx can be handled directly in dialog procedure.
 		preferTheme,      ///< True if theme is supported and can be used over subclass, e.g. combo box on Windows 10+.
 		maxValue          ///< Sentinel value for internal validation (not intended for use).
+	};
+
+	/**
+	 * @brief Defines the available dark mode types for manual configurations.
+	 *
+	 * Can be used in DarkMode::initDarkModeConfig and in DarkMode::setDarkModeConfig
+	 * with static_cast<UINT>(DarkModeType::'value').
+	 *
+	 * @note Also used internally to distinguish between light, dark, and classic modes.
+	 *
+	 * @see DarkMode::initDarkModeConfig()
+	 * @see DarkMode::setDarkModeConfig()
+	 */
+	enum class DarkModeType : unsigned char
+	{
+		light = 0,  ///< Light mode appearance.
+		dark = 1,   ///< Dark mode appearance.
+		classic = 3 ///< Classic (non-themed or system) appearance.
 	};
 
 	/**
@@ -154,10 +176,12 @@ namespace DarkMode
 	/**
 	 * @brief Initializes the dark mode configuration based on the selected mode.
 	 *
+	 * For convenience @ref DarkModeType enums values can be used.
+	 *
 	 * @param dmType Configuration mode:
-	 *        - 0: Light mode (manual)
-	 *        - 1: Dark mode (manual)
-	 *        - 3: Classic mode (manual)
+	 *        - 0: Light mode
+	 *        - 1: Dark mode
+	 *        - 3: Classic mode
 	 *
 	 * @note Values 2 and 4 are reserved for internal use only.
 	 *       Using them can cause visual glitches.
@@ -176,7 +200,7 @@ namespace DarkMode
 	/// Applies Mica effects on the full window.
 	void setMicaExtendedConfig(bool extendMica);
 
-	/// Applies dark mode settings based on the given configuration type. (initDarkModeConfig values)
+	/// Applies dark mode settings based on the given configuration type. (DarkModeType values)
 	void setDarkModeConfig(UINT dmType);
 
 	/// Applies dark mode settings based on system mode preference.
@@ -410,18 +434,24 @@ namespace DarkMode
 	/// Removes the subclass used for `WM_ERASEBKGND` message handling.
 	void removeWindowEraseBgSubclass(HWND hWnd);
 
-	/// Applies window subclassing to enable `WM_CTLCOLOR*` handling.
+	/// Applies window subclassing to handle `WM_CTLCOLOR*` messages.
 	void setWindowCtlColorSubclass(HWND hWnd);
 	/// Removes the subclass used for `WM_CTLCOLOR*` messages handling.
 	void removeWindowCtlColorSubclass(HWND hWnd);
 
-	void setWindowNotifyCustomDrawSubclass(HWND hWnd, bool subclassChildren = false);
+	/// Applies window subclassing for handling `NM_CUSTOMDRAW` notifications for custom drawing.
+	void setWindowNotifyCustomDrawSubclass(HWND hWnd);
+	/// Removes the subclass used for handling `NM_CUSTOMDRAW` notifications for custom drawing.
 	void removeWindowNotifyCustomDrawSubclass(HWND hWnd);
 
+	/// Applies window subclassing for menu bar themed custom drawing.
 	void setWindowMenuBarSubclass(HWND hWnd);
+	/// Removes the subclass used for menu bar themed custom drawing.
 	void removeWindowMenuBarSubclass(HWND hWnd);
 
+	/// Applies window subclassing to handle `WM_SETTINGCHANGE` message.
 	void setWindowSettingChangeSubclass(HWND hWnd);
+	/// Removes the subclass used for `WM_SETTINGCHANGE` message handling.
 	void removeWindowSettingChangeSubclass(HWND hWnd);
 
 	// ========================================================================
@@ -454,10 +484,12 @@ namespace DarkMode
 	/// Sets colors and edges for a RichEdit control.
 	void setDarkRichEdit(HWND hWnd);
 
-	/// Applies visual styles; ctl color message and child controls subclassings to a dialog safely.
-	void setDarkDlgSafe(HWND hWnd, bool useWin11Features = true);
-	/// Applies visual styles; ctl color message, child controls, and custom drawing subclassings to a dialog safely.
-	void setDarkDlgNotifySafe(HWND hWnd, bool useWin11Features = true);
+	/// Applies visual styles; ctl color message and child controls subclassings to a window safely.
+	void setDarkWndSafe(HWND hWnd, bool useWin11Features = true);
+	/// Applies visual styles; ctl color message, child controls, custom drawing, and setting change subclassings to a window safely.
+	void setDarkWndNotifySafeEx(HWND hWnd, bool setSettingChangeSubclass = false, bool useWin11Features = true);
+	/// Applies visual styles; ctl color message, child controls, and custom drawing subclassings to a window safely.
+	void setDarkWndNotifySafe(HWND hWnd, bool useWin11Features = true);
 
 	/// Enables or disables theme-based dialog background textures in classic mode.
 	void enableThemeDialogTexture(HWND hWnd, bool theme);

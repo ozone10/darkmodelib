@@ -18,8 +18,8 @@
 
 
 #define DM_VERSION_MAJOR    0
-#define DM_VERSION_MINOR    9
+#define DM_VERSION_MINOR    10
 #define DM_VERSION_REVISION 0
 
-#define DM_VERSION   "Dark mode v0.9.0"
+#define DM_VERSION   "Dark mode v0.10.0"
 #define DM_COPYRIGHT "Copyright (c) 2024-2025 ozone10"
