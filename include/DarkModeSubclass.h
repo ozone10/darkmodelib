@@ -194,11 +194,14 @@ namespace DarkMode
 	/// Sets the preferred border color for window edge on Windows 11.
 	void setBorderColorConfig(COLORREF clr);
 
-	// Sets the Mica effects on Windows 11. (DWM_SYSTEMBACKDROP_TYPE values)
+	// Sets the Mica effects on Windows 11 setting. (DWM_SYSTEMBACKDROP_TYPE values)
 	void setMicaConfig(UINT mica);
 
-	/// Applies Mica effects on the full window.
+	/// Sets Mica effects on the full window setting.
 	void setMicaExtendedConfig(bool extendMica);
+
+	/// Sets dialog colors on title bar on Windows 11 setting.
+	void setColorizeTitleBarConfig(bool colorize);
 
 	/// Applies dark mode settings based on the given configuration type. (DarkModeType values)
 	void setDarkModeConfig(UINT dmType);

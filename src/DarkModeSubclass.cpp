@@ -377,8 +377,8 @@ namespace DarkMode
 
 	namespace // anonymous
 	{
-		/// Global struct 
-		struct
+		/// Global struct
+		struct a
 		{
 			DWM_WINDOW_CORNER_PREFERENCE _roundCorner = DWMWCP_DEFAULT;
 			COLORREF _borderColor = DWMWA_COLOR_DEFAULT;
@@ -388,14 +388,15 @@ namespace DarkMode
 			TreeViewStyle _tvStylePrev = TreeViewStyle::classic;
 			TreeViewStyle _tvStyle = TreeViewStyle::classic;
 			bool _micaExtend = false;
+			bool _colorizeTitleBar = false;
 			DarkModeType _dmType = DarkModeType::dark;
 			WinMode _windowsMode = WinMode::disabled;
 			bool _isInit = false;
 			bool _isInitExperimental = false;
 
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
-			bool _isIniNameSet = false;
 			std::wstring _iniName;
+			bool _isIniNameSet = false;
 #endif
 		} g_dmCfg;
 	} // anonymous namespace
@@ -1173,6 +1174,7 @@ namespace DarkMode
 	 * @param roundCornerStyle Integer value representing a `DWM_WINDOW_CORNER_PREFERENCE`.
 	 *
 	 * @see https://learn.microsoft.com/windows/win32/api/dwmapi/ne-dwmapi-dwm_window_corner_preference
+	 * @see DarkMode::setDarkTitleBarEx()
 	 */
 	void setRoundCornerConfig(UINT roundCornerStyle)
 	{
@@ -1198,6 +1200,7 @@ namespace DarkMode
 	 * @param clr Border color value, or sentinel to reset to system default.
 	 *
 	 * @see DWMWA_BORDER_COLOR
+	 * @see DarkMode::setDarkTitleBarEx()
 	 */
 	void setBorderColorConfig(COLORREF clr)
 	{
@@ -1212,7 +1215,7 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Sets the Mica effects on Windows 11.
+	 * @brief Sets the Mica effects on Windows 11 setting.
 	 *
 	 * Assigns a valid `DWM_SYSTEMBACKDROP_TYPE` to the configuration. If the value exceeds
 	 * `DWMSBT_TABBEDWINDOW`, it falls back to `DWMSBT_AUTO`.
@@ -1220,6 +1223,7 @@ namespace DarkMode
 	 * @param mica Integer value representing a `DWM_SYSTEMBACKDROP_TYPE`.
 	 *
 	 * @see DWM_SYSTEMBACKDROP_TYPE
+	 * @see DarkMode::setDarkTitleBarEx()
 	 */
 	void setMicaConfig(UINT mica)
 	{
@@ -1235,16 +1239,32 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Applies Mica effects on the full window.
+	 * @brief Sets Mica effects on the full window setting.
 	 *
 	 * Controls whether Mica should be applied to the entire window
 	 * or limited to the title bar only.
 	 *
 	 * @param extendMica `true` to apply Mica to the full window, `false` for title bar only.
+	 *
+	 * @see DarkMode::setDarkTitleBarEx()
 	 */
 	void setMicaExtendedConfig(bool extendMica)
 	{
 		g_dmCfg._micaExtend = extendMica;
+	}
+
+	/**
+	 * @brief Sets dialog colors on title bar on Windows 11 setting.
+	 *
+	 * Controls whether title bar should have same colors as dialog window.
+	 *
+	 * @param colorize `true` to have title bar to have same colors as dialog window.
+	 *
+	 * @see DarkMode::setDarkTitleBarEx()
+	 */
+	void setColorizeTitleBarConfig(bool colorize)
+	{
+		g_dmCfg._colorizeTitleBar = colorize;
 	}
 
 	/**
@@ -1432,6 +1452,11 @@ namespace DarkMode
 			DarkMode::updateThemeBrushesAndPens();
 			DarkMode::updateViewBrushesAndPens();
 			DarkMode::calculateTreeViewStyle();
+
+			if (!g_dmCfg._micaExtend)
+			{
+				g_dmCfg._colorizeTitleBar = (::GetPrivateProfileIntW(sectionBase.c_str(), L"colorizeTitleBar", 0, iniPath.c_str()) == 1);
+			}
 
 			DarkMode::setDarkMode(g_dmCfg._dmType == DarkModeType::dark, true);
 		}
@@ -7124,6 +7149,9 @@ namespace DarkMode
 	 * - Rounded corners (`DWMWA_WINDOW_CORNER_PREFERENCE`)
 	 * - Border color (`DWMWA_BORDER_COLOR`)
 	 * - Mica backdrop (`DWMWA_SYSTEMBACKDROP_TYPE`) if allowed and compatible
+	 * - Static text color for text and dialog background color for background
+	 *   (`DWMWA_CAPTION_COLOR`, `DWMWA_TEXT_COLOR`),
+	 *   only when frames are not extended to full window
 	 *
 	 * If `_DARKMODELIB_ALLOW_OLD_OS` is defined and running on pre-2004 builds,
 	 * fallback behavior will enable dark title bars via undocumented APIs.
@@ -7132,6 +7160,7 @@ namespace DarkMode
 	 * @param useWin11Features `true` to enable Windows 11 specific features such as Mica and rounded corners.
 	 *
 	 * @note Requires Windows 10 version 2004 (build 19041) or later.
+	 *
 	 * @see DwmSetWindowAttribute
 	 * @see DwmExtendFrameIntoClientArea
 	 */
@@ -7149,6 +7178,8 @@ namespace DarkMode
 				::DwmSetWindowAttribute(hWnd, DWMWA_WINDOW_CORNER_PREFERENCE, &g_dmCfg._roundCorner, sizeof(g_dmCfg._roundCorner));
 				::DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &g_dmCfg._borderColor, sizeof(g_dmCfg._borderColor));
 
+				bool canColorizeTitleBar = true;
+
 				if (DarkMode::getWindowsBuildNumber() >= win11Mica)
 				{
 					if (g_dmCfg._micaExtend && g_dmCfg._mica != DWMSBT_AUTO && !DarkMode::isWindowsModeEnabled() && (g_dmCfg._dmType == DarkModeType::dark))
@@ -7158,7 +7189,15 @@ namespace DarkMode
 					}
 
 					::DwmSetWindowAttribute(hWnd, DWMWA_SYSTEMBACKDROP_TYPE, &g_dmCfg._mica, sizeof(g_dmCfg._mica));
+
+					canColorizeTitleBar = !g_dmCfg._micaExtend;
 				}
+
+				canColorizeTitleBar = g_dmCfg._colorizeTitleBar && canColorizeTitleBar && DarkMode::isEnabled();
+				const COLORREF clrDlg = canColorizeTitleBar ? DarkMode::getDlgBackgroundColor() : DWMWA_COLOR_DEFAULT;
+				const COLORREF clrText = canColorizeTitleBar ? DarkMode::getTextColor() : DWMWA_COLOR_DEFAULT;
+				::DwmSetWindowAttribute(hWnd, DWMWA_CAPTION_COLOR, &clrDlg, sizeof(clrDlg));
+				::DwmSetWindowAttribute(hWnd, DWMWA_TEXT_COLOR, &clrText, sizeof(clrText));
 			}
 		}
 #if defined(_DARKMODELIB_ALLOW_OLD_OS)
