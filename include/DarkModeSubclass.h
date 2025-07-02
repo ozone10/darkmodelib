@@ -1,19 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 
 /*
- * Copyright (c) 2024-2025 ozone10
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (c) 2025 oZone10
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
 // Based on Notepad++ dark mode code, original by adzm / Adam D. Walling
@@ -641,7 +632,7 @@ namespace DarkMode
 	 * ## Usage Example:
 	 * ```cpp
 	 * #define IDD_DARK_FONT_DIALOG 1000 // usually in resource.h or other header
-	 * 
+	 *
 	 * CHOOSEFONT cf{};
 	 * cf.Flags |= CF_ENABLEHOOK | CF_ENABLETEMPLATE;
 	 * cf.lpfnHook = static_cast<LPCFHOOKPROC>(DarkMode::HookDlgProc);

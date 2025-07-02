@@ -1,25 +1,15 @@
-﻿	// SPDX-License-Identifier: GPL-3.0-or-later
+﻿// SPDX-License-Identifier: MPL-2.0
 
 /*
- * Copyright (c) 2024-2025 ozone10
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * Copyright (c) 2025 oZone10
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 
 // Based on Notepad++ dark mode code, original by adzm / Adam D. Walling
 // with modification from Notepad++ team.
-// Heavily modified by ozone10 (contributor of Notepad++)
+// Heavily modified by ozone10 (contributor of Notepad++).
 
 
 #include "StdAfx.h"
@@ -5795,7 +5785,7 @@ namespace DarkMode
 	 * Handles:
 	 * - `WM_CTLCOLOREDIT`, `WM_CTLCOLORLISTBOX`, `WM_CTLCOLORDLG`, `WM_CTLCOLORSTATIC`
 	 * - `WM_PRINTCLIENT` for removing light border for push buttons in dark mode
-	 * 
+	 *
 	 * Cleans up subclass on `WM_NCDESTROY`
 	 *
 	 * Uses `DarkMode::onCtlColor*` utilities.
@@ -5960,7 +5950,7 @@ namespace DarkMode
 	 * @return Flags to control draw behavior (`TBCDRF_USECDCOLORS`, `TBCDRF_NOBACKGROUND`, `CDRF_NOTIFYPOSTPAINT`).
 	 *
 	 * @note This function clears `CDIS_HOT`/`CDIS_CHECKED` to allow manual visual overrides.
-	 * 
+	 *
 	 * @see DarkMode::postpaintToolbarItem()
 	 * @see DarkMode::darkToolbarNotifyCustomDraw()
 	 */
@@ -7123,7 +7113,7 @@ namespace DarkMode
 	 * @brief Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
 	 *
 	 * Configures the first hyperlink item (index 0)
-	 * to either use default system link colors if in classic mode, 
+	 * to either use default system link colors if in classic mode,
 	 * or to be affected by `WM_CTLCOLORSTATIC` message from its parent.
 	 *
 	 * @param hWnd Handle to the SysLink control.
@@ -7889,7 +7879,7 @@ namespace DarkMode
 	 * @brief Checks whether the color is dark.
 	 *
 	 * @param clr Color to check.
-	 * 
+	 *
 	 * @return `true` if the perceived lightness of the color
 	 *         is less than (50.0 - kMiddleGrayRange), otherwise `false`.
 	 *
@@ -8034,7 +8024,7 @@ namespace DarkMode
 	 * - Fill: Hardcoded green `0x06B025` via `PBM_SETBARCOLOR`
 	 *
 	 * Typically used for marquee style progress bar.
-	 * 
+	 *
 	 * @param hWnd Handle to the progress bar control.
 	 *
 	 * @see DarkMode::setWindowStyle()
