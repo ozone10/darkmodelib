@@ -7,9 +7,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// Based on Notepad++ dark mode code, original by adzm / Adam D. Walling
-// with modification from Notepad++ team.
-// Heavily modified by ozone10 (contributor of Notepad++).
+// Based on the Notepad++ dark mode code licensed under GPLv3.
+// Originally by adzm / Adam D. Walling, with modifications by the Notepad++ team.
+// Heavily modified by oZone10 (Notepad++ contributor).
+// Used with permission to relicense under the Mozilla Public License, v. 2.0.
 
 
 #include "StdAfx.h"
