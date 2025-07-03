@@ -1,4 +1,4 @@
-name: Build library
+name: Build library and demo app
 permissions:
       contents: read
 on:
@@ -12,6 +12,7 @@ jobs:
   build:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         configuration: [ Release ]
         arch: [ x64, x86, arm64 ]
@@ -19,9 +20,9 @@ jobs:
           - arch: x64
             platform: x64
           - arch: x86
-            platform: x86
+            platform: Win32
           - arch: arm64
-            platform: arm64
+            platform: ARM64
 
     steps:
       - name: Checkout repo
@@ -31,4 +32,10 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Build ${{ matrix.arch }}
-        run: msbuild "darkmodelib.sln" /m /p:configuration="${{ matrix.configuration }}" /p:platform="${{ matrix.platform }}" /t:darkmodelib
+        run: msbuild "darkmodelib.sln" /m /p:configuration="${{ matrix.configuration }}" /p:platform="${{ matrix.arch }}"
+
+      - name: Archive artifact ${{ matrix.arch }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Win32DarkmodelibGUIDemo-${{ matrix.arch }}
+          path: build\darkmodelibdemo\${{ matrix.platform }}-${{ matrix.configuration }}\Win32DarkmodelibGUIdemo.exe
