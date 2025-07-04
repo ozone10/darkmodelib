@@ -26,6 +26,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	SetDllDirectoryW(L"");
 
 	DarkMode::initDarkMode();
+	DarkMode::setDarkModeConfig(static_cast<UINT>(DarkMode::DarkModeType::dark));
+	DarkMode::setDefaultColors(true);
 
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, g_szTitle.data(), MAX_LOADSTRING);

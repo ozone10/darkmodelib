@@ -369,7 +369,7 @@ namespace DarkMode
 	namespace // anonymous
 	{
 		/// Global struct
-		struct a
+		struct
 		{
 			DWM_WINDOW_CORNER_PREFERENCE _roundCorner = DWMWCP_DEFAULT;
 			COLORREF _borderColor = DWMWA_COLOR_DEFAULT;
