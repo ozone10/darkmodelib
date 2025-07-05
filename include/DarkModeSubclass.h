@@ -482,7 +482,7 @@ namespace DarkMode
 	/// Applies visual styles; ctl color message and child controls subclassings to a window safely.
 	void setDarkWndSafe(HWND hWnd, bool useWin11Features = true);
 	/// Applies visual styles; ctl color message, child controls, custom drawing, and setting change subclassings to a window safely.
-	void setDarkWndNotifySafeEx(HWND hWnd, bool setSettingChangeSubclass = false, bool useWin11Features = true);
+	void setDarkWndNotifySafeEx(HWND hWnd, bool setSettingChangeSubclass, bool useWin11Features);
 	/// Applies visual styles; ctl color message, child controls, and custom drawing subclassings to a window safely.
 	void setDarkWndNotifySafe(HWND hWnd, bool useWin11Features = true);
 

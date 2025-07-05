@@ -809,7 +809,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			// --- Dark Mode ---
 			DarkMode::setColorizeTitleBarConfig(true);
-			DarkMode::setDarkWndNotifySafeEx(hWnd, true);
+			DarkMode::setDarkWndNotifySafe(hWnd, true);
 			DarkMode::setWindowEraseBgSubclass(hWnd);
 			DarkMode::setWindowMenuBarSubclass(hWnd);
 
@@ -1033,7 +1033,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, [[maybe_unused]] 
 	{
 		case WM_INITDIALOG:
 		{
-			DarkMode::setDarkWndNotifySafeEx(hDlg, true);
+			DarkMode::setDarkWndNotifySafe(hDlg, true);
 			return TRUE;
 		}
 

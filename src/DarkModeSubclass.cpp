@@ -1373,8 +1373,8 @@ namespace DarkMode
 			DarkMode::initDarkModeConfig(::GetPrivateProfileIntW(L"main", L"mode", 1, iniPath.c_str()));
 			if (g_dmCfg._dmType == DarkModeType::classic)
 			{
-				DarkMode::setViewBackgroundColor(::GetSysColor(COLOR_WINDOW));
-				DarkMode::setViewTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+				DarkMode::setDarkModeConfig(static_cast<UINT>(DarkModeType::classic));
+				DarkMode::setDefaultColors(false);
 				return;
 			}
 
