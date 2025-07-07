@@ -4,7 +4,8 @@
 [![Latest release](https://img.shields.io/github/v/release/ozone10/darkmodelib?include_prereleases)](https://github.com/ozone10/darkmodelib/releases/latest)
 [![License](https://img.shields.io/github/license/ozone10/darkmodelib)](https://www.mozilla.org/en-US/MPL/2.0/)
 [![License-MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE-MIT.md)
-[![PayPal.me](https://img.shields.io/badge/PayPal-me-blue.svg?maxAge=2592000)](https://paypal.me/ozone10/)
+[![PayPal.me](https://img.shields.io/badge/PayPal-me-00457C?&logo=paypal&logoColor=white&maxAge=2592000)](https://paypal.me/ozone10/)
+[![ko-fi.com](https://img.shields.io/badge/Ko--fi-Buy_Me_a_Tea-F16061?logo=ko-fi&logoColor=white&maxAge=2592000)](https://ko-fi.com/ozone10/)
 ---
 
 Darkmodelib is a library that provides dark mode and custom colors support

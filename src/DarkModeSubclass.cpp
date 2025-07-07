@@ -7113,22 +7113,24 @@ namespace DarkMode
 	/**
 	 * @brief Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
 	 *
-	 * Configures the first hyperlink item (index 0)
-	 * to either use default system link colors if in classic mode,
+	 * Configures all items to either use default system link colors if in classic mode,
 	 * or to be affected by `WM_CTLCOLORSTATIC` message from its parent.
 	 *
 	 * @param hWnd Handle to the SysLink control.
 	 *
-	 * @note Currently affects only the first link (index 0).
+	 * @note Will affect all items, even if it's static (non-clickable).
 	 */
 	void enableSysLinkCtrlCtlColor(HWND hWnd)
 	{
-		LITEM item{};
-		item.iLink = 0; // for now colorize only 1st item
-		item.mask = LIF_ITEMINDEX | LIF_STATE;
-		item.state = DarkMode::isEnabled() ? LIS_DEFAULTCOLORS : 0;
-		item.stateMask = LIS_DEFAULTCOLORS;
-		::SendMessage(hWnd, LM_SETITEM, 0, reinterpret_cast<LPARAM>(&item));
+		LITEM lItem{};
+		lItem.iLink = 0;
+		lItem.mask = LIF_ITEMINDEX | LIF_STATE;
+		lItem.state = DarkMode::isEnabled() ? LIS_DEFAULTCOLORS : 0;
+		lItem.stateMask = LIS_DEFAULTCOLORS;
+		while (::SendMessage(hWnd, LM_SETITEM, 0, reinterpret_cast<LPARAM>(&lItem)) == TRUE)
+		{
+			++lItem.iLink;
+		}
 	}
 
 	/**

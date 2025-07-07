@@ -383,7 +383,7 @@ static void FixDarkScrollBar()
 #if defined(_DARKMODELIB_ALLOW_OLD_OS)
 static constexpr DWORD g_win10Build = 17763;
 #else
-static constexpr DWORD g_win10Build = 19045;
+static constexpr DWORD g_win10Build = 19044; // 21H2 latest LTSC, 22H2 19045 latest GA
 #endif
 static constexpr DWORD g_win11Build = 22000;
 
