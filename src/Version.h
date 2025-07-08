@@ -9,7 +9,7 @@
 
 
 #define DM_VERSION_MAJOR    0
-#define DM_VERSION_MINOR    10
+#define DM_VERSION_MINOR    11
 #define DM_VERSION_REVISION 0
 
 #define DM_VERSION   "Dark mode v0.10.0"
