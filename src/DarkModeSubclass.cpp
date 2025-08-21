@@ -55,17 +55,21 @@ static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum
 #define WM_DPICHANGED 0x02E0
 #endif
 
-//#ifndef WM_DPICHANGED_BEFOREPARENT
-//#define WM_DPICHANGED_BEFOREPARENT 0x02E2
-//#endif
+#if 0 // maybe for future hidpi enhancement
+#ifndef WM_DPICHANGED_BEFOREPARENT
+#define WM_DPICHANGED_BEFOREPARENT 0x02E2
+#endif
+#endif
 
 #ifndef WM_DPICHANGED_AFTERPARENT
 #define WM_DPICHANGED_AFTERPARENT 0x02E3
 #endif
 
-//#ifndef WM_GETDPISCALEDSIZE
-//#define WM_GETDPISCALEDSIZE 0x02E4
-//#endif
+#if 0 // maybe for future hidpi enhancement
+#ifndef WM_GETDPISCALEDSIZE
+#define WM_GETDPISCALEDSIZE 0x02E4
+#endif
+#endif
 
 /// Converts 0xRRGGBB to COLORREF (0xBBGGRR) for GDI usage.
 static constexpr COLORREF HEXRGB(DWORD rrggbb)
@@ -1280,14 +1284,14 @@ namespace DarkMode
 	/**
 	 * @brief Enables or disables dark mode using undocumented API.
 	 *
-	 * Optionally applies a scrollbar fix for dark mode inconsistencies.
+	 * Optionally applies a scroll bar fix for dark mode inconsistencies.
 	 *
 	 * @param useDark Enable dark mode when `true`, disable when `false`.
-	 * @param fixDarkScrollbar Apply scrollbar fix if `true`.
+	 * @param fixDarkScrollBar Apply scroll bar fix if `true`.
 	 */
-	static void setDarkMode(bool useDark, bool fixDarkScrollbar = true)
+	static void setDarkMode(bool useDark, bool fixDarkScrollBar = true)
 	{
-		::SetDarkMode(useDark, fixDarkScrollbar);
+		::SetDarkMode(useDark, fixDarkScrollBar);
 	}
 
 	/**
@@ -1669,7 +1673,7 @@ namespace DarkMode
 	{
 		if (DarkMode::isExperimentalSupported() && DarkMode::isColorSchemeChangeMessage(lParam))
 		{
-			// ShouldAppsUseDarkMode() is not reliable from 1903+, use DarkMode::isDarkModeReg() instead
+			// fnShouldAppsUseDarkMode (ordinal 132) is not reliable on 1903+, use DarkMode::isDarkModeReg() instead
 			const bool isDarkModeUsed = DarkMode::isDarkModeReg() && !DarkMode::isHighContrast();
 			if (DarkMode::isExperimentalActive() != isDarkModeUsed)
 			{
@@ -2441,6 +2445,7 @@ namespace DarkMode
 	 * @param dwRefData ButtonData instance.
 	 * @return LRESULT Result of message processing.
 	 *
+	 * @see DarkMode::paintButton()
 	 * @see DarkMode::setCheckboxOrRadioBtnCtrlSubclass()
 	 * @see DarkMode::removeCheckboxOrRadioBtnCtrlSubclass()
 	 */
@@ -2569,7 +2574,7 @@ namespace DarkMode
 	 *
 	 * Cleans up the `ButtonData` instance and detaches the control's subclass proc.
 	 *
-	 * @param hWnd Handle to the control previously subclassed.
+	 * @param hWnd Handle to the previously subclassed control.
 	 *
 	 * @see DarkMode::ButtonSubclass()
 	 * @see DarkMode::setCheckboxOrRadioBtnCtrlSubclass()
@@ -2719,6 +2724,7 @@ namespace DarkMode
 	 * @param dwRefData ButtonData instance.
 	 * @return LRESULT Result of message processing.
 	 *
+	 * @see DarkMode::paintGroupbox()
 	 * @see DarkMode::setGroupboxCtrlSubclass()
 	 * @see DarkMode::removeGroupboxCtrlSubclass()
 	 */
@@ -2824,7 +2830,7 @@ namespace DarkMode
 	 *
 	 * Cleans up the `ButtonData` instance and detaches the control's subclass proc.
 	 *
-	 * @param hWnd Handle to the control previously subclassed.
+	 * @param hWnd Handle to the previously subclassed control.
 	 *
 	 * @see DarkMode::GroupboxSubclass()
 	 * @see DarkMode::setGroupboxCtrlSubclass()
@@ -3029,8 +3035,7 @@ namespace DarkMode
 	 * @param hdc Target device context.
 	 * @param upDownData Reference to layout and state information (segments, orientation, corner radius).
 	 *
-	 * @note Assumes the DC has already been prepared for painting. Uses `WM_GETFONT` to
-	 *       match the host UI font.
+	 * @note Assumes the DC has already been prepared for painting.
 	 *
 	 * @see UpDownData
 	 */
@@ -3109,6 +3114,7 @@ namespace DarkMode
 	 * @param dwRefData UpDownData instance .
 	 * @return LRESULT Result of message processing.
 	 *
+	 * @see DarkMode::paintUpDown()
 	 * @see DarkMode::setUpDownCtrlSubclass()
 	 * @see DarkMode::removeUpDownCtrlSubclass()
 	 */
@@ -3270,7 +3276,7 @@ namespace DarkMode
 	 *
 	 * Cleans up the `UpDownData` instance and detaches the control's subclass proc.
 	 *
-	 * @param hWnd Handle to the control previously subclassed.
+	 * @param hWnd Handle to the previously subclassed control.
 	 *
 	 * @see DarkMode::UpDownSubclass()
 	 * @see DarkMode::setUpDownCtrlSubclass()
@@ -3283,8 +3289,8 @@ namespace DarkMode
 	/**
 	 * @brief Applies updown (spinner) control theming and/or subclassing based on specified parameters.
 	 *
-	 * Conditionally applies custom subclassing and/or themed appearance depending on
-	 * `DarkModeParams`. Subclassing takes priority if both are requested.
+	 * Conditionally applies custom subclassing and/or themed appearance
+	 * depending on `DarkModeParams`. Subclassing takes priority if both are requested.
 	 *
 	 * @param hWnd Handle to the up-down control.
 	 * @param p Parameters controlling whether to apply theming and/or subclassing.
@@ -3304,6 +3310,26 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Custom paints tab items.
+	 *
+	 * Iterates through all tabs in a `SysTabControl32`, applying customized backgrounds,
+	 * text colors, focus indicators, and optional icon rendering. Handles both button-style
+	 * (`TCS_BUTTONS`) and standard tab layouts, adapting based on hover state, selection,
+	 * and focus cue.
+	 *
+	 * Paint logic includes:
+	 * - Retrieves label and optional image via `TCITEM` and `ImageList_Draw`
+	 * - Applies coloring based on selection, hover, and tab style
+	 * - Clips each tab to avoid flickering during overlapping redraw
+	 * - Draws optional focus rectangle if control has input focus via keyboard
+	 *
+	 * @note Currently only works for horizontal style.
+	 *
+	 * @param hWnd Handle to the tab control.
+	 * @param hdc Device context to draw into.
+	 * @param rect Tab control rectangle.
+	 */
 	static void paintTab(HWND hWnd, HDC hdc, const RECT& rect)
 	{
 		::FillRect(hdc, &rect, DarkMode::getDlgBackgroundBrush());
@@ -3337,101 +3363,106 @@ namespace DarkMode
 		{
 			RECT rcItem{};
 			TabCtrl_GetItemRect(hWnd, i, &rcItem);
-			RECT rcFrame{ rcItem };
 
 			RECT rcIntersect{};
-			if (::IntersectRect(&rcIntersect, &rect, &rcItem) == TRUE)
+			if (::IntersectRect(&rcIntersect, &rect, &rcItem) == false)
 			{
-				const bool isHot = ::PtInRect(&rcItem, ptCursor) == TRUE;
-				const bool isSelectedTab = (i == iSelTab);
+				continue; // Skip to the next iteration when there is no intersection
+			}
 
-				::SetBkMode(hdc, TRANSPARENT);
+			RECT rcFrame{ rcItem };
 
-				HRGN hClip = ::CreateRectRgnIndirect(&rcItem);
-				::SelectClipRgn(hdc, hClip);
+			const bool isHot = ::PtInRect(&rcItem, ptCursor) == TRUE;
+			const bool isSelectedTab = (i == iSelTab);
 
-				::InflateRect(&rcItem, -1, -1);
-				rcItem.right += 1;
+			::SetBkMode(hdc, TRANSPARENT);
 
-				std::wstring label(MAX_PATH, L'\0');
-				TCITEM tci{};
-				tci.mask = TCIF_TEXT | TCIF_IMAGE | TCIF_STATE;
-				tci.dwStateMask = TCIS_HIGHLIGHTED;
-				tci.pszText = label.data();
-				tci.cchTextMax = MAX_PATH - 1;
+			HRGN hClip = ::CreateRectRgnIndirect(&rcItem);
+			::SelectClipRgn(hdc, hClip);
 
-				TabCtrl_GetItem(hWnd, i, &tci);
+			::InflateRect(&rcItem, -1, -1);
+			rcItem.right += 1;
 
-				const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
-				const bool isBtn = (nStyle & TCS_BUTTONS) == TCS_BUTTONS;
-				if (isBtn)
-				{
-					const bool isHighlighted = (tci.dwState & TCIS_HIGHLIGHTED) == TCIS_HIGHLIGHTED;
-					::FillRect(hdc, &rcItem, isHighlighted ? DarkMode::getHotBackgroundBrush() : DarkMode::getDlgBackgroundBrush());
-					::SetTextColor(hdc, isHighlighted ? DarkMode::getLinkTextColor() : DarkMode::getDarkerTextColor());
-				}
-				else
-				{
-					// for consistency getBackgroundBrush()
-					// would be better, than getCtrlBackgroundBrush(),
-					// however default getBackgroundBrush() has same color
-					// as getDlgBackgroundBrush()
-					auto getBrush = [&]() -> HBRUSH {
-						if (isSelectedTab)
-						{
-							return DarkMode::getDlgBackgroundBrush();
-						}
+			std::wstring label(MAX_PATH, L'\0');
+			TCITEM tci{};
+			tci.mask = TCIF_TEXT | TCIF_IMAGE | TCIF_STATE;
+			tci.dwStateMask = TCIS_HIGHLIGHTED;
+			tci.pszText = label.data();
+			tci.cchTextMax = MAX_PATH - 1;
 
-						if (isHot)
-						{
-							return DarkMode::getHotBackgroundBrush();
-						}
-						return DarkMode::getCtrlBackgroundBrush();
-					};
+			TabCtrl_GetItem(hWnd, i, &tci);
 
-					::FillRect(hdc, &rcItem, getBrush());
-					::SetTextColor(hdc, (isHot || isSelectedTab) ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
-				}
-
-				RECT rcText{ rcItem };
-				if (!isBtn)
-				{
+			const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+			const bool isBtn = (nStyle & TCS_BUTTONS) == TCS_BUTTONS;
+			if (isBtn)
+			{
+				const bool isHighlighted = (tci.dwState & TCIS_HIGHLIGHTED) == TCIS_HIGHLIGHTED;
+				::FillRect(hdc, &rcItem, isHighlighted ? DarkMode::getHotBackgroundBrush() : DarkMode::getDlgBackgroundBrush());
+				::SetTextColor(hdc, isHighlighted ? DarkMode::getLinkTextColor() : DarkMode::getDarkerTextColor());
+			}
+			else
+			{
+				// For consistency getBackgroundBrush()
+				// would be better, than getCtrlBackgroundBrush(),
+				// however default getBackgroundBrush() has almost same color
+				// as getDlgBackgroundBrush()
+				auto getBrush = [&]() -> HBRUSH {
 					if (isSelectedTab)
 					{
-						::OffsetRect(&rcText, 0, -1);
-						::InflateRect(&rcFrame, 0, 1);
+						return DarkMode::getDlgBackgroundBrush();
 					}
 
-					if (i != nTabs - 1)
+					if (isHot)
 					{
-						rcFrame.right += 1;
+						return DarkMode::getHotBackgroundBrush();
 					}
-				}
+					return DarkMode::getCtrlBackgroundBrush();
+				};
 
-				if (tci.iImage != -1)
-				{
-					int cx = 0;
-					int cy = 0;
-					auto hImagelist = TabCtrl_GetImageList(hWnd);
-					static constexpr int offset = 2;
-					::ImageList_GetIconSize(hImagelist, &cx, &cy);
-					::ImageList_Draw(hImagelist, tci.iImage, hdc, rcText.left + offset, rcText.top + (((rcText.bottom - rcText.top) - cy) / 2), ILD_NORMAL);
-					rcText.left += cx;
-				}
-
-				::DrawText(hdc, label.c_str(), -1, &rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-				::FrameRect(hdc, &rcFrame, DarkMode::getEdgeBrush());
-
-				if (isSelectedTab && hasFocusRect)
-				{
-					::InflateRect(&rcFrame, -2, -1);
-					::DrawFocusRect(hdc, &rcFrame);
-				}
-
-				::SelectClipRgn(hdc, holdClip);
-				::DeleteObject(hClip);
+				::FillRect(hdc, &rcItem, getBrush());
+				::SetTextColor(hdc, (isHot || isSelectedTab) ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
 			}
+
+			RECT rcText{ rcItem };
+			if (!isBtn)
+			{
+				if (isSelectedTab)
+				{
+					::OffsetRect(&rcText, 0, -1);
+					::InflateRect(&rcFrame, 0, 1);
+				}
+
+				if (i != nTabs - 1)
+				{
+					rcFrame.right += 1;
+				}
+			}
+
+			// Draw image
+			if (tci.iImage != -1)
+			{
+				int cx = 0;
+				int cy = 0;
+				auto hImagelist = TabCtrl_GetImageList(hWnd);
+				static constexpr int offset = 2;
+				::ImageList_GetIconSize(hImagelist, &cx, &cy);
+				::ImageList_Draw(hImagelist, tci.iImage, hdc, rcText.left + offset, rcText.top + (((rcText.bottom - rcText.top) - cy) / 2), ILD_NORMAL);
+				rcText.left += cx;
+			}
+
+			::DrawText(hdc, label.c_str(), -1, &rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+			::FrameRect(hdc, &rcFrame, DarkMode::getEdgeBrush());
+
+			// Draw focus keyboard cue
+			if (isSelectedTab && hasFocusRect)
+			{
+				::InflateRect(&rcFrame, -2, -1);
+				::DrawFocusRect(hdc, &rcFrame);
+			}
+
+			::SelectClipRgn(hdc, holdClip);
+			::DeleteObject(hClip);
 		}
 
 		::SelectObject(hdc, holdFont);
@@ -3455,6 +3486,7 @@ namespace DarkMode
 	 * @param dwRefData BufferData instance.
 	 * @return LRESULT Result of message processing.
 	 *
+	 * @see DarkMode::paintTab()
 	 * @see DarkMode::setTabCtrlPaintSubclass()
 	 * @see DarkMode::removeTabCtrlPaintSubclass()
 	 */
@@ -3563,11 +3595,29 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a tab control.
+	 *
+	 * @param hWnd Handle to the tab control.
+	 *
+	 * @see DarkMode::TabPaintSubclass()
+	 * @see DarkMode::removeTabCtrlPaintSubclass()
+	 */
 	static void setTabCtrlPaintSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass<BufferData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
 	}
 
+	/**
+	 * @brief Removes the owner drawn subclass from a tab control.
+	 *
+	 * Cleans up the `BufferData` instance and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the previously subclassed tab control.
+	 *
+	 * @see DarkMode::TabPaintSubclass()
+	 * @see DarkMode::setTabCtrlPaintSubclass()
+	 */
 	static void removeTabCtrlPaintSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<BufferData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
@@ -3584,6 +3634,7 @@ namespace DarkMode
 	 * @param dwRefData Reserved data (unused).
 	 * @return LRESULT Result of message processing.
 	 *
+	 * @see DarkMode::setUpDownCtrlSubclass()
 	 * @see DarkMode::setTabCtrlUpDownSubclass()
 	 * @see DarkMode::removeTabCtrlUpDownSubclass()
 	 */
@@ -3626,28 +3677,86 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies a subclass to detect and subclass tab control's updown (spinner) child.
+	 *
+	 * Enable automatic subclassing of the updown (spinner) control
+	 * when it's created dynamically (for `TCS_SCROLLOPPOSITE` or overflow).
+	 *
+	 * @param hWnd Handle to the tab control.
+	 *
+	 * @see DarkMode::TabUpDownSubclass()
+	 * @see DarkMode::removeTabCtrlUpDownSubclass()
+	 */
 	void setTabCtrlUpDownSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass(hWnd, TabUpDownSubclass, kTabUpDownSubclassID);
 	}
 
+	/**
+	 * @brief Removes the subclass procedure for a tab control's updown (spinner) child detection.
+	 *
+	 * Detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the previously subclassed tab control.
+	 *
+	 * @see DarkMode::TabUpDownSubclass()
+	 * @see DarkMode::setTabCtrlUpDownSubclass()
+	 */
 	void removeTabCtrlUpDownSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass(hWnd, TabUpDownSubclass, kTabUpDownSubclassID);
 	}
 
+	/**
+	 * @brief Applies owner drawn and updown (spinner) child detection subclassings for a tab control.
+	 *
+	 * Applies both @ref DarkMode::TabPaintSubclass() for custom drawing
+	 * and @ref DarkMode::TabUpDownSubclass() for detecting and subclassing
+	 * the associated updown (spinner) control.
+	 *
+	 * @param hWnd Handle to the tab control.
+	 *
+	 * @see DarkMode::removeTabCtrlSubclass()
+	 * @see DarkMode::setTabCtrlPaintSubclass()
+	 * @see DarkMode::setTabCtrlUpDownSubclass()
+	 */
 	void setTabCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setTabCtrlPaintSubclass(hWnd);
 		DarkMode::setTabCtrlUpDownSubclass(hWnd);
 	}
 
+	/**
+	 * @brief Removes owner drawn and updown (spinner) child detection subclasses.
+	 *
+	 * Detaches the control's subclass procs.
+	 *
+	 * @param hWnd Handle to the previously subclassed tab control.
+	 *
+	 * @see DarkMode::setTabCtrlSubclass()
+	 * @see DarkMode::removeTabCtrlPaintSubclass()
+	 * @see DarkMode::removeTabCtrlUpDownSubclass()
+	 */
 	void removeTabCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeTabCtrlPaintSubclass(hWnd);
 		DarkMode::removeTabCtrlUpDownSubclass(hWnd);
 	}
 
+	 /**
+	  * @brief Applies tab control theming and subclassing based on specified parameters.
+	  *
+	  * Conditionally applies tooltip theming and tab control subclassing
+	  * depending on `DarkModeParams`.
+	  *
+	  * @param hWnd Handle to the tab control.
+	  * @param p Parameters controlling whether to apply theming and/or subclassing.
+	  *
+	  * @see DarkModeParams
+	  * @see DarkMode::setDarkTooltips()
+	  * @see DarkMode::setTabCtrlSubclass()
+	  */
 	static void setTabCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -3661,6 +3770,24 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @struct BorderMetricsData
+	 * @brief Stores system border and scroll bar metrics for DPI-aware rendering.
+	 *
+	 * Captures system metrics related to edit or list box control borders and scroll bars,
+	 * along with the current DPI setting and a hot state flag.
+	 *
+	 * Members:
+	 * - `_dpi` : Current DPI value (defaults to `USER_DEFAULT_SCREEN_DPI`).
+	 * - `_xEdge` : Width of a border (`SM_CXEDGE`).
+	 * - `_yEdge` : Height of a border (`SM_CYEDGE`).
+	 * - `_xScroll` : Width of a vertical scroll bar (`SM_CXVSCROLL`).
+	 * - `_yScroll` : Height of a horizontal scroll bar (`SM_CYVSCROLL`).
+	 * - `_isHot` : Indicates whether the border is in a "hot" (hovered) state.
+	 *
+	 * @note Values are initialized from `GetSystemMetrics()` at construction time.
+	 *       Currently there is no dynamic handling for dpi changes.
+	 */
 	struct BorderMetricsData
 	{
 		UINT _dpi = USER_DEFAULT_SCREEN_DPI;
@@ -3671,6 +3798,15 @@ namespace DarkMode
 		bool _isHot = false;
 	};
 
+	/**
+	 * @brief Paints a custom non-client border for list box and edit controls.
+	 *
+	 * Paints an inner and outer border using custom colors.
+	 * The outer border highlights when the window is hot (hovered) or focused.
+	 *
+	 * @param hWnd Handle to the target list box or edit control.
+	 * @param borderMetricsData Precomputed system metrics and hot state.
+	 */
 	static void ncPaintCustomBorder(HWND hWnd, const BorderMetricsData& borderMetricsData)
 	{
 		HDC hdc = ::GetWindowDC(hWnd);
@@ -3679,16 +3815,16 @@ namespace DarkMode
 		rcClient.right += (2 * borderMetricsData._xEdge);
 
 		const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
-		const bool hasVerScrollbar = (nStyle & WS_VSCROLL) == WS_VSCROLL;
-		if (hasVerScrollbar)
+		const bool hasVerScrollBar = (nStyle & WS_VSCROLL) == WS_VSCROLL;
+		if (hasVerScrollBar)
 		{
 			rcClient.right += borderMetricsData._xScroll;
 		}
 
 		rcClient.bottom += (2 * borderMetricsData._yEdge);
 
-		const bool hasHorScrollbar = (nStyle & WS_HSCROLL) == WS_HSCROLL;
-		if (hasHorScrollbar)
+		const bool hasHorScrollBar = (nStyle & WS_HSCROLL) == WS_HSCROLL;
+		if (hasHorScrollBar)
 		{
 			rcClient.bottom += borderMetricsData._yScroll;
 		}
@@ -3714,7 +3850,7 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Window subclass procedure for owner drawn border for list box and edit control.
+	 * @brief Window subclass procedure for owner drawn border for list box and edit controls.
 	 *
 	 * @param hWnd Window handle being subclassed.
 	 * @param uMsg Message identifier.
@@ -3838,16 +3974,52 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn custom border subclassing to a list box or edit control.
+	 *
+	 * @param hWnd Handle to the list box or edit control.
+	 *
+	 * @see DarkMode::CustomBorderSubclass()
+	 * @see DarkMode::removeCustomBorderForListBoxOrEditCtrlSubclass()
+	 */
 	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, kCustomBorderSubclassID);
 	}
 
+	/**
+	 * @brief Removes the custom border subclass from a list box or edit control.
+	 *
+	 * Cleans up the `BorderMetricsData` and detaches the control's subclass proc,
+	 * restoring the control's default border rendering.
+	 *
+	 * @param hWnd Handle to the previously subclassed control.
+	 *
+	 * @see DarkMode::CustomBorderSubclass()
+	 * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass()
+	 */
 	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, kCustomBorderSubclassID);
 	}
 
+	/**
+	 * @brief Applies theming and optional custom border subclassing to a list box or edit control.
+	 *
+	 * Conditionally configures the visual style of a list box or edit control
+	 * depending on `DarkModeParams`, control type, and window styles.
+	 * Applies a custom border subclass for controls with `WS_EX_CLIENTEDGE` flag.
+	 * Toggle the client edge style depending on dark mode state.
+	 *
+	 * @param hWnd      Handle to the target list box or edit control.
+	 * @param p         Parameters controlling whether to apply theming and/or subclassing.
+	 * @param isListBox True if the control is a list box, false if it's an edit control.
+	 *
+	 * @note Custom border subclassing is skipped for combo box list boxes.
+	 *
+	 * @see DarkModeParams
+	 * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass()
+	 */
 	static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p, bool isListBox)
 	{
 		const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
