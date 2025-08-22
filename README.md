@@ -19,7 +19,7 @@ for most common controls for applications using the Win32 API.
 
 * * *
 
-## Use by
+## Used by
 
 - Parts of the code have been backported to [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/PowerEditor/src/NppDarkMode.cpp)
 - [7-Zip](https://github.com/ozone10/7zip-Dark7zip) and its fork [7-Zip-zstd](https://github.com/ozone10/7zip-Dark7zip/tree/7z-zstd)

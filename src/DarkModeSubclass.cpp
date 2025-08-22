@@ -2131,6 +2131,8 @@ namespace DarkMode
 	 * Constructor behavior:
 	 * - When constructed with an `HWND`, attempts to extract the initial size if the button
 	 *   is a checkbox/radio/tri-state type without `BS_MULTILINE`.
+	 *
+	 * @see ThemeData
 	 */
 	struct ButtonData
 	{
@@ -2322,6 +2324,7 @@ namespace DarkMode
 	 * style (e.g. `BS_CHECKBOX`, `BS_RADIOBUTTON`) and current button state flags
 	 * such as `BST_CHECKED`, `BST_PUSHED`, or `BST_HOT`.
 	 *
+	 * Paint logic:
 	 * - Uses buffered animation (if available) to smoothly transition between states.
 	 * - Falls back to direct drawing via @ref DarkMode::renderButton if animation is not used.
 	 * - Internally updates the `buttonData._iStateID` to preserve the last rendered state.
@@ -2591,7 +2594,7 @@ namespace DarkMode
 	 * and font fallback. If a caption text is present, the frame is clipped to avoid overdrawing
 	 * behind the text. The function adapts layout for both centered and left-aligned titles.
 	 *
-	 * Rendering steps:
+	 * Paint logic:
 	 * - Determines current visual state (`GBS_DISABLED`, `GBS_NORMAL`).
 	 * - Retrieves themed font via `GetThemeFont` or falls back to dialog font.
 	 * - Measures caption text, computes layout and exclusion for frame clipping.
@@ -2600,7 +2603,7 @@ namespace DarkMode
 	 * - Restores clip region and renders text using `DrawThemeTextEx` with custom colors.
 	 *
 	 * @param hWnd Handle to the group box control.
-	 * @param hdc Device context used for painting.
+	 * @param hdc Device context to draw into.
 	 * @param buttonData Reference to the theming and state info (theme handle).
 	 *
 	 * @note Ensures proper cleanup of temporary GDI objects (font, clip region).
@@ -2927,15 +2930,15 @@ namespace DarkMode
 	 * Used to manage rectangle, buffer, and hit-test regions for owner-drawn subclassed
 	 * up-down controls, supporting both vertical and horizontal layouts.
 	 *
-	 * Key members:
-	 * - `_bufferData`: Offscreen back buffer for flicker-free rendering.
+	 * Members:
+	 * - `_bufferData`: Buffer wrapper for flicker-free custom painting.
 	 * - `_rcClient`: Current client rectangle of the control.
 	 * - `_rcPrev`, `_rcNext`: Rectangles for the up/down or left/right arrow buttons.
 	 * - `_cornerRoundness`: Optional roundness for corners (used in Windows 11+ with tabs).
 	 * - `_isHorizontal`: `true` if the control is horizontal (`UDS_HORZ` style).
 	 * - `_wasHotNext`: Last hover state (used for hover feedback/rendering).
 	 *
-	 * Construction:
+	 * Constructor behavior:
 	 * - Detects orientation from `GWL_STYLE`.
 	 * - Initializes corner styling based on OS and parent class.
 	 * - Extracts rectangles for arrow segments immediately.
@@ -2943,6 +2946,8 @@ namespace DarkMode
 	 * Usage:
 	 * - `updateRect(HWND)`: Refreshes rectangle from control handle.
 	 * - `updateRect(RECT)`: Checks for rectangle change and updates it.
+	 *
+	 * @see BufferData
 	 */
 	struct UpDownData
 	{
@@ -3026,13 +3031,13 @@ namespace DarkMode
 	 * Applies hover highlighting and draws appropriate glyphs (`<`/`>` or `˄`/`˅`) using
 	 * the control's font.
 	 *
-	 * Paint logic includes:
+	 * Paint logic:
 	 * - Background fill with dialog background brush
 	 * - Rounded corners (optional, based on Windows 11 and parent class)
 	 * - Direction-aware layout and glyph placement
 	 *
 	 * @param hWnd Handle to the updown control being painted.
-	 * @param hdc Target device context.
+	 * @param hdc Device context to draw into.
 	 * @param upDownData Reference to layout and state information (segments, orientation, corner radius).
 	 *
 	 * @note Assumes the DC has already been prepared for painting.
@@ -4011,8 +4016,8 @@ namespace DarkMode
 	 * Applies a custom border subclass for controls with `WS_EX_CLIENTEDGE` flag.
 	 * Toggle the client edge style depending on dark mode state.
 	 *
-	 * @param hWnd      Handle to the target list box or edit control.
-	 * @param p         Parameters controlling whether to apply theming and/or subclassing.
+	 * @param hWnd Handle to the target list box or edit control.
+	 * @param p Parameters controlling whether to apply theming and/or subclassing.
 	 * @param isListBox True if the control is a list box, false if it's an edit control.
 	 *
 	 * @note Custom border subclassing is skipped for combo box list boxes.
@@ -4058,6 +4063,29 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @struct ComboBoxData
+	 * @brief Stores theme and buffer data for a combo box control, along with its style.
+	 *
+	 * Used to manage theming and double-buffered painting for combo box controls.
+	 * Holds both the visual style information and the control's creation style for
+	 * conditional rendering logic.
+	 *
+	 * Members:
+	 * - `_themeData` : RAII-managed theme handle for `VSCLASS_COMBOBOX`.
+	 * - `_bufferData` : Buffer wrapper for flicker-free custom painting.
+	 * - `_cbStyle` : Combo box style flags (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`).
+	 *
+	 * Constructor behavior:
+	 * - Deleted default constructor to enforce explicit style initialization.
+	 * - Explicit constructor taking `cbStyle` to set `_cbStyle`.
+	 *
+	 * @note The style value is typically retrieved via `GetWindowLongPtr(hWnd, GWL_STYLE)`
+	 *       when subclassing the combo box.
+	 *
+	 * @see ThemeData
+	 * @see BufferData
+	 */
 	struct ComboBoxData
 	{
 		ThemeData _themeData{ VSCLASS_COMBOBOX };
@@ -4072,6 +4100,33 @@ namespace DarkMode
 		{}
 	};
 
+	/**
+	 * @brief Custom paints a combo box control.
+	 *
+	 * This function handles owner-drawn rendering of a combo box, adapting its
+	 * appearance based on:
+	 * - Control style (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`)
+	 * - Enabled/disabled state
+	 * - Hot (hover) state
+	 * - Focus state
+	 * - Dark mode theme availability
+	 *
+	 * Paint logic:
+	 * - Draws background with different brushes for normal, hot, and disabled states
+	 * - Uses `COMBOBOXINFO` to retrieve subcomponent rectangles.
+	 * - Draws text using theme APIs if available, otherwise GDI
+	 * - For `CBS_DROPDOWNLIST`, draws the selected item text directly.
+	 * - For `CBS_DROPDOWN` and `CBS_SIMPLE`, text is handled by the child edit control.
+	 * - The drop-down arrow is drawn either via `DrawThemeBackground` or a manual glyph.
+	 * - Borders are drawn with pens with custom colors depending on state (rounded corners on Windows 11+).
+	 * - Uses `ExcludeClipRect` to avoid overpainting the text/edit area.
+	 *
+	 * @param hWnd Handle to the combo box control.
+	 * @param hdc Device context to draw into.
+	 * @param comboBoxData Reference to the combo box' theme and style data.
+	 *
+	 * @see ComboBoxData
+	 */
 	static void paintCombobox(HWND hWnd, HDC hdc, ComboBoxData& comboBoxData)
 	{
 		auto& themeData = comboBoxData._themeData;
@@ -4205,7 +4260,8 @@ namespace DarkMode
 				};
 
 				::SetTextColor(hdc, getTextClr());
-				::DrawText(hdc, L"˅", -1, &rcArrow, DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
+				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
+				::DrawText(hdc, L"˅", -1, &rcArrow, dtFlags);
 			}
 		}
 
@@ -4392,17 +4448,64 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a combo box control.
+	 *
+	 * Retrieves the combo box style from the window and passes it to the subclass data
+	 * (`ComboBoxData`) so the paint routine can adapt to that combo box style.
+	 *
+	 * @param hWnd Handle to the combo box control.
+	 *
+	 * @note Uses `GetWindowLongPtr` to extract the style bits.
+	 *
+	 * @see DarkMode::ComboBoxSubclass()
+	 * @see DarkMode::removeComboBoxCtrlSubclass()
+	 */
 	void setComboBoxCtrlSubclass(HWND hWnd)
 	{
 		const auto cbStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE) & CBS_DROPDOWNLIST;
 		DarkMode::setSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, kComboBoxSubclassID, cbStyle);
 	}
 
+	/**
+	 * @brief Removes the owner drawn subclass from a combo box control.
+	 *
+	 * Cleans up the `ComboBoxData` and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the combo box control.
+	 *
+	 * @see DarkMode::ComboBoxSubclass()
+	 * @see DarkMode::setComboBoxCtrlSubclass()
+	 */
 	void removeComboBoxCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, kComboBoxSubclassID);
 	}
 
+	/**
+	 * @brief Applies theming and optional subclassing to a combo box control.
+	 *
+	 * Configures a combo box' appearance and behavior based on its style,
+	 * the provided parameters, and current theme preferences.
+	 *
+	 * Behavior:
+	 * - If theming is enabled (`p._theme`) and the combo box has an associated list box:
+	 *   - For `CBS_SIMPLE`, replaces the client edge with a custom border for non-classic mode.
+	 *   - Applies themed scroll bars.
+	 * - If subclassing is enabled (`p._subclass`) and dark mode is not the preferred theme:
+	 *   - Applies a combo box subclassing unless the parent is a `ComboBoxEx` control.
+	 * - If theming is enabled (`p._theme`):
+	 *   - Applies the experimental `"CFD"` dark theme to the combo box for a light drop-down arrow.
+	 *   - Clears the edit selection for non-`CBS_DROPDOWNLIST` styles to avoid visual artifacts.
+	 *
+	 * @param hWnd Handle to the combo box control.
+	 * @param p Parameters controlling whether to apply theming and/or subclassing.
+	 *
+	 * @note Skips subclassing for `ComboBoxEx` parents to avoid conflicts.
+	 *
+	 * @see DarkModeParams
+	 * @see DarkMode::setComboBoxCtrlSubclass()
+	 */
 	static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 	{
 		const auto cbStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE) & CBS_DROPDOWNLIST;
@@ -4464,7 +4567,7 @@ namespace DarkMode
 	 * @see DarkMode::setComboBoxExCtrlSubclass()
 	 * @see DarkMode::removeComboBoxExCtrlSubclass()
 	 */
-	static LRESULT CALLBACK ComboboxExSubclass(
+	static LRESULT CALLBACK ComboBoxExSubclass(
 		HWND hWnd,
 		UINT uMsg,
 		WPARAM wParam,
@@ -4477,7 +4580,7 @@ namespace DarkMode
 		{
 			case WM_NCDESTROY:
 			{
-				::RemoveWindowSubclass(hWnd, ComboboxExSubclass, uIdSubclass);
+				::RemoveWindowSubclass(hWnd, ComboBoxExSubclass, uIdSubclass);
 				DarkMode::unhookSysColor();
 				break;
 			}
@@ -4520,7 +4623,7 @@ namespace DarkMode
 					break;
 				}
 
-				// ComboboxEx has only one child combo box, so only control-defined notification code is checked.
+				// ComboBoxEx has only one child combo box, so only control-defined notification code is checked.
 				// Hooking is done only when list box is about to show. And unhook when list box is closed.
 				// This process is used to avoid visual glitches in other GUI.
 				switch (HIWORD(wParam))
@@ -4553,17 +4656,47 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies subclassing to a combo box ex control to handle its child list box and edit controls.
+	 *
+	 * @param hWnd Handle to the combo box ex control.
+	 *
+	 * @note Uses IAT hooking for custom colors.
+	 *
+	 * @see DarkMode::ComboBoxSubclass()
+	 * @see DarkMode::removeComboBoxExCtrlSubclass()
+	 */
 	void setComboBoxExCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::setSubclass(hWnd, ComboboxExSubclass, kComboBoxExSubclassID);
+		DarkMode::setSubclass(hWnd, ComboBoxExSubclass, kComboBoxExSubclassID);
 	}
 
+	/**
+	 * @brief Removes the child handling subclass from a combo box ex control.
+	 *
+	 * Detaches the control's subclass proc and unhooks system color changes.
+	 *
+	 * @param hWnd Handle to the combo box ex control.
+	 *
+	 * @see DarkMode::ComboBoxSubclass()
+	 * @see DarkMode::setComboBoxExCtrlSubclass()
+	 */
 	void removeComboBoxExCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::removeSubclass(hWnd, ComboboxExSubclass, kComboBoxExSubclassID);
+		DarkMode::removeSubclass(hWnd, ComboBoxExSubclass, kComboBoxExSubclassID);
 		DarkMode::unhookSysColor();
 	}
 
+	/**
+	 * @brief Applies subclassing to a combo box ex control to handle its child list box and edit controls.
+	 *
+	 * Applies the subclass only if `p._subclass` is true
+	 *
+	 * @param hWnd Handle to the combo box ex control.
+	 * @param p Parameters controlling whether to apply subclassing.
+	 *
+	 * @see DarkMode::setComboBoxExCtrlSubclass()
+	 */
 	static void setComboBoxExCtrlSubclass(HWND hWnd, DarkModeParams p)
 	{
 		if (p._subclass)
@@ -4604,6 +4737,7 @@ namespace DarkMode
 				break;
 			}
 
+			// For gridlines
 			case WM_PAINT:
 			{
 				if (!DarkMode::isEnabled())
@@ -4640,6 +4774,7 @@ namespace DarkMode
 				return DarkMode::onCtlColorCtrl(reinterpret_cast<HDC>(wParam));
 			}
 
+			// For header control text
 			case WM_NOTIFY:
 			{
 				if (!DarkMode::isEnabled())

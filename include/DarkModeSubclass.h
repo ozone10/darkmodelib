@@ -399,10 +399,14 @@ namespace DarkMode
 	/// Removes the custom border subclass from a list box or edit control.
 	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd);
 
+	/// Applies owner drawn subclassing to a combo box control.
 	void setComboBoxCtrlSubclass(HWND hWnd);
+	/// Removes the owner drawn subclass from a combo box control.
 	void removeComboBoxCtrlSubclass(HWND hWnd);
 
+	/// Applies subclassing to a combo box ex control to handle its child list box and edit controls.
 	void setComboBoxExCtrlSubclass(HWND hWnd);
+	///  Removes the child handling subclass from a combo box ex control.
 	void removeComboBoxExCtrlSubclass(HWND hWnd);
 
 	void setListViewCtrlSubclass(HWND hWnd);
