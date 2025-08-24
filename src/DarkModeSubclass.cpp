@@ -106,7 +106,7 @@ static std::wstring GetWndClassName(HWND hWnd)
  * This function retrieves the class name of the given window handle
  * and compares it to the provided class name.
  *
- * @param hWnd Handle to the window whose class name is to be checked.
+ * @param hWnd           Handle to the window whose class name is to be checked.
  * @param classNameToCmp Pointer to a null-terminated wide string representing the class name to compare against.
  * @return `true` if the window's class name matches the specified string; otherwise `false`.
  *
@@ -171,9 +171,9 @@ static bool FileExists(const std::wstring& filePath)
  * it as a Windows GDI `COLORREF` value.
  *
  * @param sectionName Section within the `.ini` file.
- * @param keyName Key name containing the hex RGB value (e.g., "E0E2E4").
+ * @param keyName     Key name containing the hex RGB value (e.g., "E0E2E4").
  * @param iniFilePath Full path to the `.ini` file.
- * @param clr Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
+ * @param clr         Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
  * @return `true` if a valid 6-digit hex color was read and parsed, otherwise `false`.
  *
  * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.
@@ -1286,7 +1286,7 @@ namespace DarkMode
 	 *
 	 * Optionally applies a scroll bar fix for dark mode inconsistencies.
 	 *
-	 * @param useDark Enable dark mode when `true`, disable when `false`.
+	 * @param useDark          Enable dark mode when `true`, disable when `false`.
 	 * @param fixDarkScrollBar Apply scroll bar fix if `true`.
 	 */
 	static void setDarkMode(bool useDark, bool fixDarkScrollBar = true)
@@ -1297,7 +1297,7 @@ namespace DarkMode
 	/**
 	 * @brief Enables or disables dark mode support for a specific window.
 	 *
-	 * @param hWnd Window handle to apply dark mode.
+	 * @param hWnd  Window handle to apply dark mode.
 	 * @param allow Whether to allow (`true`) or disallow (`false`) dark mode.
 	 * @return `true` if successfully applied.
 	 */
@@ -1723,7 +1723,7 @@ namespace DarkMode
 	 * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
 	 *
 	 * @param nIndex One of the supported system color indices.
-	 * @param color Custom `COLORREF` value to apply.
+	 * @param color  Custom `COLORREF` value to apply.
 	 */
 	void setSysColor(int nIndex, COLORREF color)
 	{
@@ -1772,11 +1772,11 @@ namespace DarkMode
 	 * Draws a rounded rectangle defined by `rect`, using the provided pen (`hpen`) and brush (`hBrush`)
 	 * for the edge and fill, respectively. Preserves previous GDI object selections.
 	 *
-	 * @param hdc Handle to the device context.
-	 * @param rect Rectangle bounds for the shape.
-	 * @param hpen Pen used to draw the edge.
+	 * @param hdc    Handle to the device context.
+	 * @param rect   Rectangle bounds for the shape.
+	 * @param hpen   Pen used to draw the edge.
 	 * @param hBrush Brush used to inner fill.
-	 * @param width Horizontal corner radius.
+	 * @param width  Horizontal corner radius.
 	 * @param height Vertical corner radius.
 	 */
 	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height)
@@ -1793,10 +1793,10 @@ namespace DarkMode
 	 *
 	 * Uses a `NULL_BRUSH` to omit the inner fill, drawing only the rounded frame.
 	 *
-	 * @param hdc Handle to the device context.
-	 * @param rect Rectangle bounds for the frame.
-	 * @param hpen Pen used to draw the edge.
-	 * @param width Horizontal corner radius.
+	 * @param hdc    Handle to the device context.
+	 * @param rect   Rectangle bounds for the frame.
+	 * @param hpen   Pen used to draw the edge.
+	 * @param width  Horizontal corner radius.
 	 * @param height Vertical corner radius.
 	 */
 	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width, int height)
@@ -2011,12 +2011,12 @@ namespace DarkMode
 	 * If the subclass ID is not already attached, allocates a `T` instance using the given
 	 * `param` and stores it as subclass reference data. Ownership is transferred to the system.
 	 *
-	 * @tparam T The user-defined data type associated with the subclass.
-	 * @tparam Param Type used to initialize `T`.
-	 * @param hWnd Target window.
+	 * @tparam T           The user-defined data type associated with the subclass.
+	 * @tparam Param       Type used to initialize `T`.
+	 * @param hWnd         Window handle.
 	 * @param subclassProc Subclass procedure.
-	 * @param subclassID Identifier for the subclass instance.
-	 * @param param Constructor argument forwarded to `T`.
+	 * @param subclassID   Identifier for the subclass instance.
+	 * @param param        Constructor argument forwarded to `T`.
 	 * @return TRUE on success, FALSE on failure, -1 if subclass already set.
 	 */
 	template <typename T, typename Param>
@@ -2040,10 +2040,10 @@ namespace DarkMode
 	 *
 	 * Same logic as the other overload, but constructs `T` using its default constructor.
 	 *
-	 * @tparam T The user-defined data type associated with the subclass.
-	 * @param hWnd Target window.
+	 * @tparam T           The user-defined data type associated with the subclass.
+	 * @param hWnd         Window handle.
 	 * @param subclassProc Subclass procedure.
-	 * @param subclassID Identifier for the subclass instance.
+	 * @param subclassID   Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
 	 */
 	template <typename T>
@@ -2067,9 +2067,9 @@ namespace DarkMode
 	 *
 	 * Sets a subclass with no associated custom data.
 	 *
-	 * @param hWnd Target window.
+	 * @param hWnd         Window handle.
 	 * @param subclassProc Subclass procedure.
-	 * @param subclassID Identifier for the subclass instance.
+	 * @param subclassID   Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
 	 */
 	static int setSubclass(HWND hWnd, SUBCLASSPROC subclassProc, UINT_PTR subclassID)
@@ -2087,10 +2087,10 @@ namespace DarkMode
 	 * Retrieves and deletes user-defined `T` data stored in subclass reference
 	 * (unless `T = void`, in which case no delete is performed). Then removes the subclass.
 	 *
-	 * @tparam T Optional type of reference data to delete.
-	 * @param hWnd Window handle.
+	 * @tparam T           Optional type of reference data to delete.
+	 * @param hWnd         Window handle.
 	 * @param subclassProc Subclass procedure.
-	 * @param subclassID Identifier for the subclass instance.
+	 * @param subclassID   Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if not present.
 	 */
 	template <typename T = void>
@@ -2111,6 +2111,103 @@ namespace DarkMode
 			return ::RemoveWindowSubclass(hWnd, subclassProc, subclassID);
 		}
 		return -1;
+	}
+
+	/**
+	 * @brief Performs double-buffered painting using a memory DC and a custom paint function.
+	 *
+	 * Allocates and manages an off-screen buffer via `BufferData`, clips to the paint region,
+	 * executes the provided paint function, and blits the result to the target DC.
+	 *
+	 * @tparam T         Control data type containing a `_bufferData` member.
+	 * @tparam PaintFunc Callable object (lambda or function) that performs painting.
+	 * @param ctrlData   Reference to control-specific data (must contain `_bufferData`).
+	 * @param hdc        Target device context.
+	 * @param ps         Paint structure from `BeginPaint`.
+	 * @param paintFunc  Custom paint routine.
+	 * @param rcClient   Client rectangle of the control.
+	 *
+	 * @see BufferData
+	 */
+	template<typename T, typename PaintFunc>
+	static void paintWithBuffer(
+		T& ctrlData,
+		HDC hdc,
+		const PAINTSTRUCT& ps,
+		PaintFunc&& paintFunc,
+		const RECT& rcClient
+	)
+	{
+		auto& bufferData = ctrlData._bufferData;
+
+		if (bufferData.ensureBuffer(hdc, rcClient))
+		{
+			const auto& hMemDC = bufferData.getHMemDC();
+			const int savedState = ::SaveDC(hMemDC);
+
+			::IntersectClipRect(
+				hMemDC,
+				ps.rcPaint.left, ps.rcPaint.top,
+				ps.rcPaint.right, ps.rcPaint.bottom
+			);
+
+			std::forward<PaintFunc>(paintFunc)();
+
+			::RestoreDC(hMemDC, savedState);
+
+			::BitBlt(
+				hdc,
+				ps.rcPaint.left, ps.rcPaint.top,
+				ps.rcPaint.right - ps.rcPaint.left,
+				ps.rcPaint.bottom - ps.rcPaint.top,
+				hMemDC,
+				ps.rcPaint.left, ps.rcPaint.top,
+				SRCCOPY
+			);
+		}
+	}
+
+	/**
+	 * @brief Overload of `paintWithBuffer` that automatically retrieves the client rect.
+	 *
+	 * Extracts the client rectangle from the window handle,
+	 * then forwards it to the main `paintWithBuffer` implementation.
+	 *
+	 * @tparam T         Control data type containing a `_bufferData` member.
+	 * @tparam PaintFunc Callable object (lambda or function) that performs painting.
+	 * @param ctrlData   Reference to control-specific data (must contain `_bufferData`).
+	 * @param hdc        Target device context.
+	 * @param ps         Paint structure from `BeginPaint`.
+	 * @param paintFunc  Custom paint routine.
+	 * @param hWnd       Handle to the control window.
+	 *
+	 * @see DarkMode::paintWithBuffer(const T&, HDC, const PAINTSTRUCT&, PaintFunc&&, const RECT&)
+	 */
+	template<typename T, typename PaintFunc>
+	static void paintWithBuffer(
+		T& ctrlData,
+		HDC hdc,
+		const PAINTSTRUCT& ps,
+		PaintFunc&& paintFunc,
+		HWND hWnd
+	)
+	{
+		RECT rcClient{};
+		::GetClientRect(hWnd, &rcClient);
+
+		DarkMode::paintWithBuffer(ctrlData, hdc, ps, std::forward<PaintFunc>(paintFunc), rcClient);
+	}
+
+	/**
+	 * @brief Checks whether a RECT defines a non-empty, valid area.
+	 *
+	 * @param rc The rectangle to validate.
+	 * @return `true`  If rc has positive width and height (right > left and bottom > top).
+	 * @return `false` Otherwise.
+	 */
+	[[nodiscard]] static bool isRectValid(const RECT& rc)
+	{
+		return (rc.right > rc.left && rc.bottom > rc.top);
 	}
 
 	/**
@@ -2189,10 +2286,10 @@ namespace DarkMode
 	 * - Draws themed background and glyph using `DrawThemeBackground`.
 	 * - Uses dark mode-aware text rendering and applies focus cue when needed.
 	 *
-	 * @param hWnd Handle to the button control.
-	 * @param hdc Device context for drawing.
-	 * @param hTheme Active visual style theme handle.
-	 * @param iPartID Part ID (`BP_CHECKBOX`, `BP_RADIOBUTTON`, etc.).
+	 * @param hWnd     Handle to the button control.
+	 * @param hdc      Device context for drawing.
+	 * @param hTheme   Active visual style theme handle.
+	 * @param iPartID  Part ID (`BP_CHECKBOX`, `BP_RADIOBUTTON`, etc.).
 	 * @param iStateID State ID (`CBS_CHECKEDHOT`, `RBS_UNCHECKEDNORMAL`, etc.).
 	 *
 	 * @see DarkMode::paintButton()
@@ -2330,8 +2427,8 @@ namespace DarkMode
 	 * - Internally updates the `buttonData._iStateID` to preserve the last rendered state.
 	 * - Not used for `BS_PUSHLIKE` buttons.
 	 *
-	 * @param hWnd Handle to the checkbox or radio button control.
-	 * @param hdc Device context used for rendering.
+	 * @param hWnd       Handle to the checkbox or radio button control.
+	 * @param hdc        Device context used for rendering.
 	 * @param buttonData Theming and state info, including current theme and last state.
 	 *
 	 * @see DarkMode::renderButton()
@@ -2440,12 +2537,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for themed owner drawn checkbox, radio, and tri-state buttons.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData ButtonData instance.
+	 * @param dwRefData   ButtonData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::paintButton()
@@ -2602,8 +2699,8 @@ namespace DarkMode
 	 *   using `DarkMode::getEdgePen()`.
 	 * - Restores clip region and renders text using `DrawThemeTextEx` with custom colors.
 	 *
-	 * @param hWnd Handle to the group box control.
-	 * @param hdc Device context to draw into.
+	 * @param hWnd       Handle to the group box control.
+	 * @param hdc        Device context to draw into.
 	 * @param buttonData Reference to the theming and state info (theme handle).
 	 *
 	 * @note Ensures proper cleanup of temporary GDI objects (font, clip region).
@@ -2719,12 +2816,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn groupbox button control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData ButtonData instance.
+	 * @param dwRefData   ButtonData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::paintGroupbox()
@@ -2856,7 +2953,7 @@ namespace DarkMode
 	 * provided in @ref DarkModeParams.
 	 *
 	 * @param hWnd Handle to the target button control.
-	 * @param p Parameters defining theming and subclassing behavior.
+	 * @param p    Parameters defining theming and subclassing behavior.
 	 *
 	 * @see DarkModeParams
 	 * @see DarkMode::setCheckboxOrRadioBtnCtrlSubclass()
@@ -3036,8 +3133,8 @@ namespace DarkMode
 	 * - Rounded corners (optional, based on Windows 11 and parent class)
 	 * - Direction-aware layout and glyph placement
 	 *
-	 * @param hWnd Handle to the updown control being painted.
-	 * @param hdc Device context to draw into.
+	 * @param hWnd       Handle to the updown control being painted.
+	 * @param hdc        Device context to draw into.
 	 * @param upDownData Reference to layout and state information (segments, orientation, corner radius).
 	 *
 	 * @note Assumes the DC has already been prepared for painting.
@@ -3111,12 +3208,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn updown (spinner) control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData UpDownData instance .
+	 * @param dwRefData   UpDownData instance .
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::paintUpDown()
@@ -3133,8 +3230,7 @@ namespace DarkMode
 	)
 	{
 		auto* pUpDownData = reinterpret_cast<UpDownData*>(dwRefData);
-		auto& bufferData = pUpDownData->_bufferData;
-		const auto& hMemDC = bufferData.getHMemDC();
+		const auto& hMemDC = pUpDownData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
@@ -3170,7 +3266,7 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+				if (!DarkMode::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
@@ -3189,28 +3285,9 @@ namespace DarkMode
 					::OffsetRect(&rcClient, 2, 0);
 				}
 
-				if (bufferData.ensureBuffer(hdc, rcClient))
-				{
-					const int savedState = ::SaveDC(hMemDC);
-					::IntersectClipRect(
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-					);
-
-					DarkMode::paintUpDown(hWnd, hMemDC, *pUpDownData);
-
-					::RestoreDC(hMemDC, savedState);
-
-					::BitBlt(
-						hdc,
-						ps.rcPaint.left, ps.rcPaint.top,
-						ps.rcPaint.right - ps.rcPaint.left,
-						ps.rcPaint.bottom - ps.rcPaint.top,
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top,
-						SRCCOPY
-					);
-				}
+				DarkMode::paintWithBuffer<UpDownData>(*pUpDownData, hdc, ps,
+					[&]() { DarkMode::paintUpDown(hWnd, hMemDC, *pUpDownData); },
+					rcClient);
 
 				::EndPaint(hWnd, &ps);
 				return 0;
@@ -3298,7 +3375,7 @@ namespace DarkMode
 	 * depending on `DarkModeParams`. Subclassing takes priority if both are requested.
 	 *
 	 * @param hWnd Handle to the up-down control.
-	 * @param p Parameters controlling whether to apply theming and/or subclassing.
+	 * @param p    Parameters controlling whether to apply theming and/or subclassing.
 	 *
 	 * @see DarkModeParams
 	 * @see DarkMode::setUpDownCtrlSubclass()
@@ -3314,6 +3391,20 @@ namespace DarkMode
 			::SetWindowTheme(hWnd, p._themeClassName, nullptr);
 		}
 	}
+
+	/**
+	 * @struct TabData
+	 * @brief Simple wrapper for `BufferData`.
+	 *
+	 * Members:
+	 * - `_bufferData` : Buffer wrapper for flicker-free custom painting.
+	 *
+	 * @see BufferData
+	 */
+	struct TabData
+	{
+		BufferData _bufferData;
+	};
 
 	/**
 	 * @brief Custom paints tab items.
@@ -3332,7 +3423,7 @@ namespace DarkMode
 	 * @note Currently only works for horizontal style.
 	 *
 	 * @param hWnd Handle to the tab control.
-	 * @param hdc Device context to draw into.
+	 * @param hdc  Device context to draw into.
 	 * @param rect Tab control rectangle.
 	 */
 	static void paintTab(HWND hWnd, HDC hdc, const RECT& rect)
@@ -3483,12 +3574,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn tab control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData BufferData instance.
+	 * @param dwRefData   TabData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::paintTab()
@@ -3504,15 +3595,15 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pTabBufferData = reinterpret_cast<BufferData*>(dwRefData);
-		const auto& hMemDC = pTabBufferData->getHMemDC();
+		auto* pTabData = reinterpret_cast<TabData*>(dwRefData);
+		const auto& hMemDC = pTabData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
 			case WM_NCDESTROY:
 			{
 				::RemoveWindowSubclass(hWnd, TabPaintSubclass, uIdSubclass);
-				delete pTabBufferData;
+				delete pTabData;
 				break;
 			}
 
@@ -3547,7 +3638,7 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+				if (!DarkMode::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
@@ -3555,29 +3646,9 @@ namespace DarkMode
 
 				RECT rcClient{};
 				::GetClientRect(hWnd, &rcClient);
-
-				if (pTabBufferData->ensureBuffer(hdc, rcClient))
-				{
-					const int savedState = ::SaveDC(hMemDC);
-					::IntersectClipRect(
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-					);
-
-					DarkMode::paintTab(hWnd, hMemDC, rcClient);
-
-					::RestoreDC(hMemDC, savedState);
-
-					::BitBlt(
-						hdc,
-						ps.rcPaint.left, ps.rcPaint.top,
-						ps.rcPaint.right - ps.rcPaint.left,
-						ps.rcPaint.bottom - ps.rcPaint.top,
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top,
-						SRCCOPY
-					);
-				}
+				DarkMode::paintWithBuffer<TabData>(*pTabData, hdc, ps,
+					[&]() { DarkMode::paintTab(hWnd, hMemDC, rcClient); },
+					hWnd);
 
 				::EndPaint(hWnd, &ps);
 				return 0;
@@ -3610,13 +3681,13 @@ namespace DarkMode
 	 */
 	static void setTabCtrlPaintSubclass(HWND hWnd)
 	{
-		DarkMode::setSubclass<BufferData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
+		DarkMode::setSubclass<TabData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
 	}
 
 	/**
 	 * @brief Removes the owner drawn subclass from a tab control.
 	 *
-	 * Cleans up the `BufferData` instance and detaches the control's subclass proc.
+	 * Cleans up the `TabData` instance and detaches the control's subclass proc.
 	 *
 	 * @param hWnd Handle to the previously subclassed tab control.
 	 *
@@ -3625,18 +3696,18 @@ namespace DarkMode
 	 */
 	static void removeTabCtrlPaintSubclass(HWND hWnd)
 	{
-		DarkMode::removeSubclass<BufferData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
+		DarkMode::removeSubclass<TabData>(hWnd, TabPaintSubclass, kTabPaintSubclassID);
 	}
 
 	/**
 	 * @brief Window subclass procedure for tab control's updown control subclassing.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData Reserved data (unused).
+	 * @param dwRefData   Reserved data (unused).
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setUpDownCtrlSubclass()
@@ -3756,7 +3827,7 @@ namespace DarkMode
 	  * depending on `DarkModeParams`.
 	  *
 	  * @param hWnd Handle to the tab control.
-	  * @param p Parameters controlling whether to apply theming and/or subclassing.
+	  * @param p    Parameters controlling whether to apply theming and/or subclassing.
 	  *
 	  * @see DarkModeParams
 	  * @see DarkMode::setDarkTooltips()
@@ -3809,7 +3880,7 @@ namespace DarkMode
 	 * Paints an inner and outer border using custom colors.
 	 * The outer border highlights when the window is hot (hovered) or focused.
 	 *
-	 * @param hWnd Handle to the target list box or edit control.
+	 * @param hWnd              Handle to the target list box or edit control.
 	 * @param borderMetricsData Precomputed system metrics and hot state.
 	 */
 	static void ncPaintCustomBorder(HWND hWnd, const BorderMetricsData& borderMetricsData)
@@ -3857,12 +3928,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn border for list box and edit controls.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData BorderMetricsData instance.
+	 * @param dwRefData   BorderMetricsData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass()
@@ -4016,9 +4087,9 @@ namespace DarkMode
 	 * Applies a custom border subclass for controls with `WS_EX_CLIENTEDGE` flag.
 	 * Toggle the client edge style depending on dark mode state.
 	 *
-	 * @param hWnd Handle to the target list box or edit control.
-	 * @param p Parameters controlling whether to apply theming and/or subclassing.
-	 * @param isListBox True if the control is a list box, false if it's an edit control.
+	 * @param hWnd      Handle to the target list box or edit control.
+	 * @param p         Parameters controlling whether to apply theming and/or subclassing.
+	 * @param isListBox `true` if the control is a list box, `false` if it's an edit control.
 	 *
 	 * @note Custom border subclassing is skipped for combo box list boxes.
 	 *
@@ -4121,8 +4192,8 @@ namespace DarkMode
 	 * - Borders are drawn with pens with custom colors depending on state (rounded corners on Windows 11+).
 	 * - Uses `ExcludeClipRect` to avoid overpainting the text/edit area.
 	 *
-	 * @param hWnd Handle to the combo box control.
-	 * @param hdc Device context to draw into.
+	 * @param hWnd         Handle to the combo box control.
+	 * @param hdc          Device context to draw into.
 	 * @param comboBoxData Reference to the combo box' theme and style data.
 	 *
 	 * @see ComboBoxData
@@ -4313,12 +4384,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn combo box control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData ComboBoxData instance.
+	 * @param dwRefData   ComboBoxData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setComboBoxCtrlSubclass()
@@ -4335,8 +4406,7 @@ namespace DarkMode
 	{
 		auto* pComboboxData = reinterpret_cast<ComboBoxData*>(dwRefData);
 		auto& themeData = pComboboxData->_themeData;
-		auto& bufferData = pComboboxData->_bufferData;
-		const auto& hMemDC = bufferData.getHMemDC();
+		const auto& hMemDC = pComboboxData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
@@ -4374,37 +4444,15 @@ namespace DarkMode
 
 				if (pComboboxData->_cbStyle != CBS_DROPDOWN)
 				{
-					if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+					if (!DarkMode::isRectValid(ps.rcPaint))
 					{
 						::EndPaint(hWnd, &ps);
 						return 0;
 					}
 
-					RECT rcClient{};
-					::GetClientRect(hWnd, &rcClient);
-
-					if (bufferData.ensureBuffer(hdc, rcClient))
-					{
-						const int savedState = ::SaveDC(hMemDC);
-						::IntersectClipRect(
-							hMemDC,
-							ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-						);
-
-						DarkMode::paintCombobox(hWnd, hMemDC, *pComboboxData);
-
-						::RestoreDC(hMemDC, savedState);
-
-						::BitBlt(
-							hdc,
-							ps.rcPaint.left, ps.rcPaint.top,
-							ps.rcPaint.right - ps.rcPaint.left,
-							ps.rcPaint.bottom - ps.rcPaint.top,
-							hMemDC,
-							ps.rcPaint.left, ps.rcPaint.top,
-							SRCCOPY
-						);
-					}
+					DarkMode::paintWithBuffer<ComboBoxData>(*pComboboxData, hdc, ps,
+						[&]() { DarkMode::paintCombobox(hWnd, hMemDC, *pComboboxData); },
+						hWnd);
 				}
 				else
 				{
@@ -4499,7 +4547,7 @@ namespace DarkMode
 	 *   - Clears the edit selection for non-`CBS_DROPDOWNLIST` styles to avoid visual artifacts.
 	 *
 	 * @param hWnd Handle to the combo box control.
-	 * @param p Parameters controlling whether to apply theming and/or subclassing.
+	 * @param p    Parameters controlling whether to apply theming and/or subclassing.
 	 *
 	 * @note Skips subclassing for `ComboBoxEx` parents to avoid conflicts.
 	 *
@@ -4556,12 +4604,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for custom color for combo box ex' list box and edit control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData Reserved data (unused).
+	 * @param dwRefData   Reserved data (unused).
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setComboBoxExCtrlSubclass()
@@ -4693,7 +4741,7 @@ namespace DarkMode
 	 * Applies the subclass only if `p._subclass` is true
 	 *
 	 * @param hWnd Handle to the combo box ex control.
-	 * @param p Parameters controlling whether to apply subclassing.
+	 * @param p    Parameters controlling whether to apply subclassing.
 	 *
 	 * @see DarkMode::setComboBoxExCtrlSubclass()
 	 */
@@ -4708,12 +4756,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for custom color for list view's gridlines and edit control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData Reserved data (unused).
+	 * @param dwRefData   Reserved data (unused).
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setListViewCtrlSubclass()
@@ -5047,8 +5095,7 @@ namespace DarkMode
 	{
 		auto* pHeaderData = reinterpret_cast<HeaderData*>(dwRefData);
 		auto& themeData = pHeaderData->_themeData;
-		auto& bufferData = pHeaderData->_bufferData;
-		const auto& hMemDC = bufferData.getHMemDC();
+		const auto& hMemDC = pHeaderData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
@@ -5084,37 +5131,15 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+				if (!DarkMode::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				RECT rcClient{};
-				::GetClientRect(hWnd, &rcClient);
-
-				if (bufferData.ensureBuffer(hdc, rcClient))
-				{
-					const int savedState = ::SaveDC(hMemDC);
-					::IntersectClipRect(
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-					);
-
-					DarkMode::paintHeader(hWnd, hMemDC, *pHeaderData);
-
-					::RestoreDC(hMemDC, savedState);
-
-					::BitBlt(
-						hdc,
-						ps.rcPaint.left, ps.rcPaint.top,
-						ps.rcPaint.right - ps.rcPaint.left,
-						ps.rcPaint.bottom - ps.rcPaint.top,
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top,
-						SRCCOPY
-					);
-				}
+				DarkMode::paintWithBuffer<HeaderData>(*pHeaderData, hdc, ps,
+					[&]() { DarkMode::paintHeader(hWnd, hMemDC, *pHeaderData); },
+					hWnd);
 
 				::EndPaint(hWnd, &ps);
 				return 0;
@@ -5365,8 +5390,7 @@ namespace DarkMode
 	{
 		auto* pStatusBarData = reinterpret_cast<StatusBarData*>(dwRefData);
 		auto& themeData = pStatusBarData->_themeData;
-		auto& bufferData = pStatusBarData->_bufferData;
-		const auto& hMemDC = bufferData.getHMemDC();
+		const auto& hMemDC = pStatusBarData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
@@ -5402,37 +5426,15 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+				if (!DarkMode::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				RECT rcClient{};
-				::GetClientRect(hWnd, &rcClient);
-
-				if (bufferData.ensureBuffer(hdc, rcClient))
-				{
-					const int savedState = ::SaveDC(hMemDC);
-					::IntersectClipRect(
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-					);
-
-					DarkMode::paintStatusBar(hWnd, hMemDC, *pStatusBarData);
-
-					::RestoreDC(hMemDC, savedState);
-
-					::BitBlt(
-						hdc,
-						ps.rcPaint.left, ps.rcPaint.top,
-						ps.rcPaint.right - ps.rcPaint.left,
-						ps.rcPaint.bottom - ps.rcPaint.top,
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top,
-						SRCCOPY
-					);
-				}
+				DarkMode::paintWithBuffer<StatusBarData>(*pStatusBarData, hdc, ps,
+					[&]() { DarkMode::paintStatusBar(hWnd, hMemDC, *pStatusBarData); },
+					hWnd);
 
 				::EndPaint(hWnd, &ps);
 				return 0;
@@ -5569,8 +5571,7 @@ namespace DarkMode
 	{
 		auto* pProgressBarData = reinterpret_cast<ProgressBarData*>(dwRefData);
 		auto& themeData = pProgressBarData->_themeData;
-		auto& bufferData = pProgressBarData->_bufferData;
-		const auto& hMemDC = bufferData.getHMemDC();
+		const auto& hMemDC = pProgressBarData->_bufferData.getHMemDC();
 
 		switch (uMsg)
 		{
@@ -5606,37 +5607,15 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (ps.rcPaint.right <= ps.rcPaint.left || ps.rcPaint.bottom <= ps.rcPaint.top)
+				if (!DarkMode::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				RECT rcClient{};
-				::GetClientRect(hWnd, &rcClient);
-
-				if (bufferData.ensureBuffer(hdc, rcClient))
-				{
-					const int savedState = ::SaveDC(hMemDC);
-					::IntersectClipRect(
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom
-					);
-
-					DarkMode::paintProgressBar(hWnd, hMemDC, *pProgressBarData);
-
-					::RestoreDC(hMemDC, savedState);
-
-					::BitBlt(
-						hdc,
-						ps.rcPaint.left, ps.rcPaint.top,
-						ps.rcPaint.right - ps.rcPaint.left,
-						ps.rcPaint.bottom - ps.rcPaint.top,
-						hMemDC,
-						ps.rcPaint.left, ps.rcPaint.top,
-						SRCCOPY
-					);
-				}
+				DarkMode::paintWithBuffer<ProgressBarData>(*pProgressBarData, hdc, ps,
+					[&]() { DarkMode::paintProgressBar(hWnd, hMemDC, *pProgressBarData); },
+					hWnd);
 
 				::EndPaint(hWnd, &ps);
 				return 0;
