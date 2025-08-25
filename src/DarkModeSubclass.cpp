@@ -8322,7 +8322,7 @@ namespace DarkMode
 	/**
 	 * @brief Applies classic-themed styling to a progress bar in non-classic mode.
 	 *
-	 * When dark mode is enabled, applies `WS_DLGFRAME`, removes visual styles
+	 * When dark mode is enabled, applies `WS_BORDER`, removes visual styles
 	 * to allow to set custom background and fill colors using:
 	 * - Background: `DarkMode::getBackgroundColor()`
 	 * - Fill: Hardcoded green `0x06B025` via `PBM_SETBARCOLOR`
@@ -8336,8 +8336,9 @@ namespace DarkMode
 	 */
 	void setProgressBarClassicTheme(HWND hWnd)
 	{
-		DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled(), WS_DLGFRAME);
+		DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled(), WS_BORDER);
 		DarkMode::disableVisualStyle(hWnd, DarkMode::isEnabled());
+		DarkMode::setWindowExStyle(hWnd, false, WS_EX_STATICEDGE);
 		if (DarkMode::isEnabled())
 		{
 			::SendMessage(hWnd, PBM_SETBKCOLOR, 0, static_cast<LPARAM>(DarkMode::getCtrlBackgroundColor()));

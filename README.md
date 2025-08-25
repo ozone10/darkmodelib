@@ -14,7 +14,7 @@ for most common controls for applications using the Win32 API.
 * * *
 
 <p align="center">
-  <img src="https://i.imgur.com/D8ZgP6G.png">
+  <img src="https://i.imgur.com/MtUL6jI.png">
 </p>
 
 * * *
