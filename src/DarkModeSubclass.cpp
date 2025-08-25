@@ -4868,16 +4868,54 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies subclassing to a list view control to handle custom colors.
+	 *
+	 * Handles custom colors for gridlines, header text, and in-place edit controls.
+	 *
+	 * @param hWnd Handle to the list view control.
+	 *
+	 * @note Uses IAT hooking for gridlines colors.
+	 *
+	 * @see DarkMode::ListViewSubclass()
+	 * @see DarkMode::removeListViewCtrlSubclass()
+	 */
 	void setListViewCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass(hWnd, ListViewSubclass, kListViewSubclassID);
 	}
 
+	/**
+	 * @brief Removes the custom colors handling subclass from a list view control.
+	 *
+	 * Detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the list view control.
+	 *
+	 * @see DarkMode::ListViewSubclass()
+	 * @see DarkMode::setComboBoxExCtrlSubclass()
+	 */
 	void removeListViewCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass(hWnd, ListViewSubclass, kListViewSubclassID);
 	}
 
+	/**
+	 * @brief Applies theming and optional subclassing to a list view control.
+	 *
+	 * Configures colors, header theming, checkbox styling, and tooltips theming.
+	 * Optionally installs the list view and header control subclasses for custom drawing.
+	 * Enables double-buffering via `LVS_EX_DOUBLEBUFFER` flag.
+	 *
+	 * @param hWnd Handle to the list view control.
+	 * @param p    Parameters controlling whether to apply theming and/or subclassing.
+	 *
+	 * @see DarkMode::setDarkListView()
+	 * @see DarkMode::setDarkListViewCheckboxes()
+	 * @see DarkMode::setDarkTooltips()
+	 * @see DarkMode::setListViewCtrlSubclass()
+	 * @see DarkMode::setHeaderCtrlSubclass()
+	 */
 	static void setListViewCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 	{
 		HWND hHeader = ListView_GetHeader(hWnd);
@@ -4911,6 +4949,31 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @struct HeaderData
+	 * @brief Stores theme, buffer, and font data for a header control, along with its style and state information.
+	 *
+	 * Used to manage theming and double-buffered painting for header controls.
+	 * Holds the button visual style information and the control's state for
+	 * conditional rendering logic.
+	 *
+	 * Members:
+	 * - `_themeData` : RAII-managed theme handle for `VSCLASS_HEADER`.
+	 * - `_bufferData` : Buffer wrapper for flicker-free custom painting.
+	 * - `_fontData` : Font resource wrapper for text rendering.
+	 * - `_pt` : Last known mouse position in client coordinates (LONG_MIN if uninitialized).
+	 * - `_isHot` : True if the mouse is currently over a header item.
+	 * - `_hasBtnStyle` : True if the header uses button-style items (`HDF_BUTTON`).
+	 * - `_isPressed` : True if a header item is currently pressed.
+	 *
+	 * Constructor behavior:
+	 * - Deleted default constructor to enforce explicit initialization.
+	 * - Explicit constructor taking `hasBtnStyle` to set `_hasBtnStyle`.
+	 *
+	 * @see ThemeData
+	 * @see BufferData
+	 * @see FontData
+	 */
 	struct HeaderData
 	{
 		ThemeData _themeData{ VSCLASS_HEADER };
@@ -4929,6 +4992,26 @@ namespace DarkMode
 		{}
 	};
 
+	/**
+	 * @brief Custom paints a header control.
+	 *
+	 * Renders the background, text, hot/pressed states, and optional sort arrows
+	 * for each header item, adapting to custom colors and theming.
+	 *
+	 * Paint logic:
+	 * - Determines if the parent list view is in report mode and has gridlines.
+	 * - Iterates over all header items:
+	 *   - Draws sort arrows if `HDF_SORTUP` or `HDF_SORTDOWN` is set.
+	 *   - Draws a vertical separator line with alignment between items.
+	 *   - Draws the item text with alignment and pressed offset adjustments.
+	 * - Uses `DrawThemeTextEx` for themed text rendering, or `DrawText` otherwise.
+	 *
+	 * @param hWnd       Handle to the header control.
+	 * @param hdc        Device context to draw into.
+	 * @param headerData Reference to the header's theme, state, and style data.
+	 *
+	 * @see HeaderData
+	 */
 	static void paintHeader(HWND hWnd, HDC hdc, HeaderData& headerData)
 	{
 		auto& themeData = headerData._themeData;
@@ -4942,6 +5025,8 @@ namespace DarkMode
 		RECT rcHeader{};
 		::GetClientRect(hWnd, &rcHeader);
 		::FillRect(hdc, &rcHeader, DarkMode::getHeaderBackgroundBrush());
+
+		// Font part
 
 		LOGFONT lf{};
 		if (!fontData.hasFont()
@@ -4966,6 +5051,8 @@ namespace DarkMode
 			::SetTextColor(hdc, DarkMode::getHeaderTextColor());
 		}
 
+		// Special handling with gridlines
+
 		HWND hList = ::GetParent(hWnd);
 		const auto lvStyle = ::GetWindowLongPtr(hList, GWL_STYLE) & LVS_TYPEMASK;
 		bool hasGridlines = false;
@@ -4982,6 +5069,8 @@ namespace DarkMode
 			Header_GetItemRect(hWnd, i, &rcItem);
 			const bool isOnItem = ::PtInRect(&rcItem, headerData._pt) == TRUE;
 
+			// Different visual styles have different vertical alignments.
+			// This part is for header item rectangle.
 			if (headerData._hasBtnStyle && isOnItem)
 			{
 				RECT rcTmp{ rcItem };
@@ -5004,6 +5093,7 @@ namespace DarkMode
 
 			Header_GetItem(hWnd, i, &hdi);
 
+			// Sort arrows
 			if (hasTheme
 				&& ((hdi.fmt & HDF_SORTUP) == HDF_SORTUP
 					|| (hdi.fmt & HDF_SORTDOWN) == HDF_SORTDOWN))
@@ -5019,6 +5109,7 @@ namespace DarkMode
 				::DrawThemeBackground(hTheme, hdc, HP_HEADERSORTARROW, iStateID, &rcArrow, nullptr);
 			}
 
+			// Aligment for border
 			LONG edgeX = rcItem.right;
 			if (!hasGridlines)
 			{
@@ -5034,6 +5125,8 @@ namespace DarkMode
 				{ edgeX, rcItem.bottom }
 			} };
 			::Polyline(hdc, edge.data(), static_cast<int>(edge.size()));
+
+			// Text draw part
 
 			DWORD dtFlags = DT_VCENTER | DT_SINGLELINE | DT_WORD_ELLIPSIS | DT_HIDEPREFIX;
 			if ((hdi.fmt & HDF_RIGHT) == HDF_RIGHT)
@@ -5073,12 +5166,12 @@ namespace DarkMode
 	/**
 	 * @brief Window subclass procedure for owner drawn header control.
 	 *
-	 * @param hWnd Window handle being subclassed.
-	 * @param uMsg Message identifier.
-	 * @param wParam Message-specific data.
-	 * @param lParam Message-specific data.
+	 * @param hWnd        Window handle being subclassed.
+	 * @param uMsg        Message identifier.
+	 * @param wParam      Message-specific data.
+	 * @param lParam      Message-specific data.
 	 * @param uIdSubclass Subclass identifier.
-	 * @param dwRefData HeaderData instance.
+	 * @param dwRefData   HeaderData instance.
 	 * @return LRESULT Result of message processing.
 	 *
 	 * @see DarkMode::setHeaderCtrlSubclass()
@@ -5233,12 +5326,35 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a header control.
+	 *
+	 * Retrieves the header button style from the window and passes it to the subclass data
+	 * (`HeaderData`) so the paint routine can adapt to that header style.
+	 *
+	 * @param hWnd Handle to the header control.
+	 *
+	 * @note Uses `GetWindowLongPtr` to extract the style bits.
+	 *
+	 * @see DarkMode::HeaderSubclass()
+	 * @see DarkMode::removeHeaderCtrlSubclass()
+	 */
 	void setHeaderCtrlSubclass(HWND hWnd)
 	{
 		const bool hasBtnStyle = (::GetWindowLongPtr(hWnd, GWL_STYLE) & HDS_BUTTONS) == HDS_BUTTONS;
 		DarkMode::setSubclass<HeaderData>(hWnd, HeaderSubclass, kHeaderSubclassID, hasBtnStyle);
 	}
 
+	/**
+	 * @brief Removes the owner drawn subclass from a header control.
+	 *
+	 * Cleans up the `HeaderData` and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the combo box control.
+	 *
+	 * @see DarkMode::HeaderSubclass()
+	 * @see DarkMode::setHeaderCtrlSubclass()
+	 */
 	void removeHeaderCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<HeaderData>(hWnd, HeaderSubclass, kHeaderSubclassID);

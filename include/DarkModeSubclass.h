@@ -409,10 +409,14 @@ namespace DarkMode
 	///  Removes the child handling subclass from a combo box ex control.
 	void removeComboBoxExCtrlSubclass(HWND hWnd);
 
+	/// Applies subclassing to a list view control to handle custom colors.
 	void setListViewCtrlSubclass(HWND hWnd);
+	/// Removes the custom colors handling subclass from a list view control.
 	void removeListViewCtrlSubclass(HWND hWnd);
 
+	/// Applies owner drawn subclassing to a header control.
 	void setHeaderCtrlSubclass(HWND hWnd);
+	/// Removes the owner drawn subclass from a header control.
 	void removeHeaderCtrlSubclass(HWND hWnd);
 
 	void setStatusBarCtrlSubclass(HWND hWnd);
