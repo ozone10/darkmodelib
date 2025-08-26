@@ -656,10 +656,10 @@ namespace DarkMode
 	 * cf.lpTemplateName = MAKEINTRESOURCE(IDD_DARK_FONT_DIALOG);
 	 * ```
 	 *
-	 * @param hWnd Handle to the dialog window.
-	 * @param uMsg Message identifier.
-	 * @param wParam First message parameter (unused).
-	 * @param lParam Second message parameter (unused).
+	 * @param hWnd      Handle to the dialog window.
+	 * @param uMsg      Message identifier.
+	 * @param wParam    First message parameter (unused).
+	 * @param lParam    Second message parameter (unused).
 	 * @return A value defined by the hook procedure.
 	 */
 	UINT_PTR CALLBACK HookDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
