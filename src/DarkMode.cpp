@@ -547,18 +547,21 @@ void SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
 	}
 }
 
-// Hooking GetSysColor for comboboxex' list box and list view's gridlines
+// Hooking GetSysColor for combo box ex' list box and list view's gridlines
+
+template <typename T>
+struct MyFunc
+{
+	T func = nullptr;
+	size_t ref = 0;
+};
 
 using fnGetSysColor = auto (WINAPI*)(int nIndex) -> DWORD;
-
-static fnGetSysColor pfGetSysColor = nullptr;
+static MyFunc<fnGetSysColor> g_myGetSysColor{};
 
 static COLORREF g_clrWindow = RGB(32, 32, 32);
 static COLORREF g_clrText = RGB(224, 224, 224);
 static COLORREF g_clrTGridlines = RGB(100, 100, 100);
-
-static bool g_isGetSysColorHooked = false;
-static int g_hookRef = 0;
 
 void SetMySysColor(int nIndex, COLORREF clr)
 {
@@ -623,27 +626,23 @@ static DWORD WINAPI MyGetSysColor(int nIndex)
 bool HookSysColor()
 {
 	const ModuleHandle moduleComctl(L"comctl32.dll");
-	if (moduleComctl.isLoaded())
+	if (!moduleComctl.isLoaded())
 	{
-		if (pfGetSysColor == nullptr || !g_isGetSysColorHooked)
-		{
-			auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
-			if (addr != nullptr)
-			{
-				pfGetSysColor = ReplaceFunction<fnGetSysColor>(addr, MyGetSysColor);
-				g_isGetSysColorHooked = true;
-			}
-			else
-			{
-				return false;
-			}
-		}
+		return false;
+	}
 
-		if (g_isGetSysColorHooked)
+	if (g_myGetSysColor.func == nullptr && g_myGetSysColor.ref == 0)
+	{
+		auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
+		if (addr != nullptr)
 		{
-			++g_hookRef;
+			g_myGetSysColor.func = ReplaceFunction<fnGetSysColor>(addr, MyGetSysColor);
 		}
+	}
 
+	if (g_myGetSysColor.func != nullptr)
+	{
+		++g_myGetSysColor.ref;
 		return true;
 	}
 	return false;
@@ -652,23 +651,22 @@ bool HookSysColor()
 void UnhookSysColor()
 {
 	const ModuleHandle moduleComctl(L"comctl32.dll");
-	if (moduleComctl.isLoaded())
+	if (!moduleComctl.isLoaded())
 	{
-		if (g_isGetSysColorHooked)
-		{
-			if (g_hookRef > 0)
-			{
-				--g_hookRef;
-			}
+		return;
+	}
 
-			if (g_hookRef == 0)
+	if (g_myGetSysColor.ref > 0)
+	{
+		--g_myGetSysColor.ref;
+
+		if (g_myGetSysColor.func != nullptr && g_myGetSysColor.ref == 0)
+		{
+			auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
+			if (addr != nullptr)
 			{
-				auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
-				if (addr != nullptr)
-				{
-					ReplaceFunction<fnGetSysColor>(addr, pfGetSysColor);
-					g_isGetSysColorHooked = false;
-				}
+				ReplaceFunction<fnGetSysColor>(addr, g_myGetSysColor.func);
+				g_myGetSysColor.func = nullptr;
 			}
 		}
 	}
