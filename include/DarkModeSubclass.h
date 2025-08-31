@@ -438,7 +438,9 @@ namespace DarkMode
 	// Child Subclassing
 	// ========================================================================
 
+	/// Applies theming and/or subclassing to all child controls of a parent window.
 	void setChildCtrlsSubclassAndTheme(HWND hParent, bool subclass = true, bool theme = true);
+	/// Applies theming to all child controls of a parent window.
 	void setChildCtrlsTheme(HWND hParent);
 
 	// ========================================================================

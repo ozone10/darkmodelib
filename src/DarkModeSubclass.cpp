@@ -5410,7 +5410,7 @@ namespace DarkMode
 		const auto& hFont = statusBarData._fontData.getFont();
 
 		struct {
-			int : 0; // horizontal not used
+			int : sizeof(int) * CHAR_BIT; // horizontal not used
 			int vertical = 0;
 			int between = 0;
 		} borders{};
@@ -6067,8 +6067,8 @@ namespace DarkMode
 	 * @param hWnd Handle to the static control.
 	 *
 	 * @note
-	 *  - Uses `IsWindowEnabled` to determine the current enabled state.
-	 *  - Works only if `WM_ENABLE` message is sent.
+	 * - Uses `IsWindowEnabled` to determine the current enabled state.
+	 * - Works only if `WM_ENABLE` message is sent.
 	 *
 	 * @see DarkMode::StaticTextSubclass()
 	 * @see DarkMode::removeStaticTextCtrlSubclass()
@@ -6156,14 +6156,6 @@ namespace DarkMode
 		}
 	}
 
-	static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
-	{
-		if (p._theme)
-		{
-			DarkMode::setDarkRichEdit(hWnd);
-		}
-	}
-
 	static void setTrackbarCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -6173,6 +6165,55 @@ namespace DarkMode
 		}
 	}
 
+	static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
+	{
+		if (p._theme)
+		{
+			DarkMode::setDarkRichEdit(hWnd);
+		}
+	}
+
+	/**
+	 * @brief Callback function used to enumerate and apply theming/subclassing to child controls.
+	 *
+	 * Called in `setChildCtrlsSubclassAndTheme()` and `setChildCtrlsTheme()`
+	 * to inspect each child window's class name and apply appropriate theming
+	 * and/or subclassing logic based on control type.
+	 *
+	 * @param hWnd      Handle to the window being enumerated.
+	 * @param lParam    Pointer to a `DarkModeParams` structure containing theming flags and settings.
+	 * @return `TRUE`   to continue enumeration.
+	 *
+	 * @note
+	 * - Currently handles these controls:
+	 *      `WC_BUTTON`, `WC_STATIC`, `WC_COMBOBOX`, `WC_EDIT`, `WC_LISTBOX`,
+	 *      `WC_LISTVIEW`, `WC_TREEVIEW`, `REBARCLASSNAME`, `TOOLBARCLASSNAME`,
+	 *      `UPDOWN_CLASS`, `WC_TABCONTROL`, `STATUSCLASSNAME`, `WC_SCROLLBAR`,
+	 *      `WC_COMBOBOXEX`, `PROGRESS_CLASS`, `WC_LINK`, `TRACKBAR_CLASS`,
+	 *      `RICHEDIT_CLASS`, and `MSFTEDIT_CLASS`
+	 * - The `#32770` dialog class is commented out for debugging purposes.
+	 *
+	 * @see DarkMode::setChildCtrlsSubclassAndTheme()
+	 * @see DarkMode::setChildCtrlsSubclassAndTheme()
+	 * @see DarkModeParams
+	 * @see DarkMode::setBtnCtrlSubclassAndTheme()
+	 * @see DarkMode::setStaticTextCtrlSubclass()
+	 * @see DarkMode::setComboBoxCtrlSubclassAndTheme()
+	 * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclassAndTheme()
+	 * @see DarkMode::setListViewCtrlSubclassAndTheme()
+	 * @see DarkMode::setTreeViewCtrlTheme()
+	 * @see DarkMode::setRebarCtrlSubclass()
+	 * @see DarkMode::setToolbarCtrlTheme()
+	 * @see DarkMode::setUpDownCtrlSubclassAndTheme()
+	 * @see DarkMode::setTabCtrlSubclassAndTheme()
+	 * @see DarkMode::setStatusBarCtrlSubclass()
+	 * @see DarkMode::setScrollBarCtrlTheme()
+	 * @see DarkMode::setComboBoxExCtrlSubclass()
+	 * @see DarkMode::setProgressBarCtrlSubclass()
+	 * @see DarkMode::enableSysLinkCtrlCtlColor()
+	 * @see DarkMode::setTrackbarCtrlTheme()
+	 * @see DarkMode::setRichEditCtrlTheme()
+	 */
 	static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 	{
 		const auto& p = *reinterpret_cast<DarkModeParams*>(lParam);
@@ -6220,7 +6261,7 @@ namespace DarkMode
 			return TRUE;
 		}
 
-		if (className == REBARCLASSNAMEW)
+		if (className == REBARCLASSNAME)
 		{
 			DarkMode::setRebarCtrlSubclass(hWnd, p);
 			return TRUE;
@@ -6274,28 +6315,42 @@ namespace DarkMode
 			return TRUE;
 		}
 
-		if (className == RICHEDIT_CLASS || className == MSFTEDIT_CLASS)
-		{
-			DarkMode::setRichEditCtrlTheme(hWnd, p);
-			return TRUE;
-		}
-
 		if (className == TRACKBAR_CLASS)
 		{
 			DarkMode::setTrackbarCtrlTheme(hWnd, p);
 			return TRUE;
 		}
 
+		if (className == RICHEDIT_CLASS || className == MSFTEDIT_CLASS) // rich edit controls 2.0, 3.0, and 4.1
+		{
+			DarkMode::setRichEditCtrlTheme(hWnd, p);
+			return TRUE;
+		}
 #if 0 // for debugging
 		if (className == L"#32770") // dialog
 		{
 			return TRUE;
 		}
 #endif
-
 		return TRUE;
 	}
 
+	/**
+	 * @brief Applies theming and/or subclassing to all child controls of a parent window.
+	 *
+	 * Enumerates all child windows of the specified parent and dispatches them to
+	 * `DarkEnumChildProc`, which applies control-specific theming and/or subclassing logic
+	 * based on their class name and the provided parameters.
+	 *
+	 * Mainly used when initializing parent control.
+	 *
+	 * @param hParent   Handle to the parent window whose child controls will be themed.
+	 * @param subclass  Whether to apply subclassing.
+	 * @param theme     Whether to apply theming.
+	 *
+	 * @see DarkMode::DarkEnumChildProc()
+	 * @see DarkModeParams
+	 */
 	void setChildCtrlsSubclassAndTheme(HWND hParent, bool subclass, bool theme)
 	{
 		DarkModeParams p{
@@ -6307,6 +6362,21 @@ namespace DarkMode
 		::EnumChildWindows(hParent, DarkMode::DarkEnumChildProc, reinterpret_cast<LPARAM>(&p));
 	}
 
+	/**
+	 * @brief Applies theming to all child controls of a parent window.
+	 *
+	 * Enumerates child windows of the specified parent and applies theming without subclassing.
+	 * The theming behavior adapts based on OS support and compile-time flags.
+	 * If `_DARKMODELIB_ALLOW_OLD_OS > 1` is true, theming is applied unconditionally.
+	 * Otherwise, theming is applied only if the OS is Windows 10 or newer.
+	 * The function delegates to `setChildCtrlsSubclassAndTheme()` with appropriate flags.
+	 *
+	 * Mainly used when changing mode.
+	 *
+	 * @param hParent Handle to the parent window whose child controls will be themed.
+	 *
+	 * @see DarkMode::setChildCtrlsSubclassAndTheme()
+	 */
 	void setChildCtrlsTheme(HWND hParent)
 	{
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 1)
