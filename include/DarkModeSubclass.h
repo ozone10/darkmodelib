@@ -419,13 +419,19 @@ namespace DarkMode
 	/// Removes the owner drawn subclass from a header control.
 	void removeHeaderCtrlSubclass(HWND hWnd);
 
+	/// Applies owner drawn subclassing to a status bar control.
 	void setStatusBarCtrlSubclass(HWND hWnd);
+	/// Removes the owner drawn subclass from a status bar control.
 	void removeStatusBarCtrlSubclass(HWND hWnd);
 
+	/// Applies owner drawn subclassing to a progress bar control.
 	void setProgressBarCtrlSubclass(HWND hWnd);
+	/// Removes the owner drawn subclass from a progress bar control.
 	void removeProgressBarCtrlSubclass(HWND hWnd);
 
+	/// Applies workaround subclassing to a static control to handle visual glitch in disabled state.
 	void setStaticTextCtrlSubclass(HWND hWnd);
+	/// Removes the workaround subclass from a static control.
 	void removeStaticTextCtrlSubclass(HWND hWnd);
 
 	// ========================================================================

@@ -4738,7 +4738,7 @@ namespace DarkMode
 	/**
 	 * @brief Applies subclassing to a combo box ex control to handle its child list box and edit controls.
 	 *
-	 * Applies the subclass only if `p._subclass` is true
+	 * Overload wrapper that applies the subclass only if `p._subclass` is `true`.
 	 *
 	 * @param hWnd  Handle to the combo box ex control.
 	 * @param p     Parameters controlling whether to apply subclassing.
@@ -5350,7 +5350,7 @@ namespace DarkMode
 	 *
 	 * Cleans up the `HeaderData` and detaches the control's subclass proc.
 	 *
-	 * @param hWnd Handle to the combo box control.
+	 * @param hWnd Handle to the header control.
 	 *
 	 * @see DarkMode::HeaderSubclass()
 	 * @see DarkMode::setHeaderCtrlSubclass()
@@ -5360,6 +5360,25 @@ namespace DarkMode
 		DarkMode::removeSubclass<HeaderData>(hWnd, HeaderSubclass, kHeaderSubclassID);
 	}
 
+	/**
+	 * @struct StatusBarData
+	 * @brief Stores theme, buffer, and font data for a status bar control.
+	 *
+	 * Used to manage theming and double-buffered painting for status bar controls.
+	 *
+	 * Members:
+	 * - `_themeData` : RAII-managed theme handle for `VSCLASS_HEADER`.
+	 * - `_bufferData` : Buffer wrapper for flicker-free custom painting.
+	 * - `_fontData` : Font resource wrapper for text drawing.
+	 *
+	 * Constructor behavior:
+	 * - Deleted default constructor to enforce explicit font initialization.
+	 * - Explicit constructor taking `HFONT` to initialize `_fontData`.
+	 *
+	 * @see ThemeData
+	 * @see BufferData
+	 * @see FontData
+	 */
 	struct StatusBarData
 	{
 		ThemeData _themeData{ VSCLASS_STATUS };
@@ -5373,6 +5392,19 @@ namespace DarkMode
 		{}
 	};
 
+	/**
+	 * @brief Custom paints a status bar control.
+	 *
+	 * Draws the background, text, part separators, and optional size grip using
+	 * custom brushes, pens, and fonts. Supports owner-drawn parts and adapts
+	 * to the control's style flags and part configuration.
+	 *
+	 * @param hWnd          Handle to the status bar control.
+	 * @param hdc           Device context to paint into.
+	 * @param statusBarData Reference to the control's theme, buffer, and font data.
+	 *
+	 * @see StatusBarData
+	 */
 	static void paintStatusBar(HWND hWnd, HDC hdc, StatusBarData& statusBarData)
 	{
 		const auto& hFont = statusBarData._fontData.getFont();
@@ -5589,6 +5621,19 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a status bar control.
+	 *
+	 * Retrieves the status bar system font and passes it to the subclass data
+	 * (`StatusBarData`).
+	 *
+	 * @param hWnd Handle to the status bar control.
+	 *
+	 * @note Uses `SystemParametersInfoW` to extract the `lfStatusFont` font.
+	 *
+	 * @see DarkMode::StatusBarSubclass()
+	 * @see DarkMode::removeStatusBarCtrlSubclass()
+	 */
 	void setStatusBarCtrlSubclass(HWND hWnd)
 	{
 		LOGFONT lf{};
@@ -5601,11 +5646,31 @@ namespace DarkMode
 		DarkMode::setSubclass<StatusBarData>(hWnd, StatusBarSubclass, kStatusBarSubclassID, ::CreateFontIndirect(&lf));
 	}
 
+	/**
+	 * @brief Removes the owner drawn subclass from a status bar control.
+	 *
+	 * Cleans up the `StatusBarData` and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the status bar control.
+	 *
+	 * @see DarkMode::StatusBarSubclass()
+	 * @see DarkMode::setStatusBarCtrlSubclass()
+	 */
 	void removeStatusBarCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<StatusBarData>(hWnd, StatusBarSubclass, kStatusBarSubclassID);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a status bar control.
+	 *
+	 * Overload wrapper that applies the subclass only if `p._subclass` is `true`.
+	 *
+	 * @param hWnd  Handle to the status bar control.
+	 * @param p     Parameters controlling whether to apply subclassing.
+	 *
+	 * @see DarkMode::setStatusBarCtrlSubclass()
+	 */
 	static void setStatusBarCtrlSubclass(HWND hWnd, DarkModeParams p)
 	{
 		if (p._subclass)
@@ -5614,6 +5679,24 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @struct ProgressBarData
+	 * @brief Stores theme and buffer data for a progress bar control, along with its current state.
+	 *
+	 * Used to manage theming and double-buffered painting for progress bar controls.
+	 * Captures the current visual state (normal, paused, error) via `PBM_GETSTATE`.
+	 *
+	 * Members:
+	 * - `_themeData` : RAII-managed theme handle for `VSCLASS_PROGRESS`.
+	 * - `_bufferData` : Buffer wrapper for flicker-free custom painting.
+	 * - `_iStateID` : Current progress bar state (e.g., `PBFS_NORMAL`, `PBFS_PAUSED`, `PBFS_ERROR`, `PBFS_PARTIAL`).
+	 *
+	 * Constructor behavior:
+	 * - Initializes `_iStateID` by querying the control with `PBM_GETSTATE`.
+	 *
+	 * @see ThemeData
+	 * @see BufferData
+	 */
 	struct ProgressBarData
 	{
 		ThemeData _themeData{ VSCLASS_PROGRESS };
@@ -5626,6 +5709,22 @@ namespace DarkMode
 		{}
 	};
 
+	/**
+	 * @brief Calculates the filled and empty portions of a progress bar based on its current position.
+	 *
+	 * Retrieves the current progress position and range using `PBM_GETPOS` and `PBM_GETRANGE`,
+	 * then computes two rectangles:
+	 * - `rcFilled`: the portion of the progress bar that is filled.
+	 * - `rcEmpty`: the remaining portion that is unfilled.
+	 *
+	 * The function modifies `rcEmpty->left` to avoid overpainting the filled area.
+	 *
+	 * @param hWnd      Handle to the progress bar control.
+	 * @param rcEmpty   Pointer to the full client rectangle of the progress bar (in/out).
+	 * @param rcFilled  Pointer to a rectangle that will receive the filled portion (out).
+	 *
+	 * @note This function assumes horizontal progress bars.
+	 */
 	static void getProgressBarRects(HWND hWnd, RECT* rcEmpty, RECT* rcFilled)
 	{
 		const auto pos = static_cast<int>(::SendMessage(hWnd, PBM_GETPOS, 0, 0));
@@ -5647,6 +5746,20 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Custom paints a progress bar control with dark mode styling.
+	 *
+	 * Draws the progress bar frame, filled portion, and background using custom
+	 * brushes and themed drawing. Uses the current progress state to determine the
+	 * visual style (e.g., normal, paused, error).
+	 *
+	 * @param hWnd              Handle to the progress bar control.
+	 * @param hdc               Device context to paint into.
+	 * @param progressBarData   Reference to the control's theme and state data.
+	 *
+	 * @see ProgressBarData
+	 * @see DarkMode::getProgressBarRects()
+	 */
 	static void paintProgressBar(HWND hWnd, HDC hdc, const ProgressBarData& progressBarData)
 	{
 		const auto& hTheme = progressBarData._themeData.getHTheme();
@@ -5792,16 +5905,55 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies owner drawn subclassing to a progress bar control.
+	 *
+	 * Retrieves the progress bar state information and passes it to the subclass data
+	 * (`ProgressBarData`).
+	 *
+	 * @param hWnd Handle to the progress bar control.
+	 *
+	 * @note Uses `PBM_GETSTATE` to determine the current visual state.
+	 *
+	 * @see DarkMode::ProgressBarSubclass()
+	 * @see DarkMode::removeProgressBarCtrlSubclass()
+	 */
 	void setProgressBarCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, kProgressBarSubclassID, hWnd);
 	}
 
+	/**
+	 * @brief Removes the owner drawn subclass from a progress bar control.
+	 *
+	 * Cleans up the `ProgressBarData` and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the progress bar control.
+	 *
+	 * @see DarkMode::ProgressBarSubclass()
+	 * @see DarkMode::setProgressBarCtrlSubclass()
+	 */
 	void removeProgressBarCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, kProgressBarSubclassID);
 	}
 
+	/**
+	 * @brief Applies theming or subclassing to a progress bar control based on style and parameters.
+	 *
+	 * Conditionally applies either the classic theme or applies the owner drawn subclassing
+	 * depending on the control style and `DarkModeParams`.
+	 *
+	 * Behavior:
+	 * - If `p._theme` is `true` and the control uses `PBS_MARQUEE`, applies classic theme.
+	 * - Otherwise, if `p._subclass` is `true`, applies owner drawn subclassing.
+	 *
+	 * @param hWnd  Handle to the progress bar control.
+	 * @param p     Parameters controlling whether to apply theming or subclassing.
+	 *
+	 * @see DarkMode::setProgressBarClassicTheme()
+	 * @see DarkMode::setProgressBarCtrlSubclass()
+	 */
 	static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p)
 	{
 		const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
@@ -5815,6 +5967,20 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @struct StaticTextData
+	 * @brief Stores enabled status information for a static text control.
+	 *
+	 * Used to determine whether a static control (e.g., label or caption) should be drawn
+	 * using enabled or disabled colors.
+	 *
+	 * Members:
+	 * - `_isEnabled` : Indicates whether the control is currently enabled (`true`) or disabled (`false`).
+	 *
+	 * Constructor behavior:
+	 * - Default constructor initializes `_isEnabled` to `true`.
+	 * - Explicit constructor queries the control's enabled state via `IsWindowEnabled(hWnd)`.
+	 */
 	struct StaticTextData
 	{
 		bool _isEnabled = true;
@@ -5891,16 +6057,52 @@ namespace DarkMode
 		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
 
+	/**
+	 * @brief Applies workaround subclassing to a static control to handle visual glitch in disabled state.
+	 *
+	 * Retrieves the static control enabled state information and passes it to the subclass data
+	 * (`StaticTextData`) to handle visual glitch with static text in disabled state
+	 * via handling `WM_ENABLE` message.
+	 *
+	 * @param hWnd Handle to the static control.
+	 *
+	 * @note
+	 *  - Uses `IsWindowEnabled` to determine the current enabled state.
+	 *  - Works only if `WM_ENABLE` message is sent.
+	 *
+	 * @see DarkMode::StaticTextSubclass()
+	 * @see DarkMode::removeStaticTextCtrlSubclass()
+	 */
 	void setStaticTextCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::setSubclass<StaticTextData>(hWnd, StaticTextSubclass, kStaticTextSubclassID, hWnd);
 	}
 
+	/**
+	 * @brief Removes the workaround subclass from a static control.
+	 *
+	 * Cleans up the `StaticTextData` and detaches the control's subclass proc.
+	 *
+	 * @param hWnd Handle to the static control.
+	 *
+	 * @see DarkMode::StaticTextSubclass()
+	 * @see DarkMode::setStaticTextCtrlSubclass()
+	 */
 	void removeStaticTextCtrlSubclass(HWND hWnd)
 	{
 		DarkMode::removeSubclass<StaticTextData>(hWnd, StaticTextSubclass, kStaticTextSubclassID);
 	}
 
+	/**
+	 * @brief Applies workaround subclassing to a static control.
+	 *
+	 * Overload wrapper that applies the subclass only if `p._subclass` is `true`.
+	 *
+	 * @param hWnd  Handle to the static control.
+	 * @param p     Parameters controlling whether to apply subclassing.
+	 *
+	 * @see DarkMode::setStaticTextCtrlSubclass()
+	 */
 	static void setStaticTextCtrlSubclass(HWND hWnd, DarkModeParams p)
 	{
 		if (p._subclass)
