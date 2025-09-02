@@ -227,6 +227,8 @@ static void SelectAndRefreshMode(HWND hWnd, UINT checkID)
 	}
 
 	RedrawWindow(hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME);
+	SendMessage(hWnd, WM_NCACTIVATE, FALSE, NULL);
+	SendMessage(hWnd, WM_NCACTIVATE, TRUE, NULL);
 }
 
 //
