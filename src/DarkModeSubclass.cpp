@@ -3185,24 +3185,61 @@ namespace DarkMode
 		paintUpDownBtn(upDownData._rcPrev, isHotPrev);
 		paintUpDownBtn(upDownData._rcNext, isHotNext);
 
-		// Glyph part
-
-		auto hFont = reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0));
-		auto holdFont = static_cast<HFONT>(::SelectObject(hdc, hFont));
-
-		static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
-		const COLORREF clrText = isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getDarkerTextColor();
-
-		const LONG offset = upDownData._isHorizontal ? 1 : 0;
-		RECT rcTectPrev{ upDownData._rcPrev.left, upDownData._rcPrev.top, upDownData._rcPrev.right, upDownData._rcPrev.bottom - offset };
-		::SetTextColor(hdc, isHotPrev ? DarkMode::getTextColor() : clrText);
-		::DrawText(hdc, upDownData._isHorizontal ? L"<" : L"˄", -1, &rcTectPrev, dtFlags);
-
-		RECT rcTectNext{ upDownData._rcNext.left + offset, upDownData._rcNext.top, upDownData._rcNext.right, upDownData._rcNext.bottom - offset };
-		::SetTextColor(hdc, isHotNext ? DarkMode::getTextColor() : clrText);
-		::DrawText(hdc, upDownData._isHorizontal ? L">" : L"˅", -1, &rcTectNext, dtFlags);
-
-		::SelectObject(hdc, holdFont);
+		HTHEME hTheme = OpenThemeData(hWnd, L"Spin");
+		SIZE size;
+		GetThemePartSize(hTheme, nullptr, SPNP_UP, UPS_NORMAL, nullptr, TS_TRUE, &size);
+		LONG height = size.cy / 5;
+		LONG width = 1 + (height - 1) * 2;
+		auto paintArrow = [&](const RECT& rect, bool isHorizontal, bool isHot, bool isPrev) {
+			POINT pts[3];
+			LONG x = ((rect.left + rect.right) / 2) - ((width + 1) / 2);
+			LONG y = ((rect.top + rect.bottom) / 2) - ((height + 1) / 2);
+			if (isHorizontal) {
+				if (isPrev) {
+					pts[0].x = x + 1;
+					pts[0].y = y + width / 2;
+					pts[1].x = x + height + 1;
+					pts[1].y = y + width;
+					pts[2].x = x + height + 1;
+					pts[2].y = y - 1;
+				}
+				else {
+					pts[0].x = x + 1;
+					pts[0].y = y + width;
+					pts[1].x = x + height + 1;
+					pts[1].y = y + width / 2;
+					pts[2].x = x + 1;
+					pts[2].y = y - 1;
+				}
+			}
+			else {
+				if (isPrev) {
+					pts[0].x = x + width / 2 + 1;
+					pts[0].y = y;
+					pts[1].x = x + width + 1;
+					pts[1].y = y + height + 1;
+					pts[2].x = x;
+					pts[2].y = y + height + 1;
+				}
+				else {
+					pts[0].x = x + 1;
+					pts[0].y = y + 1;
+					pts[1].x = x + width + 1;
+					pts[1].y = y + 1;
+					pts[2].x = x + width / 2 + 1;
+					pts[2].y = y + height + 1;
+				}
+			}
+			const COLORREF color = isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getDarkerTextColor();
+			HBRUSH hBrush = ::CreateSolidBrush(isHot ? DarkMode::getTextColor() : color);
+			::SelectObject(hdc, ::GetStockObject(NULL_PEN));
+			auto hBrushBkup = ::SelectObject(hdc, hBrush);
+			::Polygon(hdc, pts, 3);
+			::SelectObject(hdc, hBrushBkup);
+		};
+		paintArrow(upDownData._rcPrev, upDownData._isHorizontal, isHotPrev, true);
+		paintArrow(upDownData._rcNext, upDownData._isHorizontal, isHotNext, false);
+		CloseThemeData(hTheme);
 	}
 
 	/**
