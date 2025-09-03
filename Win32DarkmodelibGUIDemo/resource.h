@@ -9,7 +9,6 @@
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
 #define IDI_DEMO                        107
-#define IDI_SMALL                       108
 #define IDC_DEMO                        109
 #define IDR_MAINFRAME                   128
 #define IDD_DARK_FONT_DIALOG            1000
@@ -21,7 +20,7 @@
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1

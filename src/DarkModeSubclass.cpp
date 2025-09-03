@@ -7892,6 +7892,13 @@ namespace DarkMode
 			DarkMode::setTitleBarThemeColor(hWnd);
 		}
 #endif
+		// on Windows 10 title bar needs refresh when changing colors
+		if (DarkMode::isAtLeastWindows10() && !DarkMode::isAtLeastWindows11())
+		{
+			const bool isActive = (hWnd == ::GetActiveWindow()) && (hWnd == ::GetForegroundWindow());
+			::SendMessage(hWnd, WM_NCACTIVATE, static_cast<WPARAM>(!isActive), 0);
+			::SendMessage(hWnd, WM_NCACTIVATE, static_cast<WPARAM>(isActive), 0);
+		}
 	}
 
 	/**
