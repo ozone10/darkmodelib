@@ -6111,6 +6111,18 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a tree view control.
+	 *
+	 * Sets custom text and background colors, applies a themed window style,
+	 * and applies themed tooltips for tree view items.
+	 *
+	 * @param hWnd  Handle to the tree view control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::setTreeViewWindowTheme()
+	 * @see DarkMode::setDarkTooltips()
+	 */
 	static void setTreeViewCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -6123,6 +6135,16 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies subclassing to a rebar control.
+	 *
+	 * Applies window subclassing to handle `WM_ERASEBKGND` message.
+	 *
+	 * @param hWnd  Handle to the rebar control.
+	 * @param p     Parameters controlling whether to apply subclassing.
+	 *
+	 * @see DarkMode::setWindowEraseBgSubclass()
+	 */
 	static void setRebarCtrlSubclass(HWND hWnd, DarkModeParams p)
 	{
 		if (p._subclass)
@@ -6131,6 +6153,18 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a toolbar control.
+	 *
+	 * Sets custom colors for line above toolbar panel
+	 * and applies themed tooltips for toolbar buttons.
+	 *
+	 * @param hWnd  Handle to the toolbar control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::setDarkLineAbovePanelToolbar()
+	 * @see DarkMode::setDarkTooltips()
+	 */
 	static void setToolbarCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -6140,6 +6174,14 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a scroll bar control.
+	 *
+	 * @param hWnd  Handle to the scroll bar control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::setDarkScrollBar()
+	 */
 	static void setScrollBarCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -6148,6 +6190,17 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a sys link control.
+	 *
+	 * Overload that enable `WM_CTLCOLORSTATIC` message handling
+	 * depending on `DarkModeParams` for the syslink control.
+	 *
+	 * @param hWnd  Handle to the sys link control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::enableSysLinkCtrlCtlColor()
+	 */
 	static void enableSysLinkCtrlCtlColor(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -6156,15 +6209,35 @@ namespace DarkMode
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a trackbar control.
+	 *
+	 * Sets transparent background via `TBS_TRANSPARENTBKGND` flag
+	 * and applies themed tooltips for trackbar buttons.
+	 * 
+	 * @param hWnd  Handle to the trackbar control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::setWindowStyle()
+	 * @see DarkMode::setDarkTooltips()
+	 */
 	static void setTrackbarCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
 		{
-			DarkMode::setDarkTooltips(hWnd, ToolTipsType::trackbar);
 			DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled(), TBS_TRANSPARENTBKGND);
+			DarkMode::setDarkTooltips(hWnd, ToolTipsType::trackbar);
 		}
 	}
 
+	/**
+	 * @brief Applies theming to a rich edit control.
+	 *
+	 * @param hWnd  Handle to the rich edit control.
+	 * @param p     Parameters controlling whether to apply theming.
+	 *
+	 * @see DarkMode::setDarkRichEdit()
+	 */
 	static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
 	{
 		if (p._theme)
@@ -7803,12 +7876,12 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
+	 * @brief Configures the sys link control to be affected by `WM_CTLCOLORSTATIC` message.
 	 *
 	 * Configures all items to either use default system link colors if in classic mode,
 	 * or to be affected by `WM_CTLCOLORSTATIC` message from its parent.
 	 *
-	 * @param hWnd Handle to the SysLink control.
+	 * @param hWnd Handle to the sys link control.
 	 *
 	 * @note Will affect all items, even if it's static (non-clickable).
 	 */
