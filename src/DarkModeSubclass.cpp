@@ -220,6 +220,10 @@ static bool SetClrFromIni(const std::wstring& sectionName, const std::wstring& k
 }
 #endif // !defined(_DARKMODELIB_NO_INI_CONFIG)
 
+/**
+ * @namespace DarkMode
+ * @brief Provides dark mode theming, subclassing, and rendering utilities for most Win32 controls.
+ */
 namespace DarkMode
 {
 	/**
@@ -404,6 +408,84 @@ namespace DarkMode
 #endif
 		} g_dmCfg;
 	} // anonymous namespace
+
+	/**
+	 * @class GdiObject
+	 * @brief RAII wrapper for managing GDI objects in a device context.
+	 *
+	 * Automatically selects a GDI object (e.g., brush, pen, font) into a device context (DC),
+	 * stores the previous object, and restores it upon destruction. Optionally deletes the
+	 * selected object unless marked as shared.
+	 *
+	 * Logic:
+	 * - Prevents resource leaks and ensures proper cleanup of GDI objects.
+	 * - Supports shared objects (e.g., system fonts or brushes) via the `isShared` flag.
+	 * - Uses `SelectObject()` to apply and restore the DC state.
+	 * - Deletes the object via `DeleteObject()` unless shared.
+	 *
+	 * Constructors:
+	 * - `GdiObject(HDC hdc, HGDIOBJ obj, bool isShared)`
+	 *   Selects the object into the DC and marks it as shared or owned.
+	 * - `GdiObject(HDC hdc, HGDIOBJ obj)`
+	 *   Convenience constructor for non-shared objects.
+	 *
+	 * Destructor:
+	 * - Automatically restores the previous object and deletes the selected one if owned.
+	 *
+	 * Methods:
+	 * - `void deleteObj()`
+	 *   Manually restores and deletes the object (if not shared).
+	 *
+	 * @note The default constructor is deleted to enforce explicit initialization.
+	 */
+	class GdiObject
+	{
+	public:
+		GdiObject() = delete;
+		explicit GdiObject(HDC hdc, HGDIOBJ obj, bool isShared)
+			: _hdc(hdc)
+			, _obj(obj)
+			, _isShared(isShared)
+		{
+			if (_obj != nullptr)
+			{
+				_oldObj = ::SelectObject(hdc, obj);
+			}
+		}
+
+		explicit GdiObject(HDC hdc, HGDIOBJ obj)
+			: GdiObject(hdc, obj, false)
+		{}
+
+		~GdiObject()
+		{
+			deleteObj();
+		}
+
+		void deleteObj()
+		{
+			if (_obj != nullptr)
+			{
+				::SelectObject(_hdc, _oldObj);
+				if (!_isShared)
+				{
+					::DeleteObject(_obj);
+					_obj = nullptr;
+				}
+			}
+		}
+
+		operator HGDIOBJ() const
+		{
+			return _obj;
+		}
+
+	private:
+		HDC _hdc = nullptr;
+		HGDIOBJ _obj = nullptr;
+		HGDIOBJ _oldObj = nullptr;
+		bool _isShared = false;
+	};
 
 	struct Brushes
 	{
@@ -3048,6 +3130,7 @@ namespace DarkMode
 	 */
 	struct UpDownData
 	{
+		ThemeData _themeData{ VSCLASS_SPIN };
 		BufferData _bufferData;
 
 		RECT _rcClient{};
@@ -3072,11 +3155,11 @@ namespace DarkMode
 			{
 				const RECT rcArrowLeft{
 					_rcClient.left, _rcClient.top,
-					_rcClient.right - ((_rcClient.right - _rcClient.left) / 2) - 1, _rcClient.bottom
+					_rcClient.right - ((_rcClient.right - _rcClient.left) / 2), _rcClient.bottom
 				};
 
 				const RECT rcArrowRight{
-					rcArrowLeft.right + 1, _rcClient.top,
+					rcArrowLeft.right, _rcClient.top,
 					_rcClient.right, _rcClient.bottom
 				};
 
@@ -3121,35 +3204,34 @@ namespace DarkMode
 	};
 
 	/**
-	 * @brief Custom paints a updown (spinner) control.
+	 * @brief Custom paints an updown (spinner) control.
 	 *
-	 * Draws the two-button control using custom color brushes, pen styles, and directional
-	 * arrows. Adapts to both vertical and horizontal orientation based on @ref UpDownData.
-	 * Applies hover highlighting and draws appropriate glyphs (`<`/`>` or `˄`/`˅`) using
-	 * the control's font.
+	 * Draws the two-button spinner control using either themed drawing or manual
+	 * owner-drawn logic depending on OS version and theme availability. Supports both
+	 * vertical and horizontal orientations and adapts to hover and disabled states.
 	 *
 	 * Paint logic:
 	 * - Background fill with dialog background brush
 	 * - Rounded corners (optional, based on Windows 11 and parent class)
 	 * - Direction-aware layout and glyph placement
 	 *
-	 * @param hWnd          Handle to the updown control being painted.
+	 * @param hWnd          Handle to the updown control.
 	 * @param hdc           Device context to draw into.
 	 * @param upDownData    Reference to layout and state information (segments, orientation, corner radius).
-	 *
-	 * @note Assumes the DC has already been prepared for painting.
 	 *
 	 * @see UpDownData
 	 */
 	static void paintUpDown(HWND hWnd, HDC hdc, UpDownData& upDownData)
 	{
+		auto& themeData = upDownData._themeData;
+		const bool hasTheme = themeData.ensureTheme(hWnd);
+		const auto& hTheme = themeData.getHTheme();
+
 		const bool isDisabled = ::IsWindowEnabled(hWnd) == FALSE;
-		const int roundness = upDownData._cornerRoundness;
+		const bool isHorz = upDownData._isHorizontal;
 
 		::FillRect(hdc, &upDownData._rcClient, DarkMode::getDlgBackgroundBrush());
 		::SetBkMode(hdc, TRANSPARENT);
-
-		// Button part
 
 		POINT ptCursor{};
 		::GetCursorPos(&ptCursor);
@@ -3160,49 +3242,169 @@ namespace DarkMode
 
 		upDownData._wasHotNext = !isHotPrev && (::PtInRect(&upDownData._rcClient, ptCursor) == TRUE);
 
-		auto paintUpDownBtn = [&](const RECT& rect, bool isHot) -> void {
-			HBRUSH hBrush = nullptr;
-			HPEN hPen = nullptr;
-			if (isDisabled)
+		if (hasTheme && DarkMode::isAtLeastWindows11())
+		{
+			// all 4 variants of updown control buttons have enums with same values
+			auto getStateId = [&](bool isHot) -> int {
+				if (isDisabled)
+				{
+					return UPS_DISABLED;
+				}
+				if (isHot)
+				{
+					return UPS_HOT;
+				}
+				return UPS_NORMAL;
+			};
+
+			const int stateIdPrev = getStateId(isHotPrev);
+			const int stateIdNext = getStateId(isHotNext);
+
+			RECT rcPrev{ upDownData._rcPrev };
+			RECT rcNext{ upDownData._rcNext };
+
+			int partIdPrev = SPNP_DOWNHORZ;
+			int partIdNext = SPNP_UPHORZ;
+
+			if (!isHorz)
 			{
-				hBrush = DarkMode::getDlgBackgroundBrush();
-				hPen = DarkMode::getDisabledEdgePen();
+				--rcPrev.left;
+				--rcNext.left;
+
+				partIdPrev = SPNP_UP;
+				partIdNext = SPNP_DOWN;
 			}
-			else if (isHot)
+
+			::DrawThemeBackground(hTheme, hdc, partIdPrev, stateIdPrev, &rcPrev, nullptr);
+			::DrawThemeBackground(hTheme, hdc, partIdNext, stateIdNext, &rcNext, nullptr);
+		}
+		else
+		{
+			// Button part
+
+			auto paintUpDownBtn = [&](const RECT& rect, bool isHot) -> void {
+				HBRUSH hBrush = nullptr;
+				HPEN hPen = nullptr;
+				if (isDisabled)
+				{
+					hBrush = DarkMode::getDlgBackgroundBrush();
+					hPen = DarkMode::getDisabledEdgePen();
+				}
+				else if (isHot)
+				{
+					hBrush = DarkMode::getHotBackgroundBrush();
+					hPen = DarkMode::getHotEdgePen();
+				}
+				else
+				{
+					hBrush = DarkMode::getCtrlBackgroundBrush();
+					hPen = DarkMode::getEdgePen();
+				}
+
+				const int roundness = upDownData._cornerRoundness;
+				DarkMode::paintRoundRect(hdc, rect, hPen, hBrush, roundness, roundness);
+			};
+
+			paintUpDownBtn(upDownData._rcPrev, isHotPrev);
+			paintUpDownBtn(upDownData._rcNext, isHotNext);
+
+			// Glyph part
+
+			auto getGlyphColor = [&](bool isHot) -> COLORREF {
+				if (isDisabled)
+				{
+					return DarkMode::getDisabledTextColor();
+				}
+				if (isHot)
+				{
+					return DarkMode::getTextColor();
+				}
+				return DarkMode::getDarkerTextColor();
+			};
+
+			if (hasTheme)
 			{
-				hBrush = DarkMode::getHotBackgroundBrush();
-				hPen = DarkMode::getHotEdgePen();
+				SIZE size{};
+				::GetThemePartSize(hTheme, nullptr, SPNP_UP, UPS_NORMAL, nullptr, TS_TRUE, &size);
+
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowLeft{ { {1.0f, 0.0f}, {0.0f, 0.5f}, {1.0f, 1.0f} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowRight{ { {0.0f, 0.0f}, {1.0f, 0.5f}, {0.0f, 1.0f} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowUp{ { {0.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowDown{ { {0.0f, 0.0f}, {0.5f, 1.0f}, {1.0f, 0.0f} } };
+
+				static constexpr float scaleFactor = 3.0f;
+				const auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
+				const auto baseSize = (static_cast<float>(size.cy - offsetSize) / scaleFactor) + offsetSize;
+
+				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
+					POINTFLOAT sizeArrow{ baseSize, baseSize };
+					float offsetPosX = 0.0f;
+					float offsetPosY = 0.0f;
+					std::array<POINTFLOAT, 3> ptsArrowSelected{};
+					if (isHorz)
+					{
+						if (isPrev)
+						{
+							ptsArrowSelected = ptsArrowLeft;
+							offsetPosX = 1.0f;
+						}
+						else
+						{
+							ptsArrowSelected = ptsArrowRight;
+							offsetPosX = -1.0f;
+						}
+						sizeArrow.x *= 0.5f; // ratio adjustment
+					}
+					else
+					{
+						if (isPrev)
+						{
+							ptsArrowSelected = ptsArrowUp;
+							offsetPosY = 1.0f;
+						}
+						else
+						{
+							ptsArrowSelected = ptsArrowDown;
+						}
+						sizeArrow.y *= 0.5f;
+					}
+
+					const auto xPos = static_cast<float>(rect.left) + (static_cast<float>(rect.right - rect.left) - sizeArrow.x - offsetPosX) / 2.0f;
+					const auto yPos = static_cast<float>(rect.top) + (static_cast<float>(rect.bottom - rect.top) - sizeArrow.y - offsetPosY) / 2.0f;
+
+					std::array<POINT, 3> ptsArrow{};
+					for (size_t i = 0; i < 3; ++i)
+					{
+						ptsArrow.at(i).x = static_cast<LONG>(ptsArrowSelected.at(i).x * sizeArrow.x + xPos);
+						ptsArrow.at(i).y = static_cast<LONG>(ptsArrowSelected.at(i).y * sizeArrow.y + yPos);
+					}
+
+					const COLORREF clrSelected = getGlyphColor(isHot);
+					GdiObject hBrush{ hdc, ::CreateSolidBrush(clrSelected) };
+					GdiObject hPen{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
+
+					::Polygon(hdc, ptsArrow.data(), static_cast<int>(ptsArrow.size()));
+				};
+
+				paintArrow(upDownData._rcPrev, isHotPrev, true);
+				paintArrow(upDownData._rcNext, isHotNext, false);
 			}
 			else
 			{
-				hBrush = DarkMode::getCtrlBackgroundBrush();
-				hPen = DarkMode::getEdgePen();
+				GdiObject hFont{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+
+				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
+				const LONG offset = isHorz ? 1 : 0;
+
+				RECT rcTextPrev{ upDownData._rcPrev.left, upDownData._rcPrev.top, upDownData._rcPrev.right, upDownData._rcPrev.bottom - offset };
+				::SetTextColor(hdc, getGlyphColor(isHotPrev));
+				::DrawText(hdc, isHorz ? L"<" : L"˄", -1, & rcTextPrev, dtFlags);
+
+				RECT rcTextNext{ upDownData._rcNext.left + offset, upDownData._rcNext.top, upDownData._rcNext.right, upDownData._rcNext.bottom - offset };
+				::SetTextColor(hdc, getGlyphColor(isHotNext));
+				::DrawText(hdc, isHorz ? L">" : L"˅", -1, & rcTextNext, dtFlags);
 			}
-
-			DarkMode::paintRoundRect(hdc, rect, hPen, hBrush, roundness, roundness);
-		};
-
-		paintUpDownBtn(upDownData._rcPrev, isHotPrev);
-		paintUpDownBtn(upDownData._rcNext, isHotNext);
-
-		// Glyph part
-
-		auto hFont = reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0));
-		auto holdFont = static_cast<HFONT>(::SelectObject(hdc, hFont));
-
-		static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
-		const COLORREF clrText = isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getDarkerTextColor();
-
-		const LONG offset = upDownData._isHorizontal ? 1 : 0;
-		RECT rcTectPrev{ upDownData._rcPrev.left, upDownData._rcPrev.top, upDownData._rcPrev.right, upDownData._rcPrev.bottom - offset };
-		::SetTextColor(hdc, isHotPrev ? DarkMode::getTextColor() : clrText);
-		::DrawText(hdc, upDownData._isHorizontal ? L"<" : L"˄", -1, &rcTectPrev, dtFlags);
-
-		RECT rcTectNext{ upDownData._rcNext.left + offset, upDownData._rcNext.top, upDownData._rcNext.right, upDownData._rcNext.bottom - offset };
-		::SetTextColor(hdc, isHotNext ? DarkMode::getTextColor() : clrText);
-		::DrawText(hdc, upDownData._isHorizontal ? L">" : L"˅", -1, &rcTectNext, dtFlags);
-
-		::SelectObject(hdc, holdFont);
+		}
 	}
 
 	/**
@@ -3230,6 +3432,7 @@ namespace DarkMode
 	)
 	{
 		auto* pUpDownData = reinterpret_cast<UpDownData*>(dwRefData);
+		auto& themeData = pUpDownData->_themeData;
 		const auto& hMemDC = pUpDownData->_bufferData.getHMemDC();
 
 		switch (uMsg)
@@ -3243,7 +3446,7 @@ namespace DarkMode
 
 			case WM_ERASEBKGND:
 			{
-				if (!DarkMode::isEnabled())
+				if (!DarkMode::isEnabled() || !themeData.ensureTheme(hWnd))
 				{
 					break;
 				}
@@ -3297,7 +3500,14 @@ namespace DarkMode
 			case WM_DPICHANGED_AFTERPARENT:
 			{
 				pUpDownData->updateRect(hWnd);
+				themeData.closeTheme();
 				return 0;
+			}
+
+			case WM_THEMECHANGED:
+			{
+				themeData.closeTheme();
+				break;
 			}
 
 			case WM_MOUSEMOVE:
@@ -6191,12 +6401,12 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Applies theming to a sys link control.
+	 * @brief Applies theming to a SysLink control.
 	 *
 	 * Overload that enable `WM_CTLCOLORSTATIC` message handling
 	 * depending on `DarkModeParams` for the syslink control.
 	 *
-	 * @param hWnd  Handle to the sys link control.
+	 * @param hWnd  Handle to the SysLink control.
 	 * @param p     Parameters controlling whether to apply theming.
 	 *
 	 * @see DarkMode::enableSysLinkCtrlCtlColor()
@@ -7876,12 +8086,12 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Configures the sys link control to be affected by `WM_CTLCOLORSTATIC` message.
+	 * @brief Configures the SysLink control to be affected by `WM_CTLCOLORSTATIC` message.
 	 *
 	 * Configures all items to either use default system link colors if in classic mode,
 	 * or to be affected by `WM_CTLCOLORSTATIC` message from its parent.
 	 *
-	 * @param hWnd Handle to the sys link control.
+	 * @param hWnd Handle to the SysLink control.
 	 *
 	 * @note Will affect all items, even if it's static (non-clickable).
 	 */
@@ -8966,7 +9176,7 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Handles text and background colorizing for syslink controls.
+	 * @brief Handles text and background colorizing for SysLink controls.
 	 *
 	 * Sets the text and background colors on the provided HDC.
 	 * Colors depend on if control is enabled.

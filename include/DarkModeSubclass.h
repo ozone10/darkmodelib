@@ -28,6 +28,10 @@
 #pragma comment(lib, "Gdi32.lib")
 #endif
 
+/**
+ * @namespace DarkMode
+ * @brief Provides dark mode theming, subclassing, and rendering utilities for most Win32 controls.
+ */
 namespace DarkMode
 {
 	struct Colors
@@ -572,7 +576,7 @@ namespace DarkMode
 	/// Handles text and background colorizing for static text controls.
 	[[nodiscard]] LRESULT onCtlColorDlgStaticText(HDC hdc, bool isTextEnabled);
 
-	/// Handles text and background colorizing for syslink controls.
+	/// Handles text and background colorizing for SysLink controls.
 	[[nodiscard]] LRESULT onCtlColorDlgLinkText(HDC hdc, bool isTextEnabled = true);
 
 	/// Handles text and background colorizing for list box controls.
