@@ -89,7 +89,7 @@ public:
 	ModuleHandle() = delete;
 
 	explicit ModuleHandle(const wchar_t* moduleName)
-		: hModule(LoadLibraryEx(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
+		: m_hModule(LoadLibraryEx(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
 	{}
 
 	ModuleHandle(const ModuleHandle&) = delete;
@@ -100,24 +100,24 @@ public:
 
 	~ModuleHandle()
 	{
-		if (hModule != nullptr)
+		if (m_hModule != nullptr)
 		{
-			FreeLibrary(hModule);
+			FreeLibrary(m_hModule);
 		}
 	}
 
 	[[nodiscard]] HMODULE get() const
 	{
-		return hModule;
+		return m_hModule;
 	}
 
 	[[nodiscard]] bool isLoaded() const
 	{
-		return hModule != nullptr;
+		return m_hModule != nullptr;
 	}
 
 private:
-	HMODULE hModule = nullptr;
+	HMODULE m_hModule = nullptr;
 };
 
 enum IMMERSIVE_HC_CACHE_MODE

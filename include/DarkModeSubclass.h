@@ -384,18 +384,18 @@ namespace DarkMode
 	/// Removes the owner drawn subclass from a groupbox button control.
 	void removeGroupboxCtrlSubclass(HWND hWnd);
 
-	/// Applies owner drawn subclassing and theming to an updown (spinner) control.
+	/// Applies owner drawn subclassing and theming to an up-down (spinner) control.
 	void setUpDownCtrlSubclass(HWND hWnd);
-	/// Removes the owner drawn subclass from a updown (spinner) control.
+	/// Removes the owner drawn subclass from a up-down (spinner) control.
 	void removeUpDownCtrlSubclass(HWND hWnd);
 
-	/// Applies a subclass to detect and subclass tab control's updown (spinner) child.
+	/// Applies a subclass to detect and subclass tab control's up-down (spinner) child.
 	void setTabCtrlUpDownSubclass(HWND hWnd);
-	/// Removes the subclass procedure for a tab control's updown (spinner) child detection.
+	/// Removes the subclass procedure for a tab control's up-down (spinner) child detection.
 	void removeTabCtrlUpDownSubclass(HWND hWnd);
-	/// Applies owner drawn and updown (spinner) child detection subclassings for a tab control.
+	/// Applies owner drawn and up-down (spinner) child detection subclassings for a tab control.
 	void setTabCtrlSubclass(HWND hWnd);
-	/// Removes owner drawn and updown (spinner) child detection subclasses.
+	/// Removes owner drawn and up-down (spinner) child detection subclasses.
 	void removeTabCtrlSubclass(HWND hWnd);
 
 	/// Applies owner drawn custom border subclassing to a list box or edit control.
@@ -408,9 +408,9 @@ namespace DarkMode
 	/// Removes the owner drawn subclass from a combo box control.
 	void removeComboBoxCtrlSubclass(HWND hWnd);
 
-	/// Applies subclassing to a combo box ex control to handle its child list box and edit controls.
+	/// Applies subclassing to a ComboBoxEx control to handle its child list box and edit controls.
 	void setComboBoxExCtrlSubclass(HWND hWnd);
-	///  Removes the child handling subclass from a combo box ex control.
+	///  Removes the child handling subclass from a ComboBoxEx control.
 	void removeComboBoxExCtrlSubclass(HWND hWnd);
 
 	/// Applies subclassing to a list view control to handle custom colors.
