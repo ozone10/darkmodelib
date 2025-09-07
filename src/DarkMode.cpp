@@ -223,7 +223,7 @@ static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 static fnRefreshImmersiveColorPolicyState pfRefreshImmersiveColorPolicyState = nullptr;
 static fnGetIsImmersiveColorUsingHighContrast pfGetIsImmersiveColorUsingHighContrast = nullptr;
 // 1903 18362
-//static fnShouldSystemUseDarkMode _ShouldSystemUseDarkMode = nullptr;
+//static fnShouldSystemUseDarkMode pfShouldSystemUseDarkMode = nullptr;
 static fnSetPreferredAppMode pfSetPreferredAppMode = nullptr;
 
 bool g_darkModeSupported = false;
