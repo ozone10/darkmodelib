@@ -475,7 +475,13 @@ namespace DarkMode
 			}
 		}
 
-		operator HGDIOBJ() const
+		GdiObject(const GdiObject&) = delete;
+		GdiObject& operator=(const GdiObject&) = delete;
+
+		GdiObject(GdiObject&&) = delete;
+		GdiObject& operator=(GdiObject&&) = delete;
+
+		explicit operator HGDIOBJ() const
 		{
 			return m_hObj;
 		}
@@ -3327,61 +3333,61 @@ namespace DarkMode
 				SIZE size{};
 				::GetThemePartSize(hTheme, nullptr, SPNP_UP, UPS_NORMAL, nullptr, TS_TRUE, &size);
 
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowLeft{ { {1.0f, 0.0f}, {0.0f, 0.5f}, {1.0f, 1.0f} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowRight{ { {0.0f, 0.0f}, {1.0f, 0.5f}, {0.0f, 1.0f} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowUp{ { {0.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowDown{ { {0.0f, 0.0f}, {0.5f, 1.0f}, {1.0f, 0.0f} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowLeft{ { {1.0F, 0.0F}, {0.0F, 0.5F}, {1.0F, 1.0F} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowRight{ { {0.0F, 0.0F}, {1.0F, 0.5F}, {0.0F, 1.0F} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowUp{ { {0.0F, 1.0F}, {0.5F, 0.0F}, {1.0F, 1.0F} } };
+				static constexpr std::array<POINTFLOAT, 3> ptsArrowDown{ { {0.0F, 0.0F}, {0.5F, 1.0F}, {1.0F, 0.0F} } };
 
-				static constexpr float scaleFactor = 3.0f;
+				static constexpr float scaleFactor = 3.0F;
 				const auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
 				const auto baseSize = (static_cast<float>(size.cy - offsetSize) / scaleFactor) + offsetSize;
 
 				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
 					POINTFLOAT sizeArrow{ baseSize, baseSize };
-					float offsetPosX = 0.0f;
-					float offsetPosY = 0.0f;
+					float offsetPosX = 0.0F;
+					float offsetPosY = 0.0F;
 					std::array<POINTFLOAT, 3> ptsArrowSelected{};
 					if (isHorz)
 					{
 						if (isPrev)
 						{
 							ptsArrowSelected = ptsArrowLeft;
-							offsetPosX = 1.0f;
+							offsetPosX = 1.0F;
 						}
 						else
 						{
 							ptsArrowSelected = ptsArrowRight;
-							offsetPosX = -1.0f;
+							offsetPosX = -1.0F;
 						}
-						sizeArrow.x *= 0.5f; // ratio adjustment
+						sizeArrow.x *= 0.5F; // ratio adjustment
 					}
 					else
 					{
 						if (isPrev)
 						{
 							ptsArrowSelected = ptsArrowUp;
-							offsetPosY = 1.0f;
+							offsetPosY = 1.0F;
 						}
 						else
 						{
 							ptsArrowSelected = ptsArrowDown;
 						}
-						sizeArrow.y *= 0.5f;
+						sizeArrow.y *= 0.5F;
 					}
 
-					const auto xPos = static_cast<float>(rect.left) + (static_cast<float>(rect.right - rect.left) - sizeArrow.x - offsetPosX) / 2.0f;
-					const auto yPos = static_cast<float>(rect.top) + (static_cast<float>(rect.bottom - rect.top) - sizeArrow.y - offsetPosY) / 2.0f;
+					const auto xPos = static_cast<float>(rect.left) + ((static_cast<float>(rect.right - rect.left) - sizeArrow.x - offsetPosX) / 2.0F);
+					const auto yPos = static_cast<float>(rect.top) + ((static_cast<float>(rect.bottom - rect.top) - sizeArrow.y - offsetPosY) / 2.0F);
 
 					std::array<POINT, 3> ptsArrow{};
 					for (size_t i = 0; i < 3; ++i)
 					{
-						ptsArrow.at(i).x = static_cast<LONG>(ptsArrowSelected.at(i).x * sizeArrow.x + xPos);
-						ptsArrow.at(i).y = static_cast<LONG>(ptsArrowSelected.at(i).y * sizeArrow.y + yPos);
+						ptsArrow.at(i).x = static_cast<LONG>((ptsArrowSelected.at(i).x * sizeArrow.x) + xPos);
+						ptsArrow.at(i).y = static_cast<LONG>((ptsArrowSelected.at(i).y * sizeArrow.y) + yPos);
 					}
 
 					const COLORREF clrSelected = getGlyphColor(isHot);
-					GdiObject hBrush{ hdc, ::CreateSolidBrush(clrSelected) };
-					GdiObject hPen{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
+					const GdiObject hBrush{ hdc, ::CreateSolidBrush(clrSelected) };
+					const GdiObject hPen{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
 
 					::Polygon(hdc, ptsArrow.data(), static_cast<int>(ptsArrow.size()));
 				};
@@ -3391,7 +3397,7 @@ namespace DarkMode
 			}
 			else
 			{
-				GdiObject hFont{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+				const GdiObject hFont{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
 
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
 				const LONG offset = isHorz ? 1 : 0;
@@ -3671,7 +3677,7 @@ namespace DarkMode
 			TabCtrl_GetItemRect(hWnd, i, &rcItem);
 
 			RECT rcIntersect{};
-			if (::IntersectRect(&rcIntersect, &rect, &rcItem) == false)
+			if (::IntersectRect(&rcIntersect, &rect, &rcItem) == FALSE)
 			{
 				continue; // Skip to the next iteration when there is no intersection
 			}
