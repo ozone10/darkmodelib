@@ -9566,16 +9566,10 @@ namespace DarkMode
 		BOOL* pfVerificationFlagChecked
 	)
 	{
-		if (DarkMode::isExperimentalActive())
-		{
-			DarkMode::hookGetThemeColor();
-			const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
-			DarkMode::unhookGetThemeColor();
-			return retVal;
-		}
-
+		DarkMode::hookGetThemeColor();
+		const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
 		DarkMode::unhookGetThemeColor();
-		return ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
+		return retVal;
 	}
 } // namespace DarkMode
 

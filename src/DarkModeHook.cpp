@@ -5,11 +5,6 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- *
- * This file incorporates work from the win32-darkmode project:
- *  https://github.com/ysc3839/win32-darkmode
- *  which is covered by the MIT License.
- *  See LICENSE-win32-darkmode for more information.
  */
 
 
@@ -300,6 +295,10 @@ static HTHEME g_hDarkTheme = nullptr;
 static HRESULT WINAPI MyGetThemeColor(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF* pColor)
 {
 	const HRESULT retVal = g_hookDataGetThemeColor.m_trueFn(hTheme, iPartId, iStateId, iPropId, pColor);
+	if (!g_darkModeEnabled)
+	{
+		return retVal;
+	}
 
 	if (iPropId == TMT_TEXTCOLOR)
 	{
