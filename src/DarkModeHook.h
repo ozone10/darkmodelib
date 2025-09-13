@@ -21,3 +21,6 @@ void FixDarkScrollBar();
 void SetMySysColor(int nIndex, COLORREF clr);
 bool HookSysColor();
 void UnhookSysColor();
+
+bool HookGetThemeColor();
+void UnhookGetThemeColor();
