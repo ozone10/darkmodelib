@@ -13,7 +13,7 @@
 #include <windows.h>
 
 template <typename P>
-static auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
+inline auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
 {
 	if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
 	{
@@ -24,7 +24,7 @@ static auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
 }
 
 template <typename P>
-static auto loadFn(HMODULE handle, P& pointer, WORD index) -> bool
+inline auto loadFn(HMODULE handle, P& pointer, WORD index) -> bool
 {
 	return loadFn(handle, pointer, MAKEINTRESOURCEA(index));
 }

@@ -27,8 +27,8 @@
 
 #include "DarkMode.h"
 
-#include "ModuleHelper.h"
 #include "DarkModeHook.h"
+#include "ModuleHelper.h"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800
 #pragma warning(disable : 4191)

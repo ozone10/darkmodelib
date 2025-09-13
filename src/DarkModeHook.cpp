@@ -75,9 +75,9 @@ struct HookData
 {
 	T m_trueFn = nullptr;
 	size_t m_ref = 0;
+	fnFindThunkInModule m_findFn = nullptr;
 	const char* m_dllName = nullptr;
 	const char* m_fnName = nullptr;
-	fnFindThunkInModule m_findFn = nullptr;
 };
 
 template <typename T>
@@ -299,7 +299,7 @@ static HTHEME g_hDarkTheme = nullptr;
 
 static HRESULT WINAPI MyGetThemeColor(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF* pColor)
 {
-	HRESULT retVal = g_hookDataGetThemeColor.m_trueFn(hTheme, iPartId, iStateId, iPropId, pColor);
+	const HRESULT retVal = g_hookDataGetThemeColor.m_trueFn(hTheme, iPartId, iStateId, iPropId, pColor);
 
 	if (iPropId == TMT_TEXTCOLOR)
 	{
@@ -314,6 +314,8 @@ static HRESULT WINAPI MyGetThemeColor(HTHEME hTheme, int iPartId, int iStateId, 
 			case TDLG_CONTENTPANE:
 			case TDLG_EXPANDOTEXT:
 			case TDLG_VERIFICATIONTEXT:
+			case TDLG_FOOTNOTEPANE:
+			case TDLG_EXPANDEDFOOTERAREA:
 			{
 				if (g_hDarkTheme != nullptr)
 				{
@@ -347,8 +349,9 @@ bool HookGetThemeColor()
 void UnhookGetThemeColor()
 {
 	UnhookFunction<fnGetThemeColor>(g_hookDataGetThemeColor);
-	if (g_hDarkTheme != nullptr)
+	if (g_hDarkTheme != nullptr && g_hookDataGetThemeColor.m_ref == 0)
 	{
 		CloseThemeData(g_hDarkTheme);
+		g_hDarkTheme = nullptr;
 	}
 }
