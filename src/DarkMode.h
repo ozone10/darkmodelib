@@ -30,15 +30,8 @@ void SetTitleBarThemeColor(HWND hWnd, BOOL dark);
 [[nodiscard]] bool IsColorSchemeChangeMessage(LPARAM lParam);
 [[nodiscard]] bool IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam);
 void AllowDarkModeForApp(bool allow);
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-void EnableDarkScrollBarForWindowAndChildren(HWND hWnd);
-#endif
 void InitDarkMode();
 void SetDarkMode(bool useDark, bool fixDarkScrollbar);
 [[nodiscard]] bool IsWindows10();
 [[nodiscard]] bool IsWindows11();
 [[nodiscard]] DWORD GetWindowsBuildNumber();
-
-void SetMySysColor(int nIndex, COLORREF clr);
-bool HookSysColor();
-void UnhookSysColor();

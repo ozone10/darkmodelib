@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MPL-2.0
+
+/*
+ * Copyright (c) 2025 ozone10
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+
+#pragma once
+
+#include <windows.h>
+
+template <typename P>
+static auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
+{
+	if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
+	{
+		pointer = reinterpret_cast<P>(proc);
+		return true;
+	}
+	return false;
+}
+
+template <typename P>
+static auto loadFn(HMODULE handle, P& pointer, WORD index) -> bool
+{
+	return loadFn(handle, pointer, MAKEINTRESOURCEA(index));
+}
+
+class ModuleHandle
+{
+public:
+	ModuleHandle() = delete;
+
+	explicit ModuleHandle(const wchar_t* moduleName)
+		: m_hModule(LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
+	{}
+
+	ModuleHandle(const ModuleHandle&) = delete;
+	ModuleHandle& operator=(const ModuleHandle&) = delete;
+
+	ModuleHandle(ModuleHandle&&) = delete;
+	ModuleHandle& operator=(ModuleHandle&&) = delete;
+
+	~ModuleHandle()
+	{
+		if (m_hModule != nullptr)
+		{
+			FreeLibrary(m_hModule);
+			m_hModule = nullptr;
+		}
+	}
+
+	[[nodiscard]] HMODULE get() const
+	{
+		return m_hModule;
+	}
+
+	[[nodiscard]] bool isLoaded() const
+	{
+		return m_hModule != nullptr;
+	}
+
+private:
+	HMODULE m_hModule = nullptr;
+};

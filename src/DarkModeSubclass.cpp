@@ -41,6 +41,7 @@
 #include <string>
 
 #include "DarkMode.h"
+#include "DarkModeHook.h"
 #include "UAHMenuBar.h"
 
 #include "Version.h"

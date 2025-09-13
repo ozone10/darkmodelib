@@ -27,98 +27,14 @@
 
 #include "DarkMode.h"
 
-#include <uxtheme.h>
-#include <vsstyle.h>
-
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-#include <mutex>
-#include <unordered_set>
-#endif
-
-#if !defined(_DARKMODELIB_EXTERNAL_IATHOOK)
-#include "IatHook.h"
-#else
-extern PIMAGE_THUNK_DATA FindAddressByName(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, const char* funcName);
-extern PIMAGE_THUNK_DATA FindAddressByOrdinal(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, uint16_t ordinal);
-extern PIMAGE_THUNK_DATA FindIatThunkInModule(void* moduleBase, const char* dllName, const char* funcName);
-extern PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, const char* funcName);
-extern PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, uint16_t ordinal);
-#endif
+#include "ModuleHelper.h"
+#include "DarkModeHook.h"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800
 #pragma warning(disable : 4191)
 #elif defined(__GNUC__)
 #include <cwchar>
 #endif
-
-template <typename P>
-static auto ReplaceFunction(IMAGE_THUNK_DATA* addr, const P& newFunction) -> P
-{
-	DWORD oldProtect = 0;
-	if (VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &oldProtect) == FALSE)
-	{
-		return nullptr;
-	}
-
-	const uintptr_t oldFunction = addr->u1.Function;
-	addr->u1.Function = reinterpret_cast<uintptr_t>(newFunction);
-	VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), oldProtect, &oldProtect);
-	return reinterpret_cast<P>(oldFunction);
-}
-
-template <typename P>
-static auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
-{
-	if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
-	{
-		pointer = reinterpret_cast<P>(proc);
-		return true;
-	}
-	return false;
-}
-
-template <typename P>
-static auto loadFn(HMODULE handle, P& pointer, WORD index) -> bool
-{
-	return loadFn(handle, pointer, MAKEINTRESOURCEA(index));
-}
-
-class ModuleHandle
-{
-public:
-	ModuleHandle() = delete;
-
-	explicit ModuleHandle(const wchar_t* moduleName)
-		: m_hModule(LoadLibraryEx(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
-	{}
-
-	ModuleHandle(const ModuleHandle&) = delete;
-	ModuleHandle& operator=(const ModuleHandle&) = delete;
-
-	ModuleHandle(ModuleHandle&&) = delete;
-	ModuleHandle& operator=(ModuleHandle&&) = delete;
-
-	~ModuleHandle()
-	{
-		if (m_hModule != nullptr)
-		{
-			FreeLibrary(m_hModule);
-		}
-	}
-
-	[[nodiscard]] HMODULE get() const
-	{
-		return m_hModule;
-	}
-
-	[[nodiscard]] bool isLoaded() const
-	{
-		return m_hModule != nullptr;
-	}
-
-private:
-	HMODULE m_hModule = nullptr;
-};
 
 enum IMMERSIVE_HC_CACHE_MODE
 {
@@ -195,9 +111,6 @@ using fnFlushMenuThemes = void (WINAPI*)(); // ordinal 136
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 using fnIsDarkModeAllowedForWindow = auto (WINAPI*)(HWND hWnd) -> bool; // ordinal 137
 #endif
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-using fnOpenNcThemeData = auto (WINAPI*)(HWND hWnd, LPCWSTR pszClassList) -> HTHEME; // ordinal 49
-#endif
 using fnRefreshImmersiveColorPolicyState = void (WINAPI*)(); // ordinal 104
 using fnGetIsImmersiveColorUsingHighContrast = auto (WINAPI*)(IMMERSIVE_HC_CACHE_MODE mode) -> bool; // ordinal 106
 // 1903 18362
@@ -216,9 +129,6 @@ static fnAllowDarkModeForApp pfAllowDarkModeForApp = nullptr;
 static fnFlushMenuThemes pfFlushMenuThemes = nullptr;
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 static fnIsDarkModeAllowedForWindow pfIsDarkModeAllowedForWindow = nullptr;
-#endif
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 #endif
 static fnRefreshImmersiveColorPolicyState pfRefreshImmersiveColorPolicyState = nullptr;
 static fnGetIsImmersiveColorUsingHighContrast pfGetIsImmersiveColorUsingHighContrast = nullptr;
@@ -301,16 +211,22 @@ bool IsColorSchemeChangeMessage(LPARAM lParam)
 {
 	bool isMsg = false;
 	if ((lParam != 0) // NULL
-		&& (_wcsicmp(reinterpret_cast<LPCWSTR>(lParam), L"ImmersiveColorSet") == 0)
-		&& pfRefreshImmersiveColorPolicyState != nullptr)
+		&& (_wcsicmp(reinterpret_cast<LPCWSTR>(lParam), L"ImmersiveColorSet") == 0))
 	{
-		pfRefreshImmersiveColorPolicyState();
 		isMsg = true;
 	}
 
-	if (pfGetIsImmersiveColorUsingHighContrast != nullptr)
+	if (isMsg)
 	{
-		pfGetIsImmersiveColorUsingHighContrast(IHCM_REFRESH);
+		if (pfRefreshImmersiveColorPolicyState != nullptr)
+		{
+			pfRefreshImmersiveColorPolicyState();
+		}
+
+		if (pfGetIsImmersiveColorUsingHighContrast != nullptr)
+		{
+			pfGetIsImmersiveColorUsingHighContrast(IHCM_REFRESH);
+		}
 	}
 
 	return isMsg;
@@ -346,70 +262,6 @@ static void FlushMenuThemes()
 		pfFlushMenuThemes();
 	}
 }
-
-
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 1)
-// limit dark scroll bar to specific windows and their children
-static std::unordered_set<HWND> g_darkScrollBarWindows;
-static std::mutex g_darkScrollBarMutex;
-
-void EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
-{
-	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
-	g_darkScrollBarWindows.insert(hWnd);
-}
-
-static bool IsWindowOrParentUsingDarkScrollBar(HWND hWnd)
-{
-	HWND hRoot = GetAncestor(hWnd, GA_ROOT);
-
-	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
-	auto hasElement = [](const auto& container, HWND hWndToCheck) -> bool {
-#if (defined(_MSC_VER) && (_MSVC_LANG >= 202002L)) || (__cplusplus >= 202002L)
-		return container.contains(hWndToCheck);
-#else
-		return container.count(hWndToCheck) != 0;
-#endif
-	};
-
-	if (hasElement(g_darkScrollBarWindows, hWnd))
-	{
-		return true;
-	}
-	return (hWnd != hRoot && hasElement(g_darkScrollBarWindows, hRoot));
-}
-#endif // defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 1)
-
-static HTHEME WINAPI MyOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
-{
-	static constexpr std::wstring_view scrollBarClassName = WC_SCROLLBAR;
-	if (scrollBarClassName == pszClassList)
-	{
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 1)
-		if (IsWindowOrParentUsingDarkScrollBar(hWnd))
-#endif
-		{
-			hWnd = nullptr;
-			pszClassList = L"Explorer::ScrollBar";
-		}
-	}
-	return pfOpenNcThemeData(hWnd, pszClassList);
-}
-
-static void FixDarkScrollBar()
-{
-	const ModuleHandle moduleComctl(L"comctl32.dll");
-	if (moduleComctl.isLoaded())
-	{
-		auto* addr = FindDelayLoadThunkInModule(moduleComctl.get(), "uxtheme.dll", 49); // OpenNcThemeData
-		if (addr != nullptr) // && pfOpenNcThemeData != nullptr) // checked in InitDarkMode
-		{
-			ReplaceFunction<fnOpenNcThemeData>(addr, MyOpenNcThemeData);
-		}
-	}
-}
-#endif // defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 static constexpr DWORD g_win10Build = 17763;
@@ -501,7 +353,7 @@ void InitDarkMode()
 					&& ptrFnOrd132NotNullptr
 #endif
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-					&& loadFn(hUxtheme, pfOpenNcThemeData, 49)
+					&& LoadOpenNcThemeData(hUxtheme)
 #endif
 					&& loadFn(hUxtheme, pfRefreshImmersiveColorPolicyState, 104)
 					&& loadFn(hUxtheme, pfAllowDarkModeForWindow, 133)
@@ -544,130 +396,5 @@ void SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
 		}
 #endif
 		g_darkModeEnabled = useDark && ShouldAppsUseDarkMode() && !IsHighContrast();
-	}
-}
-
-// Hooking GetSysColor for combo box ex' list box and list view's gridlines
-
-template <typename T>
-struct MyFunc
-{
-	T func = nullptr;
-	size_t ref = 0;
-};
-
-using fnGetSysColor = auto (WINAPI*)(int nIndex) -> DWORD;
-static MyFunc<fnGetSysColor> g_myGetSysColor{};
-
-static COLORREF g_clrWindow = RGB(32, 32, 32);
-static COLORREF g_clrText = RGB(224, 224, 224);
-static COLORREF g_clrTGridlines = RGB(100, 100, 100);
-
-void SetMySysColor(int nIndex, COLORREF clr)
-{
-	switch (nIndex)
-	{
-		case COLOR_WINDOW:
-		{
-			g_clrWindow = clr;
-			break;
-		}
-
-		case COLOR_WINDOWTEXT:
-		{
-			g_clrText = clr;
-			break;
-		}
-
-		case COLOR_BTNFACE:
-		{
-			g_clrTGridlines = clr;
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
-}
-
-static DWORD WINAPI MyGetSysColor(int nIndex)
-{
-	if (!g_darkModeEnabled)
-	{
-		return GetSysColor(nIndex);
-	}
-
-	switch (nIndex)
-	{
-		case COLOR_WINDOW:
-		{
-			return g_clrWindow;
-		}
-
-		case COLOR_WINDOWTEXT:
-		{
-			return g_clrText;
-		}
-
-		case COLOR_BTNFACE:
-		{
-			return g_clrTGridlines;
-		}
-
-		default:
-		{
-			return GetSysColor(nIndex);
-		}
-	}
-}
-
-bool HookSysColor()
-{
-	const ModuleHandle moduleComctl(L"comctl32.dll");
-	if (!moduleComctl.isLoaded())
-	{
-		return false;
-	}
-
-	if (g_myGetSysColor.func == nullptr && g_myGetSysColor.ref == 0)
-	{
-		auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
-		if (addr != nullptr)
-		{
-			g_myGetSysColor.func = ReplaceFunction<fnGetSysColor>(addr, MyGetSysColor);
-		}
-	}
-
-	if (g_myGetSysColor.func != nullptr)
-	{
-		++g_myGetSysColor.ref;
-		return true;
-	}
-	return false;
-}
-
-void UnhookSysColor()
-{
-	const ModuleHandle moduleComctl(L"comctl32.dll");
-	if (!moduleComctl.isLoaded())
-	{
-		return;
-	}
-
-	if (g_myGetSysColor.ref > 0)
-	{
-		--g_myGetSysColor.ref;
-
-		if (g_myGetSysColor.func != nullptr && g_myGetSysColor.ref == 0)
-		{
-			auto* addr = FindIatThunkInModule(moduleComctl.get(), "user32.dll", "GetSysColor");
-			if (addr != nullptr)
-			{
-				ReplaceFunction<fnGetSysColor>(addr, g_myGetSysColor.func);
-				g_myGetSysColor.func = nullptr;
-			}
-		}
 	}
 }

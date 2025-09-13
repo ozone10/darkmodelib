@@ -79,12 +79,15 @@
     <ClInclude Include="..\include\DarkModeSubclass.h" />
     <ClInclude Include="..\src\DarkMode.h" />
     <ClInclude Include="..\src\IatHook.h" />
+    <ClInclude Include="..\src\DarkModeHook.h" />
+    <ClInclude Include="..\src\ModuleHelper.h" />
     <ClInclude Include="..\src\StdAfx.h" />
     <ClInclude Include="..\src\UAHMenuBar.h" />
     <ClInclude Include="..\src\Version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\DarkMode.cpp" />
+    <ClCompile Include="..\src\DarkModeHook.cpp" />
     <ClCompile Include="..\src\DarkModeSubclass.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
