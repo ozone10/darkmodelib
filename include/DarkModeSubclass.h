@@ -28,6 +28,8 @@
 #pragma comment(lib, "Gdi32.lib")
 #endif
 
+typedef struct _TASKDIALOGCONFIG TASKDIALOGCONFIG;
+
 /**
  * @namespace DarkMode
  * @brief Provides dark mode theming, subclassing, and rendering utilities for most Win32 controls.
@@ -675,6 +677,36 @@ namespace DarkMode
 	 * @return A value defined by the hook procedure.
 	 */
 	UINT_PTR CALLBACK HookDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	/// Applies dark mode visual styles to task dialog.
+	void setDarkTaskDlg(HWND hWnd);
+	/**
+	 * @brief Wrapper for `TaskDialogIndirect` with dark mode support.
+	 *
+	 * Parameters are same as for `TaskDialogIndirect`.
+	 * Should be used with `DarkMode::setDarkTaskDlg` used in task dialog callback.
+	 *
+	 * ```cpp
+	 * static HRESULT CALLBACK TaskDlgCallback(
+	 *     HWND hWnd,
+	 *     UINT msg,
+	 *     [[maybe_unused]] WPARAM wParam,
+	 *     [[maybe_unused]] LPARAM lParam,
+	 *     [[maybe_unused]] LONG_PTR lpRefData
+	 * )
+	 * {
+	 *     if (msg == TDN_CREATED)
+	 *     {
+	 *          DarkMode::setDarkTaskDlg(hWnd);
+	 *     }
+	 *     return S_OK;
+	 * }
+	 * ```
+	 *
+	 * @see DarkMode::setDarkTaskDlg()
+	 */
+	HRESULT darkTaskDialogIndirect(const TASKDIALOGCONFIG* pTaskConfig, int* pnButton, int* pnRadioButton, BOOL* pfVerificationFlagChecked);
+
 } // namespace DarkMode
 
 #else

@@ -363,7 +363,8 @@ namespace DarkMode
 		windowCtlColor,
 		windowNotify,
 		windowMenuBar,
-		windowSettingChange
+		windowSettingChange,
+		taskDlg
 	};
 
 	/**
@@ -1845,6 +1846,28 @@ namespace DarkMode
 	static void unhookSysColor()
 	{
 		::UnhookSysColor();
+	}
+
+	/**
+	 * @brief Hooks `GetThemeColor` to support dark colors.
+	 *
+	 * @return `true` if the hook was installed successfully.
+	 */
+	static bool hookGetThemeColor()
+	{
+		return ::HookGetThemeColor();
+	}
+
+	/**
+	 * @brief Unhooks `GetThemeColor` overrides and restores default color behavior.
+	 *
+	 * This function is safe to call even if no color hook is currently installed.
+	 * It ensures that theme colors return to normal without requiring
+	 * prior state checks.
+	 */
+	static void unhookGetThemeColor()
+	{
+		::UnhookGetThemeColor();
 	}
 
 	/**
@@ -9290,7 +9313,7 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Hook procedure for customizing common dialogs with dark mode.
+	 * @brief Hook procedure for customizing common dialogs with custom colors.
 	 */
 	UINT_PTR CALLBACK HookDlgProc(HWND hWnd, UINT uMsg, [[maybe_unused]] WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 	{
@@ -9300,6 +9323,253 @@ namespace DarkMode
 			return TRUE;
 		}
 		return FALSE;
+	}
+
+	/**
+	 * @class TaskDlgData
+	 * @brief Class to handle colors for task dialog.
+	 *
+	 * Members:
+	 * - `m_themeData`: Theme data with "DarkMode_Explorer::TaskDialog" theme to get colors.
+	 * - `m_clrText`: Color for text.
+	 * - `m_clrBg`: Color for background.
+	 * - `m_hBrushBg`: Brush for background.
+	 *
+	 * Copying and moving are explicitly disabled to preserve exclusive ownership.
+	 */
+	class TaskDlgData
+	{
+	public:
+		TaskDlgData()
+		{
+			COLORREF clrTmp = 0;
+			if (SUCCEEDED(::GetThemeColor(m_themeData.getHTheme(), TDLG_PRIMARYPANEL, 0, TMT_TEXTCOLOR, &clrTmp)))
+			{
+				m_clrText = clrTmp;
+			}
+
+			if (SUCCEEDED(::GetThemeColor(m_themeData.getHTheme(), TDLG_PRIMARYPANEL, 0, TMT_FILLCOLOR, &clrTmp)))
+			{
+				m_clrBg = clrTmp;
+			}
+
+			m_hBrushBg = ::CreateSolidBrush(m_clrBg);
+		}
+
+		TaskDlgData(const TaskDlgData&) = delete;
+		TaskDlgData& operator=(const TaskDlgData&) = delete;
+
+		TaskDlgData(TaskDlgData&&) = delete;
+		TaskDlgData& operator=(TaskDlgData&&) = delete;
+
+		~TaskDlgData()
+		{
+			::DeleteObject(m_hBrushBg);
+		}
+
+		[[nodiscard]] const COLORREF& getTextColor() const
+		{
+			return m_clrText;
+		}
+
+		[[nodiscard]] const COLORREF& getBgColor() const
+		{
+			return m_clrBg;
+		}
+
+		[[nodiscard]] const HBRUSH& getBgBrush() const
+		{
+			return m_hBrushBg;
+		}
+
+	private:
+		ThemeData m_themeData{ L"DarkMode_Explorer::TaskDialog" };
+		COLORREF m_clrText = RGB(255, 255, 255);
+		COLORREF m_clrBg = RGB(44, 44, 44);
+		HBRUSH m_hBrushBg = nullptr;
+	};
+
+	/**
+	 * @brief Window subclass procedure for handling dark mode for task dialog and its children.
+	 *
+	 * @param hWnd          Window handle being subclassed.
+	 * @param uMsg          Message identifier.
+	 * @param wParam        Message-specific data.
+	 * @param lParam        Message-specific data.
+	 * @param uIdSubclass   Subclass identifier.
+	 * @param dwRefData     TaskDlgData instance.
+	 * @return LRESULT Result of message processing.
+	 *
+	 * @see DarkMode::setDarkTaskDlgSubclass()
+	 */
+	static LRESULT CALLBACK DarkTaskDlgSubclass(
+		HWND hWnd,
+		UINT uMsg,
+		WPARAM wParam,
+		LPARAM lParam,
+		UINT_PTR uIdSubclass,
+		DWORD_PTR dwRefData
+	)
+	{
+		auto* pTaskDlgData = reinterpret_cast<TaskDlgData*>(dwRefData);
+
+		switch (uMsg)
+		{
+			case WM_NCDESTROY:
+			{
+				::RemoveWindowSubclass(hWnd, DarkTaskDlgSubclass, uIdSubclass);
+				delete pTaskDlgData;
+				UnhookGetThemeColor();
+				break;
+			}
+
+			case WM_ERASEBKGND:
+			{
+				if (!CmpWndClassName(hWnd, WC_LINK))
+				{
+					RECT rcClient{};
+					::GetClientRect(hWnd, &rcClient);
+					::FillRect(reinterpret_cast<HDC>(wParam), &rcClient, pTaskDlgData->getBgBrush());
+				}
+				return TRUE;
+			}
+
+			case WM_CTLCOLORDLG:
+			case WM_CTLCOLORSTATIC:
+			{
+				auto hdc = reinterpret_cast<HDC>(wParam);
+				::SetTextColor(hdc, pTaskDlgData->getTextColor());
+				::SetBkColor(hdc, pTaskDlgData->getBgColor());
+				return reinterpret_cast<LRESULT>(pTaskDlgData->getBgBrush());
+			}
+
+			case WM_PRINTCLIENT:
+			{
+				return TRUE;
+			}
+
+			default:
+			{
+				break;
+			}
+		}
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
+	/**
+	 * @brief Applies a subclass to task dialog to handle dark mode.
+	 *
+	 * @param hWnd Handle to the task dialog.
+	 *
+	 * @see DarkMode::DarkTaskDlgSubclass()
+	 */
+	static void setDarkTaskDlgSubclass(HWND hWnd)
+	{
+		DarkMode::setSubclass<TaskDlgData>(hWnd, DarkTaskDlgSubclass, SubclassID::taskDlg);
+	}
+
+	/**
+	 * @brief Callback function used to enumerate and apply theming/subclassing to task dialog child controls.
+	 *
+	 * @param hWnd      Handle to the window being enumerated.
+	 * @param lParam    LPARAM data (unused).
+	 * @return `TRUE`   to continue enumeration.
+	 */
+	static BOOL CALLBACK DarkTaskEnumChildProc(HWND hWnd, [[maybe_unused]] LPARAM lParam)
+	{
+		const std::wstring className = GetWndClassName(hWnd);
+
+		if (className == L"CtrlNotifySink")
+		{
+			DarkMode::setDarkTaskDlgSubclass(hWnd);
+			return TRUE;
+		}
+
+		if (className == WC_BUTTON)
+		{
+			const auto nBtnStyle = (::GetWindowLongPtr(hWnd, GWL_STYLE) & BS_TYPEMASK);
+			switch (nBtnStyle)
+			{
+				case BS_RADIOBUTTON:
+				case BS_AUTORADIOBUTTON:
+				{
+					DarkMode::setCheckboxOrRadioBtnCtrlSubclass(hWnd);
+					break;
+				}
+
+				default:
+				{
+					break;
+				}
+			}
+
+			DarkMode::setDarkExplorerTheme(hWnd);
+
+			return TRUE;
+		}
+
+		if (className == WC_LINK)
+		{
+			DarkMode::enableSysLinkCtrlCtlColor(hWnd);
+			DarkMode::setDarkTaskDlgSubclass(hWnd);
+			return TRUE;
+		}
+
+		if (className == WC_SCROLLBAR)
+		{
+			DarkMode::setDarkScrollBar(hWnd);
+			return TRUE;
+		}
+
+		if (className == PROGRESS_CLASS)
+		{
+			DarkMode::setProgressBarClassicTheme(hWnd);
+			return TRUE;
+		}
+
+		if (className == L"DirectUIHWND")
+		{
+			::EnumChildWindows(hWnd, DarkMode::DarkTaskEnumChildProc, 0);
+			DarkMode::setDarkTaskDlgSubclass(hWnd);
+			DarkMode::setDarkExplorerTheme(hWnd);
+			return TRUE;
+		}
+
+		return TRUE;
+	}
+
+	/**
+	 * @brief Applies dark mode visual styles to task dialog.
+	 *
+	 * @note Currently has only basic support and colors cannot be customized.
+	 *
+	 * @param hWnd Handle to the task dialog.
+	 */
+	void setDarkTaskDlg(HWND hWnd)
+	{
+		if (DarkMode::isExperimentalActive())
+		{
+			DarkMode::setDarkTitleBar(hWnd);
+			DarkMode::setDarkExplorerTheme(hWnd);
+			DarkMode::setDarkTaskDlgSubclass(hWnd);
+			::EnumChildWindows(hWnd, DarkMode::DarkTaskEnumChildProc, 0);
+		}
+	}
+
+	/**
+	 * @brief Wrapper for `TaskDialogIndirect` with dark mode support.
+	 */
+	HRESULT darkTaskDialogIndirect(
+		const TASKDIALOGCONFIG* pTaskConfig,
+		int* pnButton,
+		int* pnRadioButton,
+		BOOL* pfVerificationFlagChecked
+	)
+	{
+		DarkMode::hookGetThemeColor();
+		const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
+		DarkMode::unhookGetThemeColor();
+		return retVal;
 	}
 } // namespace DarkMode
 
