@@ -229,6 +229,42 @@ static void SelectAndRefreshMode(HWND hWnd, UINT checkID)
 	RedrawWindow(hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME);
 }
 
+enum TaskDlgBtnID
+{
+	radio_1 = 100,
+	radio_2,
+	radio_3,
+	radio_4,
+	cmd_1,
+	cmd_2,
+	cmd_3,
+	cmd_4,
+	cmd_5
+};
+
+static HRESULT CALLBACK TaskDlgCallback(
+	HWND hWnd,
+	UINT msg,
+	[[maybe_unused]] WPARAM wParam,
+	[[maybe_unused]] LPARAM lParam,
+	[[maybe_unused]] LONG_PTR lpRefData
+)
+{
+	if (msg == TDN_CREATED)
+	{
+		SendMessageW(hWnd, TDM_ENABLE_RADIO_BUTTON, static_cast<WPARAM>(radio_2), FALSE);
+		SendMessageW(hWnd, TDM_SET_PROGRESS_BAR_MARQUEE, TRUE, 0);
+
+		SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_2), FALSE);
+		SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_3), TRUE);
+		SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_4), FALSE);
+		SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_4), TRUE);
+
+		DarkMode::setDarkTaskDlg(hWnd);
+	}
+	return S_OK;
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -862,7 +898,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							return ncm.lfMessageFont;
 						}
 						return LOGFONTW{};
-						}();
+					}();
 
 					CHOOSEFONTW cf{};
 					cf.lStructSize = sizeof(cf);
@@ -875,6 +911,53 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					cf.lpTemplateName = MAKEINTRESOURCE(IDD_DARK_FONT_DIALOG);
 
 					ChooseFontW(&cf);
+					break;
+				}
+
+				case IDM_TASKDIALOG:
+				{
+					static constexpr std::array<TASKDIALOG_BUTTON, 4> radioBtn{ {
+						{radio_1, L"Radio button 1"},
+						{radio_2, L"Radio button 2 (disabled)"},
+						{radio_3, L"Radio button 3"},
+						{radio_4, L"Radio button 4\nwith\nmultiple\nlines"}
+					} };
+
+					static constexpr std::array<TASKDIALOG_BUTTON, 5> commandBtn{ {
+						{cmd_1, L"Command link 1"},
+						{cmd_2, L"Command link 2 (disabled)"},
+						{cmd_3, L"Command link 3 with shield"},
+						{cmd_4, L"Command link 4 with shield (disabled)"},
+						{cmd_5, L"Command link 5\nwith\nmultiple\nlines"}
+					} };
+
+					TASKDIALOGCONFIG taskDlgCfg{};
+					taskDlgCfg.cbSize = sizeof(TASKDIALOGCONFIG);
+					taskDlgCfg.hwndParent = hWnd;
+					taskDlgCfg.hInstance = nullptr;
+					taskDlgCfg.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_USE_COMMAND_LINKS | TDF_EXPAND_FOOTER_AREA | TDF_SHOW_MARQUEE_PROGRESS_BAR | TDF_CAN_BE_MINIMIZED | TDF_SIZE_TO_CONTENT;
+					taskDlgCfg.dwCommonButtons = TDCBF_OK_BUTTON | TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON | TDCBF_RETRY_BUTTON | TDCBF_CLOSE_BUTTON;
+					taskDlgCfg.pszWindowTitle = L"Dark Task Dialog";
+					taskDlgCfg.pszMainIcon = TD_INFORMATION_ICON;
+					taskDlgCfg.pszMainInstruction = L"Simple Dark Task Dialog";
+					taskDlgCfg.pszContent = L"Example of task dialog with basic dark mode support.\nMight/might not support every task dialog configuration.";
+					taskDlgCfg.cButtons = static_cast<UINT>(commandBtn.size());
+					taskDlgCfg.pButtons = commandBtn.data();
+					taskDlgCfg.cRadioButtons = static_cast<UINT>(radioBtn.size());
+					taskDlgCfg.pRadioButtons = radioBtn.data();
+					taskDlgCfg.nDefaultButton = IDCLOSE;
+					taskDlgCfg.pszVerificationText = L"Verification text";
+					taskDlgCfg.pszExpandedInformation = L"Expanded information.";
+					taskDlgCfg.pszExpandedControlText = L"Hide expanded information";
+					taskDlgCfg.pszCollapsedControlText = L"Show expanded information";
+					taskDlgCfg.pszFooterIcon = TD_SHIELD_ICON;
+					taskDlgCfg.pszFooter = L"Footer";
+					taskDlgCfg.pfCallback = TaskDlgCallback;
+					taskDlgCfg.lpCallbackData = 0;
+					taskDlgCfg.cxWidth = 0;
+
+					BOOL checkFlag = FALSE;
+					DarkMode::darkTaskDialogIndirect(&taskDlgCfg, nullptr, nullptr, &checkFlag);
 					break;
 				}
 
