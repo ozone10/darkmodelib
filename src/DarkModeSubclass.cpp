@@ -1855,7 +1855,11 @@ namespace DarkMode
 	 */
 	static bool hookGetThemeColor()
 	{
-		return ::HookGetThemeColor();
+		if (DarkMode::isAtLeastWindows11())
+		{
+			return ::HookGetThemeColor();
+		}
+		return false;
 	}
 
 	/**
@@ -1867,7 +1871,10 @@ namespace DarkMode
 	 */
 	static void unhookGetThemeColor()
 	{
-		::UnhookGetThemeColor();
+		if (DarkMode::isAtLeastWindows11())
+		{
+			::UnhookGetThemeColor();
+		}
 	}
 
 	/**
@@ -9541,13 +9548,14 @@ namespace DarkMode
 	/**
 	 * @brief Applies dark mode visual styles to task dialog.
 	 *
-	 * @note Currently has only basic support and colors cannot be customized.
+	 * @note Currently has only basic support on Windows 11,
+	 * and colors cannot be customized.
 	 *
 	 * @param hWnd Handle to the task dialog.
 	 */
 	void setDarkTaskDlg(HWND hWnd)
 	{
-		if (DarkMode::isExperimentalActive())
+		if (DarkMode::isAtLeastWindows11() && DarkMode::isExperimentalActive())
 		{
 			DarkMode::setDarkTitleBar(hWnd);
 			DarkMode::setDarkExplorerTheme(hWnd);

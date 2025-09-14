@@ -940,14 +940,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					taskDlgCfg.pszWindowTitle = L"Dark Task Dialog";
 					taskDlgCfg.pszMainIcon = TD_INFORMATION_ICON;
 					taskDlgCfg.pszMainInstruction = L"Simple Dark Task Dialog";
-					taskDlgCfg.pszContent = L"Example of task dialog with basic dark mode support.\nMight/might not support every task dialog configuration.";
+					taskDlgCfg.pszContent = L"Example of task dialog with basic dark mode support.\nMight/might not support every task dialog configuration.\nCurrently works only on Windows 11.";
 					taskDlgCfg.cButtons = static_cast<UINT>(commandBtn.size());
 					taskDlgCfg.pButtons = commandBtn.data();
 					taskDlgCfg.cRadioButtons = static_cast<UINT>(radioBtn.size());
 					taskDlgCfg.pRadioButtons = radioBtn.data();
 					taskDlgCfg.nDefaultButton = IDCLOSE;
 					taskDlgCfg.pszVerificationText = L"Verification text";
-					taskDlgCfg.pszExpandedInformation = L"Expanded information.";
+					taskDlgCfg.pszExpandedInformation = L"Expanded information";
 					taskDlgCfg.pszExpandedControlText = L"Hide expanded information";
 					taskDlgCfg.pszCollapsedControlText = L"Show expanded information";
 					taskDlgCfg.pszFooterIcon = TD_SHIELD_ICON;
