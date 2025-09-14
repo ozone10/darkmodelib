@@ -444,7 +444,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static constexpr int imgSize = 16;
 			static auto hImageList = ImageList_Create(imgSize, imgSize, ILC_COLOR32 | ILC_MASK, 1, 1);
-			HICON hIcon = static_cast<HICON>(
+			auto hIcon = static_cast<HICON>(
 				LoadImageW(g_hInst, MAKEINTRESOURCEW(IDI_DEMO), IMAGE_ICON, imgSize, imgSize, LR_DEFAULTCOLOR));
 			ImageList_AddIcon(hImageList, hIcon);
 			DestroyIcon(hIcon);
@@ -454,7 +454,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			for (size_t i = 0; i < nBtn; ++i)
 			{
 				tbb.at(i).iBitmap = 0;
-				tbb.at(i).idCommand = 10000 + static_cast<UINT>(i);
+				tbb.at(i).idCommand = 10000 + static_cast<int>(i);
 				tbb.at(i).fsState = TBSTATE_ENABLED;
 				tbb.at(i).fsStyle = BTNS_BUTTON;
 			}
@@ -633,7 +633,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				xPos2ndColCtrl, yCombo1, wEditCombo, 100, IdCtrl::comboDrop);
 			for (int i = 0; i < 4; ++i)
 			{
-				std::wstring itemText = L"Item " + std::to_wstring(i + 1);
+				const std::wstring itemText = L"Item " + std::to_wstring(i + 1);
 				SendMessageW(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(itemText.c_str()));
 			}
 			SetWindowTextW(hCombo, L"Item 1");
@@ -648,7 +648,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				xPos2ndColCtrl, yCombo3, wEditCombo, 100, IdCtrl::comboList);
 			for (int i = 0; i < 4; ++i)
 			{
-				std::wstring itemText = L"Item " + std::to_wstring(i + 1);
+				const std::wstring itemText = L"Item " + std::to_wstring(i + 1);
 				SendMessageW(hComboList, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(itemText.c_str()));
 			}
 			SendMessageW(hComboList, CB_SETCURSEL, 0, 0);
@@ -1127,6 +1127,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, [[maybe_unused]] 
 				EndDialog(hDlg, LOWORD(wParam));
 				return TRUE;
 			}
+			break;
+		}
+
+		default:
+		{
 			break;
 		}
 	}

@@ -1853,11 +1853,11 @@ namespace DarkMode
 	 *
 	 * @return `true` if the hook was installed successfully.
 	 */
-	static bool hookGetThemeColor()
+	static bool hookThemeColor()
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			return ::HookGetThemeColor();
+			return ::HookThemeColor();
 		}
 		return false;
 	}
@@ -1869,11 +1869,11 @@ namespace DarkMode
 	 * It ensures that theme colors return to normal without requiring
 	 * prior state checks.
 	 */
-	static void unhookGetThemeColor()
+	static void unhookThemeColor()
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			::UnhookGetThemeColor();
+			::UnhookThemeColor();
 		}
 	}
 
@@ -9426,7 +9426,6 @@ namespace DarkMode
 			{
 				::RemoveWindowSubclass(hWnd, DarkTaskDlgSubclass, uIdSubclass);
 				delete pTaskDlgData;
-				UnhookGetThemeColor();
 				break;
 			}
 
@@ -9574,9 +9573,9 @@ namespace DarkMode
 		BOOL* pfVerificationFlagChecked
 	)
 	{
-		DarkMode::hookGetThemeColor();
+		DarkMode::hookThemeColor();
 		const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
-		DarkMode::unhookGetThemeColor();
+		DarkMode::unhookThemeColor();
 		return retVal;
 	}
 } // namespace DarkMode
