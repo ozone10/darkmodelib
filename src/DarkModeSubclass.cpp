@@ -1374,7 +1374,7 @@ namespace DarkMode
 	 */
 	static void initExperimentalDarkMode()
 	{
-		::InitDarkMode();
+		dmlib::win32api::InitDarkMode();
 	}
 
 	/**
@@ -1387,7 +1387,7 @@ namespace DarkMode
 	 */
 	static void setDarkMode(bool useDark, bool fixDarkScrollBar = true)
 	{
-		::SetDarkMode(useDark, fixDarkScrollBar);
+		dmlib::win32api::SetDarkMode(useDark, fixDarkScrollBar);
 	}
 
 	/**
@@ -1399,7 +1399,7 @@ namespace DarkMode
 	 */
 	static bool allowDarkModeForWindow(HWND hWnd, bool allow)
 	{
-		return ::AllowDarkModeForWindow(hWnd, allow);
+		return dmlib::win32api::AllowDarkModeForWindow(hWnd, allow);
 	}
 
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
@@ -1425,7 +1425,7 @@ namespace DarkMode
 	 */
 	[[nodiscard]] static bool isColorSchemeChangeMessage(LPARAM lParam)
 	{
-		return ::IsColorSchemeChangeMessage(lParam);
+		return dmlib::win32api::IsColorSchemeChangeMessage(lParam);
 	}
 
 	/**
@@ -1435,7 +1435,7 @@ namespace DarkMode
 	 */
 	static bool isHighContrast()
 	{
-		return ::IsHighContrast();
+		return dmlib::win32api::IsHighContrast();
 	}
 
 	/**
@@ -1727,7 +1727,7 @@ namespace DarkMode
 	 */
 	bool isAtLeastWindows10()
 	{
-		return ::IsWindows10();
+		return dmlib::win32api::IsWindows10();
 	}
 	/**
 	 * @brief Checks if the host OS is at least Windows 11.
@@ -1736,7 +1736,7 @@ namespace DarkMode
 	 */
 	bool isAtLeastWindows11()
 	{
-		return ::IsWindows11();
+		return dmlib::win32api::IsWindows11();
 	}
 
 	/**
@@ -1746,7 +1746,7 @@ namespace DarkMode
 	 */
 	DWORD getWindowsBuildNumber()
 	{
-		return GetWindowsBuildNumber();
+		return dmlib::win32api::GetWindowsBuildNumber();
 	}
 
 	/**
@@ -1823,7 +1823,7 @@ namespace DarkMode
 	 */
 	void setSysColor(int nIndex, COLORREF color)
 	{
-		::SetMySysColor(nIndex, color);
+		dmlib::hook::SetMySysColor(nIndex, color);
 	}
 
 	/**
@@ -1833,7 +1833,7 @@ namespace DarkMode
 	 */
 	static bool hookSysColor()
 	{
-		return ::HookSysColor();
+		return dmlib::hook::HookSysColor();
 	}
 
 	/**
@@ -1845,7 +1845,7 @@ namespace DarkMode
 	 */
 	static void unhookSysColor()
 	{
-		::UnhookSysColor();
+		dmlib::hook::UnhookSysColor();
 	}
 
 	/**
@@ -1857,7 +1857,7 @@ namespace DarkMode
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			return ::HookThemeColor();
+			return dmlib::hook::HookThemeColor();
 		}
 		return false;
 	}
@@ -1873,7 +1873,7 @@ namespace DarkMode
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			::UnhookThemeColor();
+			dmlib::hook::UnhookThemeColor();
 		}
 	}
 
@@ -9561,6 +9561,34 @@ namespace DarkMode
 			DarkMode::setDarkTaskDlgSubclass(hWnd);
 			::EnumChildWindows(hWnd, DarkMode::DarkTaskEnumChildProc, 0);
 		}
+	}
+
+	/**
+	 * @brief Simple task dialog callback procedure to enable dark mode support.
+	 *
+	 * @param hWnd      Handle to the task dialog.
+	 * @param uMsg      Message identifier.
+	 * @param wParam    First message parameter (unused).
+	 * @param lParam    Second message parameter (unused).
+	 * @param lpRefData Reserved data (unused).
+	 * @return A value defined by the hook procedure.
+	 *
+	 * @see DarkMode::setDarkTaskDlg()
+	 * @see DarkMode::darkTaskDialogIndirect()
+	 */
+	HRESULT CALLBACK DarkTaskDlgCallback(
+		HWND hWnd,
+		UINT msg,
+		[[maybe_unused]] WPARAM wParam,
+		[[maybe_unused]] LPARAM lParam,
+		[[maybe_unused]] LONG_PTR lpRefData
+	)
+	{
+		if (msg == TDN_DIALOG_CONSTRUCTED)
+		{
+			DarkMode::setDarkTaskDlg(hWnd);
+		}
+		return S_OK;
 	}
 
 	/**

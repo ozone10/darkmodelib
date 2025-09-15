@@ -680,14 +680,20 @@ namespace DarkMode
 
 	/// Applies dark mode visual styles to task dialog.
 	void setDarkTaskDlg(HWND hWnd);
+
+	/// Simple task dialog callback procedure to enable dark mode support.
+	HRESULT CALLBACK DarkTaskDlgCallback(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
+
 	/**
 	 * @brief Wrapper for `TaskDialogIndirect` with dark mode support.
 	 *
 	 * Parameters are same as for `TaskDialogIndirect`.
-	 * Should be used with `DarkMode::setDarkTaskDlg` used in task dialog callback.
+	 * Should be used with `DarkMode::setDarkTaskDlg`
+	 * used in task dialog callback procedure.
 	 *
+	 * ## Example of Callback Procedure
 	 * ```cpp
-	 * static HRESULT CALLBACK TaskDlgCallback(
+	 * static HRESULT CALLBACK DarkTaskDlgCallback(
 	 *     HWND hWnd,
 	 *     UINT msg,
 	 *     [[maybe_unused]] WPARAM wParam,
@@ -695,7 +701,7 @@ namespace DarkMode
 	 *     [[maybe_unused]] LONG_PTR lpRefData
 	 * )
 	 * {
-	 *     if (msg == TDN_CREATED)
+	 *     if (msg == TDN_DIALOG_CONSTRUCTED)
 	 *     {
 	 *          DarkMode::setDarkTaskDlg(hWnd);
 	 *     }
@@ -703,6 +709,7 @@ namespace DarkMode
 	 * }
 	 * ```
 	 *
+	 * @see DarkMode::DarkTaskDlgCallback()
 	 * @see DarkMode::setDarkTaskDlg()
 	 */
 	HRESULT darkTaskDialogIndirect(const TASKDIALOGCONFIG* pTaskConfig, int* pnButton, int* pnRadioButton, BOOL* pfVerificationFlagChecked);

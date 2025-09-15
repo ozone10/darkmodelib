@@ -158,7 +158,7 @@ static DWORD g_buildNumber = 0;
 	}
 }
 
-bool AllowDarkModeForWindow(HWND hWnd, bool allow)
+bool dmlib::win32api::AllowDarkModeForWindow(HWND hWnd, bool allow)
 {
 	if (g_darkModeSupported && (pfAllowDarkModeForWindow != nullptr))
 	{
@@ -167,11 +167,11 @@ bool AllowDarkModeForWindow(HWND hWnd, bool allow)
 	return false;
 }
 
-bool IsHighContrast()
+bool dmlib::win32api::IsHighContrast()
 {
 	HIGHCONTRASTW highContrast{};
 	highContrast.cbSize = sizeof(HIGHCONTRASTW);
-	if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(HIGHCONTRASTW), &highContrast, FALSE) == TRUE)
+	if (::SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(HIGHCONTRASTW), &highContrast, FALSE) == TRUE)
 	{
 		return (highContrast.dwFlags & HCF_HIGHCONTRASTON) == HCF_HIGHCONTRASTON;
 	}
@@ -179,11 +179,11 @@ bool IsHighContrast()
 }
 
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
-void SetTitleBarThemeColor(HWND hWnd, BOOL dark)
+void dmlib::win32api::SetTitleBarThemeColor(HWND hWnd, BOOL dark)
 {
 	if (g_buildNumber < g_win10Build1903)
 	{
-		SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(static_cast<intptr_t>(dark)));
+		::SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(static_cast<intptr_t>(dark)));
 	}
 	else if (pfSetWindowCompositionAttribute != nullptr)
 	{
@@ -192,7 +192,7 @@ void SetTitleBarThemeColor(HWND hWnd, BOOL dark)
 	}
 }
 
-void RefreshTitleBarThemeColor(HWND hWnd)
+void dmlib::win32api::RefreshTitleBarThemeColor(HWND hWnd)
 {
 	BOOL dark = FALSE;
 	if (pfIsDarkModeAllowedForWindow != nullptr && pfShouldAppsUseDarkMode != nullptr)
@@ -207,7 +207,7 @@ void RefreshTitleBarThemeColor(HWND hWnd)
 }
 #endif
 
-bool IsColorSchemeChangeMessage(LPARAM lParam)
+bool dmlib::win32api::IsColorSchemeChangeMessage(LPARAM lParam)
 {
 	bool isMsg = false;
 	if ((lParam != 0) // NULL
@@ -232,16 +232,16 @@ bool IsColorSchemeChangeMessage(LPARAM lParam)
 	return isMsg;
 }
 
-bool IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam)
+bool dmlib::win32api::IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam)
 {
 	if (uMsg == WM_SETTINGCHANGE)
 	{
-		return IsColorSchemeChangeMessage(lParam);
+		return dmlib::win32api::IsColorSchemeChangeMessage(lParam);
 	}
 	return false;
 }
 
-void AllowDarkModeForApp(bool allow)
+void dmlib::win32api::AllowDarkModeForApp(bool allow)
 {
 	if (pfSetPreferredAppMode != nullptr)
 	{
@@ -270,12 +270,12 @@ static constexpr DWORD g_win10Build = 19044; // 21H2 latest LTSC, 22H2 19045 lat
 #endif
 static constexpr DWORD g_win11Build = 22000;
 
-bool IsWindows10() // or later OS version
+bool dmlib::win32api::IsWindows10() // or later OS version
 {
 	return (g_buildNumber >= g_win10Build);
 }
 
-bool IsWindows11() // or later OS version
+bool dmlib::win32api::IsWindows11() // or later OS version
 {
 	return (g_buildNumber >= g_win11Build);
 }
@@ -306,12 +306,12 @@ bool IsWindows11() // or later OS version
 #endif
 }
 
-DWORD GetWindowsBuildNumber()
+DWORD dmlib::win32api::GetWindowsBuildNumber()
 {
 	return g_buildNumber;
 }
 
-void InitDarkMode()
+void dmlib::win32api::InitDarkMode()
 {
 	static bool isInit = false;
 	if (isInit)
@@ -320,7 +320,7 @@ void InitDarkMode()
 	}
 
 	fnRtlGetNtVersionNumbers RtlGetNtVersionNumbers = nullptr;
-	HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+	HMODULE hNtdll = ::GetModuleHandleW(L"ntdll.dll");
 	if (hNtdll != nullptr && loadFn(hNtdll, RtlGetNtVersionNumbers, "RtlGetNtVersionNumbers"))
 	{
 		DWORD major = 0;
@@ -353,7 +353,7 @@ void InitDarkMode()
 					&& ptrFnOrd132NotNullptr
 #endif
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-					&& LoadOpenNcThemeData(hUxtheme)
+					&& dmlib::hook::LoadOpenNcThemeData(hUxtheme)
 #endif
 					&& loadFn(hUxtheme, pfRefreshImmersiveColorPolicyState, 104)
 					&& loadFn(hUxtheme, pfAllowDarkModeForWindow, 133)
@@ -383,11 +383,11 @@ void InitDarkMode()
 	}
 }
 
-void SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
+void dmlib::win32api::SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
 {
 	if (g_darkModeSupported)
 	{
-		AllowDarkModeForApp(useDark);
+		dmlib::win32api::AllowDarkModeForApp(useDark);
 		FlushMenuThemes();
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 		if (fixDarkScrollbar)
@@ -395,6 +395,6 @@ void SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
 			FixDarkScrollBar();
 		}
 #endif
-		g_darkModeEnabled = useDark && ShouldAppsUseDarkMode() && !IsHighContrast();
+		g_darkModeEnabled = useDark && ShouldAppsUseDarkMode() && !dmlib::win32api::IsHighContrast();
 	}
 }

@@ -250,17 +250,30 @@ static HRESULT CALLBACK TaskDlgCallback(
 	[[maybe_unused]] LONG_PTR lpRefData
 )
 {
-	if (msg == TDN_CREATED)
+	switch (msg)
 	{
-		SendMessageW(hWnd, TDM_ENABLE_RADIO_BUTTON, static_cast<WPARAM>(radio_2), FALSE);
-		SendMessageW(hWnd, TDM_SET_PROGRESS_BAR_MARQUEE, TRUE, 0);
+		case TDN_CREATED:
+		{
+			SendMessageW(hWnd, TDM_ENABLE_RADIO_BUTTON, static_cast<WPARAM>(radio_2), FALSE);
+			SendMessageW(hWnd, TDM_SET_PROGRESS_BAR_MARQUEE, TRUE, 0);
 
-		SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_2), FALSE);
-		SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_3), TRUE);
-		SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_4), FALSE);
-		SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_4), TRUE);
+			SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_2), FALSE);
+			SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_3), TRUE);
+			SendMessageW(hWnd, TDM_ENABLE_BUTTON, static_cast<WPARAM>(cmd_4), FALSE);
+			SendMessageW(hWnd, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, static_cast<WPARAM>(cmd_4), TRUE);
+			break;
+		}
 
-		DarkMode::setDarkTaskDlg(hWnd);
+		case TDN_DIALOG_CONSTRUCTED:
+		{
+			DarkMode::setDarkTaskDlg(hWnd);
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
 	}
 	return S_OK;
 }

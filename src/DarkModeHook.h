@@ -12,15 +12,18 @@
 
 #include <windows.h>
 
+namespace dmlib::hook
+{
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-bool LoadOpenNcThemeData(const HMODULE& hUxtheme);
-void EnableDarkScrollBarForWindowAndChildren(HWND hWnd);
-void FixDarkScrollBar();
+	bool LoadOpenNcThemeData(const HMODULE& hUxtheme);
+	void EnableDarkScrollBarForWindowAndChildren(HWND hWnd);
+	void FixDarkScrollBar();
 #endif
 
-void SetMySysColor(int nIndex, COLORREF clr);
-bool HookSysColor();
-void UnhookSysColor();
+	void SetMySysColor(int nIndex, COLORREF clr);
+	bool HookSysColor();
+	void UnhookSysColor();
 
-bool HookThemeColor();
-void UnhookThemeColor();
+	bool HookThemeColor();
+	void UnhookThemeColor();
+} // namespace dmlib::hook

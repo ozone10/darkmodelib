@@ -35,7 +35,7 @@ public:
 	ModuleHandle() = delete;
 
 	explicit ModuleHandle(const wchar_t* moduleName)
-		: m_hModule(LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
+		: m_hModule(::LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
 	{}
 
 	ModuleHandle(const ModuleHandle&) = delete;
@@ -48,7 +48,7 @@ public:
 	{
 		if (m_hModule != nullptr)
 		{
-			FreeLibrary(m_hModule);
+			::FreeLibrary(m_hModule);
 			m_hModule = nullptr;
 		}
 	}

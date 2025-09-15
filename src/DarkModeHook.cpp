@@ -57,14 +57,14 @@ template <typename P>
 static auto ReplaceFunction(IMAGE_THUNK_DATA* addr, const P& newFunction) -> P
 {
 	DWORD oldProtect = 0;
-	if (VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &oldProtect) == FALSE)
+	if (::VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &oldProtect) == FALSE)
 	{
 		return nullptr;
 	}
 
 	const uintptr_t oldFunction = addr->u1.Function;
 	addr->u1.Function = reinterpret_cast<uintptr_t>(newFunction);
-	VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), oldProtect, &oldProtect);
+	::VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), oldProtect, &oldProtect);
 	return reinterpret_cast<P>(oldFunction);
 }
 
@@ -177,7 +177,7 @@ static void UnhookFunction(HookData<T>& hookData)
 using fnOpenNcThemeData = auto (WINAPI*)(HWND hWnd, LPCWSTR pszClassList) -> HTHEME; // ordinal 49
 static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 
-bool LoadOpenNcThemeData(const HMODULE& hUxtheme)
+bool dmlib::hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
 {
 	return loadFn(hUxtheme, pfOpenNcThemeData, 49);
 }
@@ -187,7 +187,7 @@ bool LoadOpenNcThemeData(const HMODULE& hUxtheme)
 static std::unordered_set<HWND> g_darkScrollBarWindows;
 static std::mutex g_darkScrollBarMutex;
 
-void EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
+void dmlib::hook::EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
 {
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
 	g_darkScrollBarWindows.insert(hWnd);
@@ -230,7 +230,7 @@ static HTHEME WINAPI MyOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
 	return pfOpenNcThemeData(hWnd, pszClassList);
 }
 
-void FixDarkScrollBar()
+void dmlib::hook::FixDarkScrollBar()
 {
 	const ModuleHandle moduleComctl(L"comctl32.dll");
 	if (moduleComctl.isLoaded())
@@ -253,7 +253,7 @@ static COLORREF g_clrWindow = RGB(32, 32, 32);
 static COLORREF g_clrText = RGB(224, 224, 224);
 static COLORREF g_clrTGridlines = RGB(100, 100, 100);
 
-void SetMySysColor(int nIndex, COLORREF clr)
+void dmlib::hook::SetMySysColor(int nIndex, COLORREF clr)
 {
 	switch (nIndex)
 	{
@@ -313,7 +313,7 @@ static DWORD WINAPI MyGetSysColor(int nIndex)
 	}
 }
 
-bool HookSysColor()
+bool dmlib::hook::HookSysColor()
 {
 	return HookFunction<fnGetSysColor>(
 		g_hookDataGetSysColor,
@@ -323,7 +323,7 @@ bool HookSysColor()
 		FindIatThunkInModule);
 }
 
-void UnhookSysColor()
+void dmlib::hook::UnhookSysColor()
 {
 	UnhookFunction<fnGetSysColor>(g_hookDataGetSysColor);
 }
@@ -414,14 +414,14 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	{
 		case TDLG_PRIMARYPANEL:
 		{
-			FillRect(hdc, pRect, g_hBrushBg);
+			::FillRect(hdc, pRect, g_hBrushBg);
 			break;
 		}
 
 		case TDLG_SECONDARYPANEL:
 		case TDLG_FOOTNOTEPANE:
 		{
-			FillRect(hdc, &pOptions->rcClip, g_hBrushBgFooter);
+			::FillRect(hdc, &pOptions->rcClip, g_hBrushBgFooter);
 			break;
 		}
 
@@ -433,11 +433,11 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	return S_OK;
 }
 
-bool HookThemeColor()
+bool dmlib::hook::HookThemeColor()
 {
 	if (g_hDarkTheme == nullptr)
 	{
-		g_hDarkTheme = OpenThemeData(nullptr, L"DarkMode_Explorer::TaskDialog");
+		g_hDarkTheme = ::OpenThemeData(nullptr, L"DarkMode_Explorer::TaskDialog");
 		if (g_hDarkTheme == nullptr)
 		{
 			return false;
@@ -450,7 +450,7 @@ bool HookThemeColor()
 			{
 				clrTmp = kMainPaneBgClr;
 			}
-			g_hBrushBg = CreateSolidBrush(clrTmp);
+			g_hBrushBg = ::CreateSolidBrush(clrTmp);
 		}
 
 		if (g_hBrushBgFooter == nullptr)
@@ -459,7 +459,7 @@ bool HookThemeColor()
 			{
 				clrTmp = kFooterBgClr;
 			}
-			g_hBrushBgFooter = CreateSolidBrush(clrTmp);
+			g_hBrushBgFooter = ::CreateSolidBrush(clrTmp);
 		}
 	}
 	return
@@ -474,19 +474,19 @@ bool HookThemeColor()
 			kDrawThemeBackgroundExOrdinal);
 }
 
-void UnhookThemeColor()
+void dmlib::hook::UnhookThemeColor()
 {
 	UnhookFunction<fnGetThemeColor>(g_hookDataGetThemeColor);
 	UnhookFunction<fnDrawThemeBackgroundEx>(g_hookDataDrawThemeBackgroundEx);
 	if (g_hDarkTheme != nullptr && g_hookDataGetThemeColor.m_ref == 0)
 	{
-		CloseThemeData(g_hDarkTheme);
+		::CloseThemeData(g_hDarkTheme);
 		g_hDarkTheme = nullptr;
 
-		DeleteObject(g_hBrushBg);
+		::DeleteObject(g_hBrushBg);
 		g_hBrushBg = nullptr;
 
-		DeleteObject(g_hBrushBgFooter);
+		::DeleteObject(g_hBrushBgFooter);
 		g_hBrushBgFooter = nullptr;
 	}
 }
