@@ -948,10 +948,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					taskDlgCfg.cbSize = sizeof(TASKDIALOGCONFIG);
 					taskDlgCfg.hwndParent = hWnd;
 					taskDlgCfg.hInstance = nullptr;
-					taskDlgCfg.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_USE_COMMAND_LINKS | TDF_EXPAND_FOOTER_AREA | TDF_SHOW_MARQUEE_PROGRESS_BAR | TDF_CAN_BE_MINIMIZED | TDF_SIZE_TO_CONTENT;
+					taskDlgCfg.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_ALLOW_DIALOG_CANCELLATION | TDF_USE_COMMAND_LINKS | TDF_EXPAND_FOOTER_AREA | TDF_SHOW_MARQUEE_PROGRESS_BAR | TDF_CAN_BE_MINIMIZED | TDF_SIZE_TO_CONTENT;
 					taskDlgCfg.dwCommonButtons = TDCBF_OK_BUTTON | TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON | TDCBF_RETRY_BUTTON | TDCBF_CLOSE_BUTTON;
 					taskDlgCfg.pszWindowTitle = L"Dark Task Dialog";
-					taskDlgCfg.pszMainIcon = TD_INFORMATION_ICON;
+					taskDlgCfg.pszMainIcon = TD_ERROR_ICON;
 					taskDlgCfg.pszMainInstruction = L"Simple Dark Task Dialog";
 					taskDlgCfg.pszContent = L"Example of task dialog with basic dark mode support.\nMight/might not support every task dialog configuration.\nCurrently works only on Windows 11.";
 					taskDlgCfg.cButtons = static_cast<UINT>(commandBtn.size());
@@ -959,12 +959,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					taskDlgCfg.cRadioButtons = static_cast<UINT>(radioBtn.size());
 					taskDlgCfg.pRadioButtons = radioBtn.data();
 					taskDlgCfg.nDefaultButton = IDCLOSE;
-					taskDlgCfg.pszVerificationText = L"Verification text";
-					taskDlgCfg.pszExpandedInformation = L"Expanded information";
-					taskDlgCfg.pszExpandedControlText = L"Hide expanded information";
-					taskDlgCfg.pszCollapsedControlText = L"Show expanded information";
-					taskDlgCfg.pszFooterIcon = TD_SHIELD_ICON;
-					taskDlgCfg.pszFooter = L"Footer";
+					taskDlgCfg.pszVerificationText = L"&Verification text";
+					taskDlgCfg.pszExpandedInformation = L"Expanded Information in footer.\nThis can also go in the top part of the dialog.";
+					taskDlgCfg.pszExpandedControlText = L"Expanded Control Text\non two lines";
+					taskDlgCfg.pszCollapsedControlText = L"Collapsed Control Text";
+					taskDlgCfg.pszFooterIcon = TD_INFORMATION_ICON;
+					taskDlgCfg.pszFooter = L"Footer with <a href=\"https://example.com\">hyperlink</a>";
 					taskDlgCfg.pfCallback = TaskDlgCallback;
 					taskDlgCfg.lpCallbackData = 0;
 					taskDlgCfg.cxWidth = 0;
@@ -1130,6 +1130,14 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, [[maybe_unused]] 
 		case WM_INITDIALOG:
 		{
 			DarkMode::setDarkWndNotifySafe(hDlg, true);
+			std::wstring dmlVer = L"Darkmodelib demo v";
+			dmlVer += std::to_wstring(DarkMode::getLibInfo(DarkMode::LibInfo::verMajor));
+			dmlVer += L'.';
+			dmlVer += std::to_wstring(DarkMode::getLibInfo(DarkMode::LibInfo::verMinor));
+			dmlVer += L'.';
+			dmlVer += std::to_wstring(DarkMode::getLibInfo(DarkMode::LibInfo::verRevision));
+
+			SetDlgItemTextW(hDlg, IDC_ABOUT_VERSION, dmlVer.c_str());
 			return TRUE;
 		}
 

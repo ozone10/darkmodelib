@@ -9389,6 +9389,9 @@ namespace DarkMode
 			return m_hBrushBg;
 		}
 
+	public:
+		bool hadFirstErase = false;
+
 	private:
 		ThemeData m_themeData{ L"DarkMode_Explorer::TaskDialog" };
 		COLORREF m_clrText = RGB(255, 255, 255);
@@ -9431,11 +9434,19 @@ namespace DarkMode
 
 			case WM_ERASEBKGND:
 			{
-				if (!CmpWndClassName(hWnd, WC_LINK))
+				const std::wstring className = GetWndClassName(hWnd);
+
+				if (className == L"CtrlNotifySink")
+				{
+					break;
+				}
+
+				if ((className == L"DirectUIHWND") && !pTaskDlgData->hadFirstErase)
 				{
 					RECT rcClient{};
 					::GetClientRect(hWnd, &rcClient);
 					::FillRect(reinterpret_cast<HDC>(wParam), &rcClient, pTaskDlgData->getBgBrush());
+					pTaskDlgData->hadFirstErase = true;
 				}
 				return TRUE;
 			}
