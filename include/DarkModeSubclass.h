@@ -28,7 +28,7 @@
 #pragma comment(lib, "Gdi32.lib")
 #endif
 
-typedef struct _TASKDIALOGCONFIG TASKDIALOGCONFIG;
+typedef struct _TASKDIALOGCONFIG TASKDIALOGCONFIG; // forward declaration, from <CommCtrl.h>
 
 /**
  * @namespace DarkMode
@@ -143,13 +143,13 @@ namespace DarkMode
 	/**
 	 * @brief Defines the available dark mode types for manual configurations.
 	 *
-	 * Can be used in DarkMode::initDarkModeConfig and in DarkMode::setDarkModeConfig
+	 * Can be used in `DarkMode::initDarkModeConfig` and in `DarkMode::setDarkModeConfigEx`
 	 * with static_cast<UINT>(DarkModeType::'value').
 	 *
 	 * @note Also used internally to distinguish between light, dark, and classic modes.
 	 *
 	 * @see DarkMode::initDarkModeConfig()
-	 * @see DarkMode::setDarkModeConfig()
+	 * @see DarkMode::setDarkModeConfigEx()
 	 */
 	enum class DarkModeType : unsigned char
 	{
@@ -157,6 +157,10 @@ namespace DarkMode
 		dark = 1,   ///< Dark mode appearance.
 		classic = 3 ///< Classic (non-themed or system) appearance.
 	};
+
+#ifdef __cplusplus
+	extern "C" {
+#endif
 
 	/**
 	 * @brief Returns library version information or compile-time feature flags.
@@ -166,7 +170,7 @@ namespace DarkMode
 	 *
 	 * @see LibInfo
 	 */
-	[[nodiscard]] int getLibInfo(LibInfo libInfoType);
+	[[nodiscard]] int getLibInfo(int libInfoType);
 
 	// ========================================================================
 	// Config
@@ -203,13 +207,13 @@ namespace DarkMode
 	void setColorizeTitleBarConfig(bool colorize);
 
 	/// Applies dark mode settings based on the given configuration type. (DarkModeType values)
-	void setDarkModeConfig(UINT dmType);
+	void setDarkModeConfigEx(UINT dmType);
 
 	/// Applies dark mode settings based on system mode preference.
 	void setDarkModeConfig();
 
 	/// Initializes dark mode experimental features, colors, and other settings.
-	void initDarkMode(const wchar_t* iniName);
+	void initDarkModeEx(const wchar_t* iniName);
 
 	///Initializes dark mode without INI settings.
 	void initDarkMode();
@@ -368,9 +372,13 @@ namespace DarkMode
 	// ========================================================================
 
 	/// Paints a rounded rectangle using the specified pen and brush.
-	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width = 0, int height = 0);
+	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height);
+	/// Paints a rectangle using the specified pen and brush.
+	void paintRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush);
 	/// Paints an unfilled rounded rectangle (frame only).
-	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width = 0, int height = 0);
+	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width, int height);
+	/// Paints an unfilled rounded rectangle (frame only).
+	void paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen);
 
 	// ========================================================================
 	// Control Subclassing
@@ -445,7 +453,9 @@ namespace DarkMode
 	// ========================================================================
 
 	/// Applies theming and/or subclassing to all child controls of a parent window.
-	void setChildCtrlsSubclassAndTheme(HWND hParent, bool subclass = true, bool theme = true);
+	void setChildCtrlsSubclassAndThemeEx(HWND hParent, bool subclass, bool theme);
+	/// Wrapper for `DarkMode::setChildCtrlsSubclassAndThemeEx`.
+	void setChildCtrlsSubclassAndTheme(HWND hParent);
 	/// Applies theming to all child controls of a parent window.
 	void setChildCtrlsTheme(HWND hParent);
 
@@ -491,13 +501,15 @@ namespace DarkMode
 	void setDarkTitleBar(HWND hWnd);
 
 	/// Applies an experimental visual style to the specified window, if supported.
-	void setDarkThemeExperimental(HWND hWnd, const wchar_t* themeClassName = L"Explorer");
+	void setDarkThemeExperimentalEx(HWND hWnd, const wchar_t* themeClassName);
+	/// Applies an experimental Explorer visual style to the specified window, if supported.
+	void setDarkThemeExperimental(HWND hWnd);
 	/// Applies "DarkMode_Explorer" visual style if experimental mode is active.
 	void setDarkExplorerTheme(HWND hWnd);
 	/// Applies "DarkMode_Explorer" visual style to scroll bars.
 	void setDarkScrollBar(HWND hWnd);
 	/// Applies "DarkMode_Explorer" visual style to tooltip controls based on context.
-	void setDarkTooltips(HWND hWnd, ToolTipsType type = ToolTipsType::tooltip);
+	void setDarkTooltips(HWND hWnd, int tooltipType);
 
 	/// Sets the color of line above a toolbar control for non-classic mode.
 	void setDarkLineAbovePanelToolbar(HWND hWnd);
@@ -509,11 +521,13 @@ namespace DarkMode
 	void setDarkRichEdit(HWND hWnd);
 
 	/// Applies visual styles; ctl color message and child controls subclassings to a window safely.
-	void setDarkWndSafe(HWND hWnd, bool useWin11Features = true);
+	void setDarkWndSafeEx(HWND hWnd, bool useWin11Features);
+	/// Applies visual styles; ctl color message and child controls subclassings with Windows 11 features.
+	void setDarkWndSafe(HWND hWnd);
 	/// Applies visual styles; ctl color message, child controls, custom drawing, and setting change subclassings to a window safely.
 	void setDarkWndNotifySafeEx(HWND hWnd, bool setSettingChangeSubclass, bool useWin11Features);
-	/// Applies visual styles; ctl color message, child controls, and custom drawing subclassings to a window safely.
-	void setDarkWndNotifySafe(HWND hWnd, bool useWin11Features = true);
+	/// Applies visual styles; ctl color message, child controls, and custom drawing subclassings with Windows 11 features.
+	void setDarkWndNotifySafe(HWND hWnd);
 
 	/// Enables or disables theme-based dialog background textures in classic mode.
 	void enableThemeDialogTexture(HWND hWnd, bool theme);
@@ -525,16 +539,18 @@ namespace DarkMode
 	[[nodiscard]] double calculatePerceivedLightness(COLORREF clr);
 
 	/// Retrieves the current TreeView style configuration.
-	[[nodiscard]] const TreeViewStyle& getTreeViewStyle();
+	[[nodiscard]] int getTreeViewStyle();
 
 	/// Determines appropriate TreeView style based on background perceived lightness.
 	void calculateTreeViewStyle();
 
+	/// (Re)applies the appropriate window theme style to the specified TreeView.
+	void setTreeViewWindowThemeEx(HWND hWnd, bool force);
 	/// Applies the appropriate window theme style to the specified TreeView.
-	void setTreeViewWindowTheme(HWND hWnd, bool force = false);
+	void setTreeViewWindowTheme(HWND hWnd);
 
 	/// Retrieves the previous TreeView style configuration.
-	[[nodiscard]] const TreeViewStyle& getPrevTreeViewStyle();
+	[[nodiscard]] int getPrevTreeViewStyle();
 
 	/// Stores the current TreeView style as the previous style for later comparison.
 	void setPrevTreeViewStyle();
@@ -579,7 +595,7 @@ namespace DarkMode
 	[[nodiscard]] LRESULT onCtlColorDlgStaticText(HDC hdc, bool isTextEnabled);
 
 	/// Handles text and background colorizing for SysLink controls.
-	[[nodiscard]] LRESULT onCtlColorDlgLinkText(HDC hdc, bool isTextEnabled = true);
+	[[nodiscard]] LRESULT onCtlColorDlgLinkText(HDC hdc, bool isTextEnabled);
 
 	/// Handles text and background colorizing for list box controls.
 	[[nodiscard]] LRESULT onCtlColorListbox(WPARAM wParam, LPARAM lParam);
@@ -682,7 +698,7 @@ namespace DarkMode
 	void setDarkTaskDlg(HWND hWnd);
 
 	/// Simple task dialog callback procedure to enable dark mode support.
-	HRESULT CALLBACK DarkTaskDlgCallback(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
+	HRESULT CALLBACK DarkTaskDlgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
 
 	/**
 	 * @brief Wrapper for `TaskDialogIndirect` with dark mode support.
@@ -695,13 +711,13 @@ namespace DarkMode
 	 * ```cpp
 	 * static HRESULT CALLBACK DarkTaskDlgCallback(
 	 *     HWND hWnd,
-	 *     UINT msg,
+	 *     UINT uMsg,
 	 *     [[maybe_unused]] WPARAM wParam,
 	 *     [[maybe_unused]] LPARAM lParam,
 	 *     [[maybe_unused]] LONG_PTR lpRefData
 	 * )
 	 * {
-	 *     if (msg == TDN_DIALOG_CONSTRUCTED)
+	 *     if (uMsg == TDN_DIALOG_CONSTRUCTED)
 	 *     {
 	 *          DarkMode::setDarkTaskDlg(hWnd);
 	 *     }
@@ -713,6 +729,10 @@ namespace DarkMode
 	 * @see DarkMode::setDarkTaskDlg()
 	 */
 	HRESULT darkTaskDialogIndirect(const TASKDIALOGCONFIG* pTaskConfig, int* pnButton, int* pnRadioButton, BOOL* pfVerificationFlagChecked);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 } // namespace DarkMode
 

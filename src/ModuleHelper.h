@@ -53,12 +53,12 @@ public:
 		}
 	}
 
-	[[nodiscard]] HMODULE get() const
+	[[nodiscard]] HMODULE get() const noexcept
 	{
 		return m_hModule;
 	}
 
-	[[nodiscard]] bool isLoaded() const
+	[[nodiscard]] bool isLoaded() const noexcept
 	{
 		return m_hModule != nullptr;
 	}
