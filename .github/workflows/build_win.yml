@@ -39,3 +39,11 @@ jobs:
         with:
           name: Win32DarkmodelibGUIDemo-${{ matrix.arch }}
           path: build\darkmodelibdemo\${{ matrix.platform }}-${{ matrix.configuration }}\Win32DarkmodelibGUIdemo.exe
+
+      - name: Archive artifact ${{ matrix.arch }} DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: Win32DarkmodelibGUIDemo-DLL-${{ matrix.arch }}
+          path: |
+            build\dll\${{ matrix.platform }}-${{ matrix.configuration }}\Win32DarkmodelibGUIdemo-DLL.exe
+            build\dll\${{ matrix.platform }}-${{ matrix.configuration }}\darkmode.dll
