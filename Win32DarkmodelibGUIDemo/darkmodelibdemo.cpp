@@ -22,7 +22,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	[[maybe_unused]] _In_ LPWSTR /*lpCmdLine*/,
 	_In_ int nShowCmd)
 {
+#if !defined(DMLIB_DLL)
 	SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+#endif
 	SetDllDirectoryW(L"");
 
 	DarkMode::initDarkMode();
@@ -1130,7 +1132,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, [[maybe_unused]] 
 		case WM_INITDIALOG:
 		{
 			DarkMode::setDarkWndNotifySafe(hDlg);
-			std::wstring dmlVer = L"Darkmodelib demo v";
+			std::wstring dmlVer = L"Darkmodelib demo ";
+#if defined(DMLIB_DLL)
+			dmlVer += L"DLL";
+#endif
+			dmlVer += L" v";
 			dmlVer += std::to_wstring(DarkMode::getLibInfo(static_cast<int>(DarkMode::LibInfo::verMajor)));
 			dmlVer += L'.';
 			dmlVer += std::to_wstring(DarkMode::getLibInfo(static_cast<int>(DarkMode::LibInfo::verMinor)));
