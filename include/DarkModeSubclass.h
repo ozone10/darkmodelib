@@ -292,10 +292,10 @@ namespace DarkMode
 	// ========================================================================
 
 	/// Sets the color tone and its color set for the active theme.
-	DMLIB_API void setColorTone(ColorTone colorTone);
+	DMLIB_API void setColorTone(int colorTone);
 
 	/// Retrieves the currently active color tone for the theme.
-	[[nodiscard]] DMLIB_API ColorTone getColorTone();
+	[[nodiscard]] DMLIB_API int getColorTone();
 
 	DMLIB_API COLORREF setBackgroundColor(COLORREF clrNew);
 	DMLIB_API COLORREF setCtrlBackgroundColor(COLORREF clrNew);

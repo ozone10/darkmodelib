@@ -924,9 +924,9 @@ namespace DarkMode
 	 * @see DarkMode::getColorTone()
 	 * @see DarkMode::Theme
 	 */
-	void setColorTone(ColorTone colorTone)
+	void setColorTone(int colorTone)
 	{
-		DarkMode::getTheme().setToneColors(colorTone);
+		DarkMode::getTheme().setToneColors(static_cast<ColorTone>(colorTone));
 	}
 
 	/**
@@ -936,9 +936,9 @@ namespace DarkMode
 	 *
 	 * @see DarkMode::setColorTone()
 	 */
-	ColorTone getColorTone()
+	int getColorTone()
 	{
-		return DarkMode::getTheme().getColorTone();
+		return static_cast<int>(DarkMode::getTheme().getColorTone());
 	}
 
 	/// Dark views colors
