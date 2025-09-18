@@ -20,7 +20,7 @@
 extern bool g_darkModeSupported;
 extern bool g_darkModeEnabled;
 
-namespace dmlib::win32api
+namespace dmlib_win32api
 {
 	bool AllowDarkModeForWindow(HWND hWnd, bool allow);
 	[[nodiscard]] bool IsHighContrast();
@@ -36,4 +36,4 @@ namespace dmlib::win32api
 	[[nodiscard]] bool IsWindows10();
 	[[nodiscard]] bool IsWindows11();
 	[[nodiscard]] DWORD GetWindowsBuildNumber();
-} // namespace dmlib::win32api
+} // namespace dmlib_win32api

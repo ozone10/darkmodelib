@@ -123,7 +123,7 @@ struct HookData
 template <typename T, typename... InitArgs>
 static auto HookFunction(HookData<T>& hookData, T newFn, const char* dllName, InitArgs&&... args) -> bool
 {
-	const ModuleHandle moduleComctl(L"comctl32.dll");
+	const dmlib_module::ModuleHandle moduleComctl(L"comctl32.dll");
 	if (!moduleComctl.isLoaded())
 	{
 		return false;
@@ -151,7 +151,7 @@ static auto HookFunction(HookData<T>& hookData, T newFn, const char* dllName, In
 template <typename T>
 static void UnhookFunction(HookData<T>& hookData)
 {
-	const ModuleHandle moduleComctl(L"comctl32.dll");
+	const dmlib_module::ModuleHandle moduleComctl(L"comctl32.dll");
 	if (!moduleComctl.isLoaded())
 	{
 		return;
@@ -177,9 +177,9 @@ static void UnhookFunction(HookData<T>& hookData)
 using fnOpenNcThemeData = auto (WINAPI*)(HWND hWnd, LPCWSTR pszClassList) -> HTHEME; // ordinal 49
 static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 
-bool dmlib::hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
+bool dmlib_hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
 {
-	return loadFn(hUxtheme, pfOpenNcThemeData, 49);
+	return LoadFn(hUxtheme, pfOpenNcThemeData, 49);
 }
 
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 1)
@@ -187,7 +187,7 @@ bool dmlib::hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
 static std::unordered_set<HWND> g_darkScrollBarWindows;
 static std::mutex g_darkScrollBarMutex;
 
-void dmlib::hook::EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
+void dmlib_hook::EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
 {
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
 	g_darkScrollBarWindows.insert(hWnd);
@@ -230,7 +230,7 @@ static HTHEME WINAPI MyOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
 	return pfOpenNcThemeData(hWnd, pszClassList);
 }
 
-void dmlib::hook::FixDarkScrollBar()
+void dmlib_hook::FixDarkScrollBar()
 {
 	const ModuleHandle moduleComctl(L"comctl32.dll");
 	if (moduleComctl.isLoaded())
@@ -253,7 +253,7 @@ static COLORREF g_clrWindow = RGB(32, 32, 32);
 static COLORREF g_clrText = RGB(224, 224, 224);
 static COLORREF g_clrTGridlines = RGB(100, 100, 100);
 
-void dmlib::hook::SetMySysColor(int nIndex, COLORREF clr)
+void dmlib_hook::SetMySysColor(int nIndex, COLORREF clr)
 {
 	switch (nIndex)
 	{
@@ -313,7 +313,7 @@ static DWORD WINAPI MyGetSysColor(int nIndex)
 	}
 }
 
-bool dmlib::hook::HookSysColor()
+bool dmlib_hook::HookSysColor()
 {
 	return HookFunction<fnGetSysColor>(
 		g_hookDataGetSysColor,
@@ -323,7 +323,7 @@ bool dmlib::hook::HookSysColor()
 		FindIatThunkInModule);
 }
 
-void dmlib::hook::UnhookSysColor()
+void dmlib_hook::UnhookSysColor()
 {
 	UnhookFunction<fnGetSysColor>(g_hookDataGetSysColor);
 }
@@ -433,7 +433,7 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	return S_OK;
 }
 
-bool dmlib::hook::HookThemeColor()
+bool dmlib_hook::HookThemeColor()
 {
 	if (g_hDarkTheme == nullptr)
 	{
@@ -474,7 +474,7 @@ bool dmlib::hook::HookThemeColor()
 			kDrawThemeBackgroundExOrdinal);
 }
 
-void dmlib::hook::UnhookThemeColor()
+void dmlib_hook::UnhookThemeColor()
 {
 	UnhookFunction<fnGetThemeColor>(g_hookDataGetThemeColor);
 	UnhookFunction<fnDrawThemeBackgroundEx>(g_hookDataDrawThemeBackgroundEx);

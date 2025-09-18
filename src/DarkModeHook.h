@@ -12,7 +12,7 @@
 
 #include <windows.h>
 
-namespace dmlib::hook
+namespace dmlib_hook
 {
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 	bool LoadOpenNcThemeData(const HMODULE& hUxtheme);
@@ -26,4 +26,4 @@ namespace dmlib::hook
 
 	bool HookThemeColor();
 	void UnhookThemeColor();
-} // namespace dmlib::hook
+} // namespace dmlib_hook

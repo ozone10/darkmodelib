@@ -12,57 +12,60 @@
 
 #include <windows.h>
 
-template <typename P>
-inline auto loadFn(HMODULE handle, P& pointer, const char* name) -> bool
+namespace dmlib_module
 {
-	if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
+	template <typename P>
+	inline auto LoadFn(HMODULE handle, P& pointer, const char* name) -> bool
 	{
-		pointer = reinterpret_cast<P>(proc);
-		return true;
-	}
-	return false;
-}
-
-template <typename P>
-inline auto loadFn(HMODULE handle, P& pointer, WORD index) -> bool
-{
-	return loadFn(handle, pointer, MAKEINTRESOURCEA(index));
-}
-
-class ModuleHandle
-{
-public:
-	ModuleHandle() = delete;
-
-	explicit ModuleHandle(const wchar_t* moduleName)
-		: m_hModule(::LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
-	{}
-
-	ModuleHandle(const ModuleHandle&) = delete;
-	ModuleHandle& operator=(const ModuleHandle&) = delete;
-
-	ModuleHandle(ModuleHandle&&) = delete;
-	ModuleHandle& operator=(ModuleHandle&&) = delete;
-
-	~ModuleHandle()
-	{
-		if (m_hModule != nullptr)
+		if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
 		{
-			::FreeLibrary(m_hModule);
-			m_hModule = nullptr;
+			pointer = reinterpret_cast<P>(proc);
+			return true;
 		}
+		return false;
 	}
 
-	[[nodiscard]] HMODULE get() const noexcept
+	template <typename P>
+	inline auto LoadFn(HMODULE handle, P& pointer, WORD index) -> bool
 	{
-		return m_hModule;
+		return dmlib_module::LoadFn(handle, pointer, MAKEINTRESOURCEA(index));
 	}
 
-	[[nodiscard]] bool isLoaded() const noexcept
+	class ModuleHandle
 	{
-		return m_hModule != nullptr;
-	}
+	public:
+		ModuleHandle() = delete;
 
-private:
-	HMODULE m_hModule = nullptr;
-};
+		explicit ModuleHandle(const wchar_t* moduleName)
+			: m_hModule(::LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
+		{}
+
+		ModuleHandle(const ModuleHandle&) = delete;
+		ModuleHandle& operator=(const ModuleHandle&) = delete;
+
+		ModuleHandle(ModuleHandle&&) = delete;
+		ModuleHandle& operator=(ModuleHandle&&) = delete;
+
+		~ModuleHandle()
+		{
+			if (m_hModule != nullptr)
+			{
+				::FreeLibrary(m_hModule);
+				m_hModule = nullptr;
+			}
+		}
+
+		[[nodiscard]] HMODULE get() const noexcept
+		{
+			return m_hModule;
+		}
+
+		[[nodiscard]] bool isLoaded() const noexcept
+		{
+			return m_hModule != nullptr;
+		}
+
+	private:
+		HMODULE m_hModule = nullptr;
+	};
+} // namespace dmlib_module
