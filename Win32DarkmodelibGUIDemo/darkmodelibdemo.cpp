@@ -8,7 +8,75 @@
  */
 
 #include "darkmodelibdemo.h"
+#if !defined(DMLIB_DLL)
 #include "DarkModeSubclass.h"
+#else
+#include "DmlibDllHelper.h"
+#endif
+
+#define DMLIB_FAST_FAIL 0
+
+#if defined(DMLIB_DLL)
+
+// Example of how to define your own dummy function
+
+static HRESULT MyDummyDarkTaskDialogIndirect(
+	const TASKDIALOGCONFIG* pTaskConfig,
+	int* pnButton,
+	int* pnRadioButton,
+	BOOL* pfVerificationFlagChecked)
+{
+	return ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
+}
+
+// Example of how to define your function loader
+
+bool DarkMode::loadDarkModeFunctionsFromDll(const wchar_t* dllName)
+{
+	wchar_t fullPath[MAX_PATH]{};
+	// workaround for SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+	if (!dmlib_module::getModuleFullPath(dllName, fullPath))
+	{
+		// failed to get correct path (e.g too long)
+		::MessageBoxW(nullptr, fullPath, dllName, MB_OK);
+#if DMLIB_FAST_FAIL > 0
+		return false;
+#endif
+	}
+
+	HMODULE hDll = ::LoadLibraryExW(fullPath, nullptr, 0);
+	if (hDll == nullptr)
+	{
+		::MessageBoxW(nullptr, L"Cannot load dll.", dllName, MB_OK);
+#if DMLIB_FAST_FAIL > 0
+		return false;
+#endif
+	}
+
+#define LOAD_FN(fn, dummy) dmlib_module::LoadFn(hDll, fn, #fn, dummy)
+
+	LOAD_FN(initDarkMode, DummyInitDarkMode);
+	LOAD_FN(setDarkModeConfigEx, DummySetDarkModeConfigEx);
+	LOAD_FN(setDefaultColors, DummySetDefaultColors);
+	LOAD_FN(isExperimentalActive, DummyIsExperimentalActive);
+	LOAD_FN(setWindowExStyle, DummySetWindowExStyle);
+	LOAD_FN(isEnabled, DummyIsEnabled);
+	LOAD_FN(setDarkTitleBarEx, DummySetDarkTitleBarEx);
+	LOAD_FN(setChildCtrlsTheme, DummySetChildCtrlsTheme);
+	LOAD_FN(disableVisualStyle, DummyDisableVisualStyle);
+	LOAD_FN(setDarkTaskDlg, DummySetDarkTaskDlg);
+	LOAD_FN(setColorizeTitleBarConfig, DummySetColorizeTitleBarConfig);
+	LOAD_FN(setDarkWndNotifySafe, DummySetDarkWndNotifySafe);
+	LOAD_FN(setWindowEraseBgSubclass, DummySetWindowEraseBgSubclass);
+	LOAD_FN(setWindowMenuBarSubclass, DummySetWindowMenuBarSubclass);
+	LOAD_FN(HookDlgProc, DummyHookDlgProc);
+	LOAD_FN(darkTaskDialogIndirect, MyDummyDarkTaskDialogIndirect);
+	LOAD_FN(setDarkWndNotifySafe, DummySetDarkWndNotifySafe);
+	LOAD_FN(getLibInfo, DummyGetLibInfo);
+
+	return true;
+}
+#endif
 
 static constexpr size_t MAX_LOADSTRING = 32;
 
@@ -22,10 +90,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	[[maybe_unused]] _In_ LPWSTR /*lpCmdLine*/,
 	_In_ int nShowCmd)
 {
-#if !defined(DMLIB_DLL)
 	SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
-#endif
 	SetDllDirectoryW(L"");
+
+#if defined(DMLIB_DLL)
+	if (!DarkMode::loadDarkModeFunctionsFromDll(L"darkmode.dll"))
+	{
+#if DMLIB_FAST_FAIL > 0
+		return FALSE;
+#endif
+	}
+#endif
 
 	DarkMode::initDarkMode();
 	DarkMode::setDarkModeConfigEx(static_cast<UINT>(DarkMode::DarkModeType::dark));

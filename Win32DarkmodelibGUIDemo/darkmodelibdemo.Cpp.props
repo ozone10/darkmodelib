@@ -14,28 +14,27 @@
   <ItemDefinitionGroup Label="Globals">
     <ClCompile>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdclatest</LanguageStandard_C>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_WINDOWS;STRICT_TYPED_ITEMIDS;NOMINMAX;WIN32_LEAN_AND_MEAN;VC_EXTRALEAN;SUPPORT_UTF8;_DARKMODELIB_NO_INI_CONFIG;%(PreprocessorDefinitions)"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;STRICT_TYPED_ITEMIDS;NOMINMAX;SUPPORT_UTF8;__WIN32_WINNT=0x0601;%(PreprocessorDefinitions)"</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <ProfileGuidedDatabase>$(OutDir)$(TargetName).pgd</ProfileGuidedDatabase>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <AdditionalLibraryDirectories>..\build\dll\$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/DEPENDENTLOADFLAG:0x800 %(AdditionalOptions)</AdditionalOptions>
+      <MinimumRequiredVersion>6.01</MinimumRequiredVersion>
     </Link>
     <ResourceCompile>
       <Culture>0x0409</Culture>
     </ResourceCompile>
-    <PreBuildEvent>
-      <Command>RD /S /Q "$(OutDir)"</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
@@ -52,7 +51,6 @@
 
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)"</PreprocessorDefinitions>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -60,10 +58,11 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalOptions>/Gw %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Gw /GA %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
@@ -77,9 +76,10 @@
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX86</TargetMachine>
+      <CETCompat>true</CETCompat>
     </Link>
     <ClCompile>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PreprocessorDefinitions>WIN32;_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -88,9 +88,16 @@
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
+      <CETCompat>true</CETCompat>
     </Link>
     <ClCompile>
       <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
     </ClCompile>
   </ItemDefinitionGroup>
 
@@ -98,9 +105,16 @@
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineARM64</TargetMachine>
+      <MinimumRequiredVersion>10.0</MinimumRequiredVersion>
     </Link>
     <ClCompile>
-      <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_ARM64_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <GuardSignedReturns>true</GuardSignedReturns>
     </ClCompile>
   </ItemDefinitionGroup>
 
