@@ -3422,66 +3422,63 @@ namespace DarkMode
 			{
 				SIZE size{};
 				::GetThemePartSize(hTheme, nullptr, SPNP_UP, UPS_NORMAL, nullptr, TS_TRUE, &size);
-
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowLeft{ { {1.0F, 0.0F}, {0.0F, 0.5F}, {1.0F, 1.0F} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowRight{ { {0.0F, 0.0F}, {1.0F, 0.5F}, {0.0F, 1.0F} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowUp{ { {0.0F, 1.0F}, {0.5F, 0.0F}, {1.0F, 1.0F} } };
-				static constexpr std::array<POINTFLOAT, 3> ptsArrowDown{ { {0.0F, 0.0F}, {0.5F, 1.0F}, {1.0F, 0.0F} } };
-
-				static constexpr float scaleFactor = 3.0F;
-				static constexpr auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
-				const auto baseSize = (static_cast<float>(size.cy - offsetSize) / scaleFactor) + offsetSize;
-
 				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
-					POINTFLOAT sizeArrow{ baseSize, baseSize };
-					float offsetPosX = 0.0F;
-					float offsetPosY = 0.0F;
-					std::array<POINTFLOAT, 3> ptsArrowSelected{};
-					if (isHorz)
-					{
-						if (isPrev)
-						{
-							ptsArrowSelected = ptsArrowLeft;
-							offsetPosX = 1.0F;
-						}
-						else
-						{
-							ptsArrowSelected = ptsArrowRight;
-							offsetPosX = -1.0F;
-						}
-						sizeArrow.x *= 0.5F; // ratio adjustment
-					}
-					else
-					{
-						if (isPrev)
-						{
-							ptsArrowSelected = ptsArrowUp;
-							offsetPosY = 1.0F;
-						}
-						else
-						{
-							ptsArrowSelected = ptsArrowDown;
-						}
-						sizeArrow.y *= 0.5F;
-					}
-
-					const auto xPos = static_cast<float>(rect.left) + ((static_cast<float>(rect.right - rect.left) - sizeArrow.x - offsetPosX) / 2.0F);
-					const auto yPos = static_cast<float>(rect.top) + ((static_cast<float>(rect.bottom - rect.top) - sizeArrow.y - offsetPosY) / 2.0F);
-
-					std::array<POINT, 3> ptsArrow{};
-					for (size_t i = 0; i < 3; ++i)
-					{
-						ptsArrow.at(i).x = static_cast<LONG>((ptsArrowSelected.at(i).x * sizeArrow.x) + xPos);
-						ptsArrow.at(i).y = static_cast<LONG>((ptsArrowSelected.at(i).y * sizeArrow.y) + yPos);
-					}
-
 					const COLORREF clrSelected = getGlyphColor(isHot);
 					const GdiObject hBrush{ hdc, ::CreateSolidBrush(clrSelected) };
 					const GdiObject hPen{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
-
-					::Polygon(hdc, ptsArrow.data(), static_cast<int>(ptsArrow.size()));
+					LONG width = rect.right - rect.left;
+					LONG height = rect.bottom - rect.top;
+					LONG marginX = (width * 5 + 4) / 8;
+					LONG marginY = (height * 5 + 4) / 8;
+					LONG twidth, theight;
+					if (height < width)
+					{
+						theight = height - marginY;
+						twidth = (theight - 1) * 2 + 1;
+						theight = (twidth - 1) / 2 + 1;
+					}
+					else
+					{
+						twidth = width - marginX;
+						theight = (twidth - 1) / 2 + 1;
+						twidth = (theight - 1) * 2 + 1;
+					}
+					POINT points[2];
+					if (isHorz)
+					{
+						LONG y = rect.top + height / 2;
+						LONG dir = isPrev ? +1 : -1;
+						LONG x = (isPrev ? rect.left : rect.right) + dir * (width - theight + 1) / 2;
+						for (LONG i = 0; i < theight; ++i)
+						{
+							points[0] = { x + dir * i, y - i };
+							points[1] = { x + dir * i, y + i + 1 };
+							::Polyline(hdc, points, 2);
+						}
+					}
+					else
+					{
+						LONG x = rect.left + width / 2;
+						LONG twidthHalf = (twidth + 1) / 2;
+						LONG dir = isPrev ? -1 : +1;
+						LONG y = (isPrev ? rect.bottom : rect.top) + dir * (height - theight + 1) / 2;
+						LONG y0 = y;
+						LONG y1 = y + dir * theight;
+						points[0] = { x, y0 };
+						points[1] = { x, y1 };
+						::Polyline(hdc, points, 2);
+						for (LONG i = 1; i < twidthHalf; ++i)
+						{
+							y1 -= dir * 1;
+							points[0] = { x + i, y0 };
+							points[1] = { x + i, y1 };
+							::Polyline(hdc, points, 2);
+							points[0] = { x - i, y0 };
+							points[1] = { x - i, y1 };
+							::Polyline(hdc, points, 2);
+						}
+					}
 				};
-
 				paintArrow(upDownData.m_rcPrev, isHotPrev, true);
 				paintArrow(upDownData.m_rcNext, isHotNext, false);
 			}
