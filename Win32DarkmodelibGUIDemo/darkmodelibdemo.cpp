@@ -11,7 +11,7 @@
 #if !defined(DMLIB_DLL)
 #include "DarkModeSubclass.h"
 #else
-#include "DmlibDllHelper.h"
+#include "dmlib_dll_helper.h"
 #endif
 
 #define DMLIB_FAST_FAIL 0

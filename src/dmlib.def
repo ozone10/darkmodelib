@@ -11,6 +11,7 @@ EXPORTS
 	setDarkModeConfig
 	initDarkModeEx
 	initDarkMode
+	doesConfigFileExist
 	isEnabled
 	isExperimentalActive
 	isExperimentalSupported

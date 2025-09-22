@@ -173,6 +173,7 @@ namespace DarkMode
 	inline void DummySetDarkModeConfig() {}
 	inline void DummyInitDarkModeEx(const wchar_t*) {}
 	inline void DummyInitDarkMode() {}
+	inline bool DummyDoesConfigFileExist() { return false; }
 
 	inline bool DummyIsEnabled() { return false; }
 	inline bool DummyIsExperimentalActive() { return false; }
