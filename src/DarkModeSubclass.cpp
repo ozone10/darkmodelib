@@ -43,6 +43,10 @@
 #include "DarkMode.h"
 #include "DarkModeColor.h"
 #include "DarkModeHook.h"
+#if !defined(_DARKMODELIB_NO_INI_CONFIG)
+#include "DarkModeIni.h"
+#endif
+
 #include "UAHMenuBar.h"
 
 #include "Version.h"
@@ -109,109 +113,6 @@ static bool CmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
 {
 	return (GetWndClassName(hWnd) == classNameToCmp);
 }
-
-#if !defined(_DARKMODELIB_NO_INI_CONFIG)
-/**
- * @brief Constructs a full path to an `.ini` file located next to the executable.
- *
- * Retrieves the directory of the current module (executable or DLL) and appends
- * the specified `.ini` filename to it.
- *
- * @param iniFilename The base name of the `.ini` file (without path or extension).
- * @return Full path to the `.ini` file as a wide string, or an empty string on failure.
- *
- * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
- */
-static std::wstring GetIniPath(const std::wstring& iniFilename)
-{
-	std::array<wchar_t, MAX_PATH> buffer{};
-	const auto strLen = static_cast<size_t>(::GetModuleFileNameW(nullptr, buffer.data(), MAX_PATH));
-	if (strLen == 0)
-	{
-		return L"";
-	}
-
-	wchar_t* lastSlash = std::wcsrchr(buffer.data(), L'\\');
-	if (lastSlash == nullptr)
-	{
-		return L"";
-	}
-
-	*lastSlash = L'\0';
-	std::wstring iniPath(buffer.data());
-	iniPath += L"\\" + iniFilename + L".ini";
-	return iniPath;
-}
-
-/**
- * @brief Checks whether a file exists at the specified path.
- *
- * Determines if the given file path exists and refers to a regular file.
- *
- * @param filePath Path to the file to check.
- * @return `true` if the file exists and is not a directory, otherwise `false`.
- */
-static bool FileExists(const std::wstring& filePath)
-{
-	const DWORD dwAttrib = ::GetFileAttributesW(filePath.c_str());
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY));
-}
-
-/**
- * @brief Reads a color value from an `.ini` file and converts it to a `COLORREF`.
- *
- * Reads a 6-digit hex color string from the specified section and key, then parses
- * it as a Windows GDI `COLORREF` value.
- *
- * @param sectionName   Section within the `.ini` file.
- * @param keyName       Key name containing the hex RGB value (e.g., "E0E2E4").
- * @param iniFilePath   Full path to the `.ini` file.
- * @param clr           Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
- * @return `true` if a valid 6-digit hex color was read and parsed, otherwise `false`.
- *
- * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.
- */
-static bool SetClrFromIni(const std::wstring& sectionName, const std::wstring& keyName, const std::wstring& iniFilePath, COLORREF* clr)
-{
-	static constexpr size_t maxStrLen = 6;
-	std::wstring buffer(maxStrLen + 1, L'\0');
-
-	const auto len = static_cast<size_t>(::GetPrivateProfileStringW(
-		sectionName.c_str()
-		, keyName.c_str()
-		, L""
-		, buffer.data()
-		, static_cast<DWORD>(buffer.size())
-		, iniFilePath.c_str()));
-
-	if (len != maxStrLen)
-	{
-		return false;
-	}
-
-	buffer.resize(len); // remove extra '\0'
-
-	for (const auto& wch : buffer)
-	{
-		if (iswxdigit(wch) == 0)
-		{
-			return false;
-		}
-	}
-
-	try
-	{
-		static constexpr int baseHex = 16;
-		*clr = dmlib_color::HEXRGB(std::stoul(buffer, nullptr, baseHex));
-	}
-	catch (const std::exception&)
-	{
-		return false;
-	}
-
-	return true;
-}
-#endif // !defined(_DARKMODELIB_NO_INI_CONFIG)
 
 /**
  * @namespace DarkMode
@@ -903,7 +804,7 @@ namespace DarkMode
 	 *
 	 * @return `true` if high contrast is enabled via system accessibility settings.
 	 */
-	static bool isHighContrast()
+	[[nodiscard]] static bool isHighContrast()
 	{
 		return dmlib_win32api::IsHighContrast();
 	}
@@ -915,7 +816,7 @@ namespace DarkMode
 	 *
 	 * @return `true` if themed appearance is preferred and supported.
 	 */
-	static bool isThemePrefered()
+	[[nodiscard]] static bool isThemePrefered()
 	{
 		return (DarkMode::getLibInfo(static_cast<int>(LibInfo::preferTheme)) == TRUE)
 			&& DarkMode::isAtLeastWindows10()
@@ -947,19 +848,19 @@ namespace DarkMode
 			return;
 		}
 
-		const std::wstring iniPath = GetIniPath(iniName);
-		g_dmCfg.m_iniExist = FileExists(iniPath);
+		const auto iniPath = dmlib_ini::GetIniPath(iniName);
+		g_dmCfg.m_iniExist = dmlib_ini::FileExists(iniPath);
 		if (g_dmCfg.m_iniExist)
 		{
 			DarkMode::initDarkModeConfig(::GetPrivateProfileIntW(L"main", L"mode", 1, iniPath.c_str()));
-			if (g_dmCfg.m_dmType == DarkModeType::classic)
+			if (g_dmCfg.m_dmType == DarkMode::DarkModeType::classic)
 			{
-				DarkMode::setDarkModeConfigEx(static_cast<UINT>(DarkModeType::classic));
+				DarkMode::setDarkModeConfigEx(static_cast<UINT>(DarkMode::DarkModeType::classic));
 				DarkMode::setDefaultColors(false);
 				return;
 			}
 
-			const bool useDark = g_dmCfg.m_dmType == DarkModeType::dark;
+			const bool useDark = g_dmCfg.m_dmType == DarkMode::DarkModeType::dark;
 
 			const std::wstring sectionBase = useDark ? L"dark" : L"light";
 			const std::wstring sectionColorsView = sectionBase + L".colors.view";
@@ -967,7 +868,7 @@ namespace DarkMode
 
 			DarkMode::setMicaConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"mica", 0, iniPath.c_str()));
 			DarkMode::setRoundCornerConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"roundCorner", 0, iniPath.c_str()));
-			SetClrFromIni(sectionBase, L"borderColor", iniPath, &g_dmCfg.m_borderColor);
+			dmlib_ini::SetClrFromIni(iniPath, sectionBase, L"borderColor", &g_dmCfg.m_borderColor);
 			if (g_dmCfg.m_borderColor == kDwmwaClrDefaultRGBCheck)
 			{
 				g_dmCfg.m_borderColor = DWMWA_COLOR_DEFAULT;
@@ -976,12 +877,12 @@ namespace DarkMode
 			if (useDark)
 			{
 				UINT tone = ::GetPrivateProfileIntW(sectionBase.c_str(), L"tone", 0, iniPath.c_str());
-				if (tone >= static_cast<UINT>(ColorTone::max))
+				if (tone >= static_cast<UINT>(DarkMode::ColorTone::max))
 				{
 					tone = 0;
 				}
 
-				DarkMode::getTheme().setToneColors(static_cast<ColorTone>(tone));
+				DarkMode::getTheme().setToneColors(static_cast<DarkMode::ColorTone>(tone));
 				DarkMode::getThemeView().m_clrView = dmlib_color::kDarkColorsView;
 				DarkMode::getThemeView().m_clrView.headerBackground = DarkMode::getTheme().m_colors.background;
 				DarkMode::getThemeView().m_clrView.headerHotBackground = DarkMode::getTheme().m_colors.hotBackground;
@@ -998,28 +899,48 @@ namespace DarkMode
 				DarkMode::getThemeView().m_clrView = dmlib_color::kLightColorsView;
 			}
 
-			SetClrFromIni(sectionColorsView, L"backgroundView", iniPath, &DarkMode::getThemeView().m_clrView.background);
-			SetClrFromIni(sectionColorsView, L"textView", iniPath, &DarkMode::getThemeView().m_clrView.text);
-			SetClrFromIni(sectionColorsView, L"gridlines", iniPath, &DarkMode::getThemeView().m_clrView.gridlines);
-			SetClrFromIni(sectionColorsView, L"backgroundHeader", iniPath, &DarkMode::getThemeView().m_clrView.headerBackground);
-			SetClrFromIni(sectionColorsView, L"backgroundHotHeader", iniPath, &DarkMode::getThemeView().m_clrView.headerHotBackground);
-			SetClrFromIni(sectionColorsView, L"textHeader", iniPath, &DarkMode::getThemeView().m_clrView.headerText);
-			SetClrFromIni(sectionColorsView, L"edgeHeader", iniPath, &DarkMode::getThemeView().m_clrView.headerEdge);
+			struct ColorEntry
+			{
+				const wchar_t* key = nullptr;
+				COLORREF* clr = nullptr;
+			};
 
-			SetClrFromIni(sectionColors, L"background", iniPath, &DarkMode::getTheme().m_colors.background);
-			SetClrFromIni(sectionColors, L"backgroundCtrl", iniPath, &DarkMode::getTheme().m_colors.ctrlBackground);
-			SetClrFromIni(sectionColors, L"backgroundHot", iniPath, &DarkMode::getTheme().m_colors.hotBackground);
-			SetClrFromIni(sectionColors, L"backgroundDlg", iniPath, &DarkMode::getTheme().m_colors.dlgBackground);
-			SetClrFromIni(sectionColors, L"backgroundError", iniPath, &DarkMode::getTheme().m_colors.errorBackground);
+			static constexpr size_t nColorsViewMembers = 7;
+			const std::array<ColorEntry, nColorsViewMembers> viewColors{ {
+				{L"backgroundView", &DarkMode::getThemeView().m_clrView.background},
+				{L"textView", &DarkMode::getThemeView().m_clrView.text},
+				{L"gridlines", &DarkMode::getThemeView().m_clrView.gridlines},
+				{L"backgroundHeader", &DarkMode::getThemeView().m_clrView.headerBackground},
+				{L"backgroundHotHeader", &DarkMode::getThemeView().m_clrView.headerHotBackground},
+				{L"textHeader", &DarkMode::getThemeView().m_clrView.headerText},
+				{L"edgeHeader", &DarkMode::getThemeView().m_clrView.headerEdge}
+			} };
 
-			SetClrFromIni(sectionColors, L"text", iniPath, &DarkMode::getTheme().m_colors.text);
-			SetClrFromIni(sectionColors, L"textItem", iniPath, &DarkMode::getTheme().m_colors.darkerText);
-			SetClrFromIni(sectionColors, L"textDisabled", iniPath, &DarkMode::getTheme().m_colors.disabledText);
-			SetClrFromIni(sectionColors, L"textLink", iniPath, &DarkMode::getTheme().m_colors.linkText);
+			static constexpr size_t nColorsMembers = 12;
+			const std::array<ColorEntry, nColorsMembers> baseColors{ {
+				{L"background", &DarkMode::getTheme().m_colors.background},
+				{L"backgroundCtrl", &DarkMode::getTheme().m_colors.ctrlBackground},
+				{L"backgroundHot", &DarkMode::getTheme().m_colors.hotBackground},
+				{L"backgroundDlg", &DarkMode::getTheme().m_colors.dlgBackground},
+				{L"backgroundError", &DarkMode::getTheme().m_colors.errorBackground},
+				{L"text", &DarkMode::getTheme().m_colors.text},
+				{L"textItem", &DarkMode::getTheme().m_colors.darkerText},
+				{L"textDisabled", &DarkMode::getTheme().m_colors.disabledText},
+				{L"textLink", &DarkMode::getTheme().m_colors.linkText},
+				{L"edge", &DarkMode::getTheme().m_colors.edge},
+				{L"edgeHot", &DarkMode::getTheme().m_colors.hotEdge},
+				{L"edgeDisabled", &DarkMode::getTheme().m_colors.disabledEdge}
+			} };
 
-			SetClrFromIni(sectionColors, L"edge", iniPath, &DarkMode::getTheme().m_colors.edge);
-			SetClrFromIni(sectionColors, L"edgeHot", iniPath, &DarkMode::getTheme().m_colors.hotEdge);
-			SetClrFromIni(sectionColors, L"edgeDisabled", iniPath, &DarkMode::getTheme().m_colors.disabledEdge);
+			for (const auto& entry : viewColors)
+			{
+				dmlib_ini::SetClrFromIni(iniPath, sectionColorsView, entry.key, entry.clr);
+			}
+
+			for (const auto& entry : baseColors)
+			{
+				dmlib_ini::SetClrFromIni(iniPath, sectionColors, entry.key, entry.clr);
+			}
 
 			DarkMode::updateThemeBrushesAndPens();
 			DarkMode::updateViewBrushesAndPens();
@@ -1030,11 +951,11 @@ namespace DarkMode
 				g_dmCfg.m_colorizeTitleBar = (::GetPrivateProfileIntW(sectionBase.c_str(), L"colorizeTitleBar", 0, iniPath.c_str()) == 1);
 			}
 
-			DarkMode::setDarkMode(g_dmCfg.m_dmType == DarkModeType::dark, true);
+			DarkMode::setDarkMode(g_dmCfg.m_dmType == DarkMode::DarkModeType::dark, true);
 		}
 		else
 		{
-			DarkMode::setDarkModeConfigEx(static_cast<UINT>(DarkModeType::dark));
+			DarkMode::setDarkModeConfigEx(static_cast<UINT>(DarkMode::DarkModeType::dark));
 			DarkMode::setDefaultColors(true);
 		}
 	}

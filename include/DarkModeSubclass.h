@@ -229,7 +229,7 @@ namespace DarkMode
 	DMLIB_API void initDarkMode();
 
 	/// Checks if there is config INI file.
-	DMLIB_API bool doesConfigFileExist();
+	[[nodiscard]] DMLIB_API bool doesConfigFileExist();
 
 	// ========================================================================
 	// Basic checks
