@@ -78,6 +78,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\DarkModeSubclass.h" />
     <ClInclude Include="..\src\DarkMode.h" />
+    <ClInclude Include="..\src\DarkModeColor.h" />
     <ClInclude Include="..\src\IatHook.h" />
     <ClInclude Include="..\src\DarkModeHook.h" />
     <ClInclude Include="..\src\ModuleHelper.h" />
@@ -87,6 +88,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\DarkMode.cpp" />
+    <ClCompile Include="..\src\DarkModeColor.cpp" />
     <ClCompile Include="..\src\DarkModeHook.cpp" />
     <ClCompile Include="..\src\DarkModeSubclass.cpp" />
   </ItemGroup>

@@ -41,6 +41,7 @@
 #include <string>
 
 #include "DarkMode.h"
+#include "DarkModeColor.h"
 #include "DarkModeHook.h"
 #include "UAHMenuBar.h"
 
@@ -71,15 +72,6 @@ static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum
 #define WM_GETDPISCALEDSIZE 0x02E4
 #endif
 #endif
-
-/// Converts 0xRRGGBB to COLORREF (0xBBGGRR) for GDI usage.
-static constexpr COLORREF HEXRGB(DWORD rrggbb)
-{
-	return
-		((rrggbb & 0xFF0000) >> 16) |
-		((rrggbb & 0x00FF00)) |
-		((rrggbb & 0x0000FF) << 16);
-}
 
 /**
  * @brief Retrieves the class name of a given window.
@@ -210,7 +202,7 @@ static bool SetClrFromIni(const std::wstring& sectionName, const std::wstring& k
 	try
 	{
 		static constexpr int baseHex = 16;
-		*clr = HEXRGB(std::stoul(buffer, nullptr, baseHex));
+		*clr = dmlib_color::HEXRGB(std::stoul(buffer, nullptr, baseHex));
 	}
 	catch (const std::exception&)
 	{
@@ -503,415 +495,9 @@ namespace DarkMode
 		bool m_isShared = false;
 	};
 
-	struct Brushes
+	static dmlib_color::Theme& getTheme()
 	{
-		HBRUSH m_background = nullptr;
-		HBRUSH m_ctrlBackground = nullptr;
-		HBRUSH m_hotBackground = nullptr;
-		HBRUSH m_dlgBackground = nullptr;
-		HBRUSH m_errorBackground = nullptr;
-
-		HBRUSH m_edge = nullptr;
-		HBRUSH m_hotEdge = nullptr;
-		HBRUSH m_disabledEdge = nullptr;
-
-		Brushes() = delete;
-
-		explicit Brushes(const Colors& colors) noexcept
-			: m_background(::CreateSolidBrush(colors.background))
-			, m_ctrlBackground(::CreateSolidBrush(colors.ctrlBackground))
-			, m_hotBackground(::CreateSolidBrush(colors.hotBackground))
-			, m_dlgBackground(::CreateSolidBrush(colors.dlgBackground))
-			, m_errorBackground(::CreateSolidBrush(colors.errorBackground))
-
-			, m_edge(::CreateSolidBrush(colors.edge))
-			, m_hotEdge(::CreateSolidBrush(colors.hotEdge))
-			, m_disabledEdge(::CreateSolidBrush(colors.disabledEdge))
-		{}
-
-		Brushes(const Brushes&) = delete;
-		Brushes& operator=(const Brushes&) = delete;
-
-		Brushes(Brushes&&) = delete;
-		Brushes& operator=(Brushes&&) = delete;
-
-		~Brushes()
-		{
-			::DeleteObject(m_background);       m_background = nullptr;
-			::DeleteObject(m_ctrlBackground);   m_ctrlBackground = nullptr;
-			::DeleteObject(m_hotBackground);    m_hotBackground = nullptr;
-			::DeleteObject(m_dlgBackground);    m_dlgBackground = nullptr;
-			::DeleteObject(m_errorBackground);  m_errorBackground = nullptr;
-
-			::DeleteObject(m_edge);             m_edge = nullptr;
-			::DeleteObject(m_hotEdge);          m_hotEdge = nullptr;
-			::DeleteObject(m_disabledEdge);     m_disabledEdge = nullptr;
-		}
-
-		void updateBrushes(const Colors& colors) noexcept
-		{
-			::DeleteObject(m_background);
-			::DeleteObject(m_ctrlBackground);
-			::DeleteObject(m_hotBackground);
-			::DeleteObject(m_dlgBackground);
-			::DeleteObject(m_errorBackground);
-
-			::DeleteObject(m_edge);
-			::DeleteObject(m_hotEdge);
-			::DeleteObject(m_disabledEdge);
-
-			m_background = ::CreateSolidBrush(colors.background);
-			m_ctrlBackground = ::CreateSolidBrush(colors.ctrlBackground);
-			m_hotBackground = ::CreateSolidBrush(colors.hotBackground);
-			m_dlgBackground = ::CreateSolidBrush(colors.dlgBackground);
-			m_errorBackground = ::CreateSolidBrush(colors.errorBackground);
-
-			m_edge = ::CreateSolidBrush(colors.edge);
-			m_hotEdge = ::CreateSolidBrush(colors.hotEdge);
-			m_disabledEdge = ::CreateSolidBrush(colors.disabledEdge);
-		}
-	};
-
-	struct Pens
-	{
-		HPEN m_darkerText = nullptr;
-		HPEN m_edge = nullptr;
-		HPEN m_hotEdge = nullptr;
-		HPEN m_disabledEdge = nullptr;
-
-		Pens() = delete;
-
-		explicit Pens(const Colors& colors) noexcept
-			: m_darkerText(::CreatePen(PS_SOLID, 1, colors.darkerText))
-			, m_edge(::CreatePen(PS_SOLID, 1, colors.edge))
-			, m_hotEdge(::CreatePen(PS_SOLID, 1, colors.hotEdge))
-			, m_disabledEdge(::CreatePen(PS_SOLID, 1, colors.disabledEdge))
-		{}
-
-		Pens(const Pens&) = delete;
-		Pens& operator=(const Pens&) = delete;
-
-		Pens(Pens&&) = delete;
-		Pens& operator=(Pens&&) = delete;
-
-		~Pens()
-		{
-			::DeleteObject(m_darkerText);    m_darkerText = nullptr;
-			::DeleteObject(m_edge);          m_edge = nullptr;
-			::DeleteObject(m_hotEdge);       m_hotEdge = nullptr;
-			::DeleteObject(m_disabledEdge);  m_disabledEdge = nullptr;
-		}
-
-		void updatePens(const Colors& colors) noexcept
-		{
-			::DeleteObject(m_darkerText);
-			::DeleteObject(m_edge);
-			::DeleteObject(m_hotEdge);
-			::DeleteObject(m_disabledEdge);
-
-			m_darkerText = ::CreatePen(PS_SOLID, 1, colors.darkerText);
-			m_edge = ::CreatePen(PS_SOLID, 1, colors.edge);
-			m_hotEdge = ::CreatePen(PS_SOLID, 1, colors.hotEdge);
-			m_disabledEdge = ::CreatePen(PS_SOLID, 1, colors.disabledEdge);
-		}
-	};
-
-	/// Black tone (default)
-	static constexpr Colors kDarkColors{
-		HEXRGB(0x202020),   // background
-		HEXRGB(0x383838),   // ctrlBackground
-		HEXRGB(0x454545),   // hotBackground
-		HEXRGB(0x202020),   // dlgBackground
-		HEXRGB(0xB00000),   // errorBackground
-		HEXRGB(0xE0E0E0),   // textColor
-		HEXRGB(0xC0C0C0),   // darkerTextColor
-		HEXRGB(0x808080),   // disabledTextColor
-		HEXRGB(0xFFFF00),   // linkTextColor
-		HEXRGB(0x646464),   // edgeColor
-		HEXRGB(0x9B9B9B),   // hotEdgeColor
-		HEXRGB(0x484848)    // disabledEdgeColor
-	};
-
-	static constexpr DWORD kOffsetEdge = HEXRGB(0x1C1C1C);
-
-	/// Red tone
-	static constexpr DWORD kOffsetRed = HEXRGB(0x100000);
-	static constexpr Colors kDarkRedColors{
-		kDarkColors.background + kOffsetRed,
-		kDarkColors.ctrlBackground + kOffsetRed,
-		kDarkColors.hotBackground + kOffsetRed,
-		kDarkColors.dlgBackground + kOffsetRed,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetRed,
-		kDarkColors.hotEdge + kOffsetRed,
-		kDarkColors.disabledEdge + kOffsetRed
-	};
-
-	/// Green tone
-	static constexpr DWORD kOffsetGreen = HEXRGB(0x001000);
-	static constexpr Colors kDarkGreenColors{
-		kDarkColors.background + kOffsetGreen,
-		kDarkColors.ctrlBackground + kOffsetGreen,
-		kDarkColors.hotBackground + kOffsetGreen,
-		kDarkColors.dlgBackground + kOffsetGreen,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetGreen,
-		kDarkColors.hotEdge + kOffsetGreen,
-		kDarkColors.disabledEdge + kOffsetGreen
-	};
-
-	/// Blue tone
-	static constexpr DWORD kOffsetBlue = HEXRGB(0x000020);
-	static constexpr Colors kDarkBlueColors{
-		kDarkColors.background + kOffsetBlue,
-		kDarkColors.ctrlBackground + kOffsetBlue,
-		kDarkColors.hotBackground + kOffsetBlue,
-		kDarkColors.dlgBackground + kOffsetBlue,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetBlue,
-		kDarkColors.hotEdge + kOffsetBlue,
-		kDarkColors.disabledEdge + kOffsetBlue
-	};
-
-	/// Purple tone
-	static constexpr DWORD kOffsetPurple = HEXRGB(0x100020);
-	static constexpr Colors kDarkPurpleColors{
-		kDarkColors.background + kOffsetPurple,
-		kDarkColors.ctrlBackground + kOffsetPurple,
-		kDarkColors.hotBackground + kOffsetPurple,
-		kDarkColors.dlgBackground + kOffsetPurple,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetPurple,
-		kDarkColors.hotEdge + kOffsetPurple,
-		kDarkColors.disabledEdge + kOffsetPurple
-	};
-
-	/// Cyan tone
-	static constexpr DWORD kOffsetCyan = HEXRGB(0x001020);
-	static constexpr Colors kDarkCyanColors{
-		kDarkColors.background + kOffsetCyan,
-		kDarkColors.ctrlBackground + kOffsetCyan,
-		kDarkColors.hotBackground + kOffsetCyan,
-		kDarkColors.dlgBackground + kOffsetCyan,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetCyan,
-		kDarkColors.hotEdge + kOffsetCyan,
-		kDarkColors.disabledEdge + kOffsetCyan
-	};
-
-	/// Olive tone
-	static constexpr DWORD kOffsetOlive = HEXRGB(0x101000);
-	static constexpr Colors kDarkOliveColors{
-		kDarkColors.background + kOffsetOlive,
-		kDarkColors.ctrlBackground + kOffsetOlive,
-		kDarkColors.hotBackground + kOffsetOlive,
-		kDarkColors.dlgBackground + kOffsetOlive,
-		kDarkColors.errorBackground,
-		kDarkColors.text,
-		kDarkColors.darkerText,
-		kDarkColors.disabledText,
-		kDarkColors.linkText,
-		kDarkColors.edge + kOffsetEdge + kOffsetOlive,
-		kDarkColors.hotEdge + kOffsetOlive,
-		kDarkColors.disabledEdge + kOffsetOlive
-	};
-
-	/// Light tone
-	static Colors getLightColors()
-	{
-		const Colors lightColors{
-		::GetSysColor(COLOR_3DFACE),        // background
-		::GetSysColor(COLOR_WINDOW),        // ctrlBackground
-		HEXRGB(0xC0DCF3),                   // hotBackground
-		::GetSysColor(COLOR_3DFACE),        // dlgBackground
-		HEXRGB(0xA01000),                   // errorBackground
-		::GetSysColor(COLOR_WINDOWTEXT),    // textColor
-		::GetSysColor(COLOR_BTNTEXT),       // darkerTextColor
-		::GetSysColor(COLOR_GRAYTEXT),      // disabledTextColor
-		::GetSysColor(COLOR_HOTLIGHT),      // linkTextColor
-		HEXRGB(0x8D8D8D),                   // edgeColor
-		::GetSysColor(COLOR_HIGHLIGHT),     // hotEdgeColor
-		::GetSysColor(COLOR_GRAYTEXT)       // disabledEdgeColor
-		};
-
-		return lightColors;
-	}
-
-	class Theme
-	{
-	public:
-		Theme() noexcept
-			: m_colors(kDarkColors)
-			, m_brushes(kDarkColors)
-			, m_pens(kDarkColors)
-		{}
-
-		explicit Theme(const Colors& colors) noexcept
-			: m_colors(colors)
-			, m_brushes(colors)
-			, m_pens(colors)
-		{}
-
-		void updateTheme() noexcept
-		{
-			m_brushes.updateBrushes(m_colors);
-			m_pens.updatePens(m_colors);
-		}
-
-		void updateTheme(Colors colors) noexcept
-		{
-			m_colors = colors;
-			Theme::updateTheme();
-		}
-
-		[[nodiscard]] Colors getToneColors() const noexcept
-		{
-			switch (m_tone)
-			{
-				case ColorTone::red:
-				{
-					return kDarkRedColors;
-				}
-
-				case ColorTone::green:
-				{
-					return kDarkGreenColors;
-				}
-
-				case ColorTone::blue:
-				{
-					return kDarkBlueColors;
-				}
-
-				case ColorTone::purple:
-				{
-					return kDarkPurpleColors;
-				}
-
-				case ColorTone::cyan:
-				{
-					return kDarkCyanColors;
-				}
-
-				case ColorTone::olive:
-				{
-					return kDarkOliveColors;
-				}
-
-				case ColorTone::black:
-				case ColorTone::max:
-				{
-					break;
-				}
-			}
-			return kDarkColors;
-		}
-
-		void setToneColors(ColorTone colorTone) noexcept
-		{
-			m_tone = colorTone;
-
-			switch (m_tone)
-			{
-				case ColorTone::red:
-				{
-					m_colors = kDarkRedColors;
-					break;
-				}
-
-				case ColorTone::green:
-				{
-					m_colors = kDarkGreenColors;
-					break;
-				}
-
-				case ColorTone::blue:
-				{
-					m_colors = kDarkBlueColors;
-					break;
-				}
-
-				case ColorTone::purple:
-				{
-					m_colors = kDarkPurpleColors;
-					break;
-				}
-
-				case ColorTone::cyan:
-				{
-					m_colors = kDarkCyanColors;
-					break;
-				}
-
-				case ColorTone::olive:
-				{
-					m_colors = kDarkOliveColors;
-					break;
-				}
-
-				case ColorTone::black:
-				case ColorTone::max:
-				{
-					m_colors = kDarkColors;
-					break;
-				}
-			}
-
-			Theme::updateTheme();
-		}
-
-		void setToneColors() noexcept
-		{
-			m_colors = Theme::getToneColors();
-			Theme::updateTheme();
-		}
-
-		[[nodiscard]] const Brushes& getBrushes() const noexcept
-		{
-			return m_brushes;
-		}
-
-		[[nodiscard]] const Pens& getPens() const noexcept
-		{
-			return m_pens;
-		}
-
-		[[nodiscard]] const ColorTone& getColorTone() const noexcept
-		{
-			return m_tone;
-		}
-
-		Colors m_colors;
-
-	private:
-		Brushes m_brushes;
-		Pens m_pens;
-		ColorTone m_tone = DarkMode::ColorTone::black;
-	};
-
-	static Theme& getTheme()
-	{
-		static Theme tMain{};
+		static dmlib_color::Theme tMain{};
 		return tMain;
 	}
 
@@ -942,142 +528,24 @@ namespace DarkMode
 		return static_cast<int>(DarkMode::getTheme().getColorTone());
 	}
 
-	/// Dark views colors
-	static constexpr ColorsView kDarkColorsView{
-		HEXRGB(0x293134),   // background
-		HEXRGB(0xE0E2E4),   // text
-		HEXRGB(0x646464),   // gridlines
-		HEXRGB(0x202020),   // Header background
-		HEXRGB(0x454545),   // Header hot background
-		HEXRGB(0xC0C0C0),   // header text
-		HEXRGB(0x646464)    // header divider
-	};
-
-	/// Light views colors
-	static constexpr ColorsView kLightColorsView{
-		HEXRGB(0xFFFFFF),   // background
-		HEXRGB(0x000000),   // text
-		HEXRGB(0xF0F0F0),   // gridlines
-		HEXRGB(0xFFFFFF),   // header background
-		HEXRGB(0xD9EBF9),   // header hot background
-		HEXRGB(0x000000),   // header text
-		HEXRGB(0xE5E5E5)    // header divider
-	};
-
-	struct BrushesAndPensView
+	static dmlib_color::ThemeView& getThemeView()
 	{
-		HBRUSH m_background = nullptr;
-		HBRUSH m_gridlines = nullptr;
-		HBRUSH m_headerBackground = nullptr;
-		HBRUSH m_headerHotBackground = nullptr;
-
-		HPEN m_headerEdge = nullptr;
-
-		BrushesAndPensView() = delete;
-
-		explicit BrushesAndPensView(const ColorsView& colors) noexcept
-			: m_background(::CreateSolidBrush(colors.background))
-			, m_gridlines(::CreateSolidBrush(colors.gridlines))
-			, m_headerBackground(::CreateSolidBrush(colors.headerBackground))
-			, m_headerHotBackground(::CreateSolidBrush(colors.headerHotBackground))
-
-			, m_headerEdge(::CreatePen(PS_SOLID, 1, colors.headerEdge))
-		{}
-
-		BrushesAndPensView(const BrushesAndPensView&) = delete;
-		BrushesAndPensView& operator=(const BrushesAndPensView&) = delete;
-
-		BrushesAndPensView(BrushesAndPensView&&) = delete;
-		BrushesAndPensView& operator=(BrushesAndPensView&&) = delete;
-
-		~BrushesAndPensView()
-		{
-			::DeleteObject(m_background);           m_background = nullptr;
-			::DeleteObject(m_gridlines);            m_gridlines = nullptr;
-			::DeleteObject(m_headerBackground);     m_headerBackground = nullptr;
-			::DeleteObject(m_headerHotBackground);  m_headerHotBackground = nullptr;
-
-			::DeleteObject(m_headerEdge);           m_headerEdge = nullptr;
-		}
-
-		void update(const ColorsView& colors) noexcept
-		{
-			::DeleteObject(m_background);
-			::DeleteObject(m_gridlines);
-			::DeleteObject(m_headerBackground);
-			::DeleteObject(m_headerHotBackground);
-
-			m_background = ::CreateSolidBrush(colors.background);
-			m_gridlines = ::CreateSolidBrush(colors.gridlines);
-			m_headerBackground = ::CreateSolidBrush(colors.headerBackground);
-			m_headerHotBackground = ::CreateSolidBrush(colors.headerHotBackground);
-
-			::DeleteObject(m_headerEdge);
-
-			m_headerEdge = ::CreatePen(PS_SOLID, 1, colors.headerEdge);
-		}
-	};
-
-	class ThemeView
-	{
-	public:
-		ThemeView() noexcept
-			: m_clrView(kDarkColorsView)
-			, m_hbrPnView(kDarkColorsView)
-		{}
-
-		explicit ThemeView(const ColorsView& colorsView) noexcept
-			: m_clrView(colorsView)
-			, m_hbrPnView(colorsView)
-		{}
-
-		void updateView() noexcept
-		{
-			m_hbrPnView.update(m_clrView);
-		}
-
-		void updateView(ColorsView colors) noexcept
-		{
-			m_clrView = colors;
-			ThemeView::updateView();
-		}
-
-		[[nodiscard]] const BrushesAndPensView& getViewBrushesAndPens() const noexcept
-		{
-			return m_hbrPnView;
-		}
-
-		ColorsView m_clrView;
-
-	private:
-		BrushesAndPensView m_hbrPnView;
-	};
-
-	static ThemeView& getThemeView()
-	{
-		static ThemeView tView{};
+		static dmlib_color::ThemeView tView{};
 		return tView;
 	}
 
-	static COLORREF setNewColor(COLORREF* clrOld, COLORREF clrNew)
-	{
-		const auto clrTmp = *clrOld;
-		*clrOld = clrNew;
-		return clrTmp;
-	}
-
-	COLORREF setBackgroundColor(COLORREF clrNew)        { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.background, clrNew); }
-	COLORREF setCtrlBackgroundColor(COLORREF clrNew)    { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.ctrlBackground, clrNew); }
-	COLORREF setHotBackgroundColor(COLORREF clrNew)     { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.hotBackground, clrNew); }
-	COLORREF setDlgBackgroundColor(COLORREF clrNew)     { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.dlgBackground, clrNew); }
-	COLORREF setErrorBackgroundColor(COLORREF clrNew)   { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.errorBackground, clrNew); }
-	COLORREF setTextColor(COLORREF clrNew)              { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.text, clrNew); }
-	COLORREF setDarkerTextColor(COLORREF clrNew)        { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.darkerText, clrNew); }
-	COLORREF setDisabledTextColor(COLORREF clrNew)      { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.disabledText, clrNew); }
-	COLORREF setLinkTextColor(COLORREF clrNew)          { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.linkText, clrNew); }
-	COLORREF setEdgeColor(COLORREF clrNew)              { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.edge, clrNew); }
-	COLORREF setHotEdgeColor(COLORREF clrNew)           { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.hotEdge, clrNew); }
-	COLORREF setDisabledEdgeColor(COLORREF clrNew)      { return DarkMode::setNewColor(&DarkMode::getTheme().m_colors.disabledEdge, clrNew); }
+	COLORREF setBackgroundColor(COLORREF clrNew)        { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.background, clrNew); }
+	COLORREF setCtrlBackgroundColor(COLORREF clrNew)    { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.ctrlBackground, clrNew); }
+	COLORREF setHotBackgroundColor(COLORREF clrNew)     { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.hotBackground, clrNew); }
+	COLORREF setDlgBackgroundColor(COLORREF clrNew)     { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.dlgBackground, clrNew); }
+	COLORREF setErrorBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.errorBackground, clrNew); }
+	COLORREF setTextColor(COLORREF clrNew)              { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.text, clrNew); }
+	COLORREF setDarkerTextColor(COLORREF clrNew)        { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.darkerText, clrNew); }
+	COLORREF setDisabledTextColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.disabledText, clrNew); }
+	COLORREF setLinkTextColor(COLORREF clrNew)          { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.linkText, clrNew); }
+	COLORREF setEdgeColor(COLORREF clrNew)              { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.edge, clrNew); }
+	COLORREF setHotEdgeColor(COLORREF clrNew)           { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.hotEdge, clrNew); }
+	COLORREF setDisabledEdgeColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&DarkMode::getTheme().m_colors.disabledEdge, clrNew); }
 
 	void setThemeColors(Colors colors)
 	{
@@ -1117,14 +585,14 @@ namespace DarkMode
 	HPEN getHotEdgePen()                  { return getTheme().getPens().m_hotEdge; }
 	HPEN getDisabledEdgePen()             { return getTheme().getPens().m_disabledEdge; }
 
-	COLORREF setViewBackgroundColor(COLORREF clrNew)        { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.background, clrNew); }
-	COLORREF setViewTextColor(COLORREF clrNew)              { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.text, clrNew); }
-	COLORREF setViewGridlinesColor(COLORREF clrNew)         { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.gridlines, clrNew); }
+	COLORREF setViewBackgroundColor(COLORREF clrNew)        { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.background, clrNew); }
+	COLORREF setViewTextColor(COLORREF clrNew)              { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.text, clrNew); }
+	COLORREF setViewGridlinesColor(COLORREF clrNew)         { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.gridlines, clrNew); }
 
-	COLORREF setHeaderBackgroundColor(COLORREF clrNew)      { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.headerBackground, clrNew); }
-	COLORREF setHeaderHotBackgroundColor(COLORREF clrNew)   { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.headerHotBackground, clrNew); }
-	COLORREF setHeaderTextColor(COLORREF clrNew)            { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.headerText, clrNew); }
-	COLORREF setHeaderEdgeColor(COLORREF clrNew)            { return DarkMode::setNewColor(&DarkMode::getThemeView().m_clrView.headerEdge, clrNew); }
+	COLORREF setHeaderBackgroundColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.headerBackground, clrNew); }
+	COLORREF setHeaderHotBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.headerHotBackground, clrNew); }
+	COLORREF setHeaderTextColor(COLORREF clrNew)            { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.headerText, clrNew); }
+	COLORREF setHeaderEdgeColor(COLORREF clrNew)            { return dmlib_color::setNewColor(&DarkMode::getThemeView().m_clrView.headerEdge, clrNew); }
 
 	void setViewColors(ColorsView colors)
 	{
@@ -1178,14 +646,14 @@ namespace DarkMode
 			case DarkModeType::dark:
 			{
 				DarkMode::getTheme().setToneColors();
-				DarkMode::getThemeView().m_clrView = DarkMode::kDarkColorsView;
+				DarkMode::getThemeView().m_clrView = dmlib_color::kDarkColorsView;
 				break;
 			}
 
 			case DarkModeType::light:
 			{
-				DarkMode::getTheme().m_colors = DarkMode::getLightColors();
-				DarkMode::getThemeView().m_clrView = DarkMode::kLightColorsView;
+				DarkMode::getTheme().m_colors = dmlib_color::getLightColors();
+				DarkMode::getThemeView().m_clrView = dmlib_color::kLightColorsView;
 				break;
 			}
 
@@ -1415,7 +883,7 @@ namespace DarkMode
 	 */
 	static void setTitleBarThemeColor(HWND hWnd)
 	{
-		::RefreshTitleBarThemeColor(hWnd);
+		dmlib_win32api:::RefreshTitleBarThemeColor(hWnd);
 	}
 #endif
 
@@ -1514,7 +982,7 @@ namespace DarkMode
 				}
 
 				DarkMode::getTheme().setToneColors(static_cast<ColorTone>(tone));
-				DarkMode::getThemeView().m_clrView = DarkMode::kDarkColorsView;
+				DarkMode::getThemeView().m_clrView = dmlib_color::kDarkColorsView;
 				DarkMode::getThemeView().m_clrView.headerBackground = DarkMode::getTheme().m_colors.background;
 				DarkMode::getThemeView().m_clrView.headerHotBackground = DarkMode::getTheme().m_colors.hotBackground;
 				DarkMode::getThemeView().m_clrView.headerText = DarkMode::getTheme().m_colors.darkerText;
@@ -1526,8 +994,8 @@ namespace DarkMode
 			}
 			else
 			{
-				DarkMode::getTheme().m_colors = DarkMode::getLightColors();
-				DarkMode::getThemeView().m_clrView = DarkMode::kLightColorsView;
+				DarkMode::getTheme().m_colors = dmlib_color::getLightColors();
+				DarkMode::getThemeView().m_clrView = dmlib_color::kLightColorsView;
 			}
 
 			SetClrFromIni(sectionColorsView, L"backgroundView", iniPath, &DarkMode::getThemeView().m_clrView.background);
@@ -9223,8 +8691,8 @@ namespace DarkMode
 		if (DarkMode::isEnabled())
 		{
 			::SendMessage(hWnd, PBM_SETBKCOLOR, 0, static_cast<LPARAM>(DarkMode::getCtrlBackgroundColor()));
-			static constexpr COLORREF greenLight = HEXRGB(0x06B025);
-			static constexpr COLORREF greenDark = HEXRGB(0x0F7B0F);
+			static constexpr COLORREF greenLight = dmlib_color::HEXRGB(0x06B025);
+			static constexpr COLORREF greenDark = dmlib_color::HEXRGB(0x0F7B0F);
 			::SendMessage(hWnd, PBM_SETBARCOLOR, 0, static_cast<LPARAM>(DarkMode::isExperimentalActive() ? greenDark : greenLight));
 		}
 	}
