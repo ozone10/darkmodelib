@@ -16,7 +16,10 @@
 
 namespace dmlib_ini
 {
+	/// Constructs a full path to an `.ini` file located next to the executable.
 	[[nodiscard]] std::wstring GetIniPath(const std::wstring& iniFilename);
+	/// Checks whether a file exists at the specified path.
 	[[nodiscard]] bool FileExists(const std::wstring& filePath);
+	/// Reads a color value from an `.ini` file and converts it to a `COLORREF`.
 	bool SetClrFromIni(const std::wstring& iniFilePath, const std::wstring& sectionName, const std::wstring& keyName, COLORREF* clr);
 } // namespace dmlib_ini

@@ -28,17 +28,17 @@
 #include <array>
 #include <cwctype>
 
- /**
-  * @brief Constructs a full path to an `.ini` file located next to the executable.
-  *
-  * Retrieves the directory of the current module (executable or DLL) and appends
-  * the specified `.ini` filename to it.
-  *
-  * @param iniFilename The base name of the `.ini` file (without path or extension).
-  * @return Full path to the `.ini` file as a wide string, or an empty string on failure.
-  *
-  * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
-  */
+/**
+ * @brief Constructs a full path to an `.ini` file located next to the executable.
+ *
+ * Retrieves the directory of the current module (executable or DLL) and appends
+ * the specified `.ini` filename to it.
+ *
+ * @param[in] iniFilename The base name of the `.ini` file (without path or extension).
+ * @return Full path to the `.ini` file as a wide string, or an empty string on failure.
+ *
+ * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
+ */
 std::wstring dmlib_ini::GetIniPath(const std::wstring& iniFilename)
 {
 	std::array<wchar_t, MAX_PATH> buffer{};
@@ -65,7 +65,7 @@ std::wstring dmlib_ini::GetIniPath(const std::wstring& iniFilename)
  *
  * Determines if the given file path exists and refers to a regular file.
  *
- * @param filePath Path to the file to check.
+ * @param[in] filePath Path to the file to check.
  * @return `true` if the file exists and is not a directory, otherwise `false`.
  */
 bool dmlib_ini::FileExists(const std::wstring& filePath)
@@ -80,10 +80,10 @@ bool dmlib_ini::FileExists(const std::wstring& filePath)
  * Reads a 6-digit hex color string from the specified section and key, then parses
  * it as a Windows GDI `COLORREF` value.
  *
- * @param iniFilePath   Full path to the `.ini` file.
- * @param sectionName   Section within the `.ini` file.
- * @param keyName       Key name containing the hex RGB value (e.g., "E0E2E4").
- * @param clr           Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
+ * @param[in]   iniFilePath Full path to the `.ini` file.
+ * @param[in]   sectionName Section within the `.ini` file.
+ * @param[in]   keyName     Key name containing the hex RGB value (e.g., "E0E2E4").
+ * @param[out]  clr         Pointer to a `COLORREF` where the parsed color will be stored. **Must not be `nullptr`.**
  * @return `true` if a valid 6-digit hex color was read and parsed, otherwise `false`.
  *
  * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.

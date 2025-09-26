@@ -31,6 +31,17 @@ namespace dmlib_module
 		return dmlib_module::LoadFn(handle, pointer, MAKEINTRESOURCEA(index));
 	}
 
+	template <typename P, typename D>
+	inline auto LoadFn(HMODULE handle, P& pointer, const char* name, D& dummy) -> bool
+	{
+		const bool retVal = dmlib_module::LoadFn(handle, pointer, name);
+		if (!retVal)
+		{
+			pointer = static_cast<P>(dummy);
+		}
+		return retVal;
+	}
+
 	class ModuleHandle
 	{
 	public:

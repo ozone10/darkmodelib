@@ -24,7 +24,7 @@
 
 DarkMode::Colors dmlib_color::getLightColors()
 {
-	const DarkMode::Colors lightColors{
+	return DarkMode::Colors {
 		::GetSysColor(COLOR_3DFACE),        // background
 		::GetSysColor(COLOR_WINDOW),        // ctrlBackground
 		dmlib_color::HEXRGB(0xC0DCF3),      // hotBackground
@@ -38,6 +38,4 @@ DarkMode::Colors dmlib_color::getLightColors()
 		::GetSysColor(COLOR_HIGHLIGHT),     // hotEdgeColor
 		::GetSysColor(COLOR_GRAYTEXT)       // disabledEdgeColor
 	};
-
-	return lightColors;
 }
