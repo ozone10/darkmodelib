@@ -24,7 +24,8 @@ static HRESULT MyDummyDarkTaskDialogIndirect(
 	const TASKDIALOGCONFIG* pTaskConfig,
 	int* pnButton,
 	int* pnRadioButton,
-	BOOL* pfVerificationFlagChecked)
+	BOOL* pfVerificationFlagChecked
+)
 {
 	return ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
 }
@@ -77,6 +78,28 @@ bool DarkMode::loadDarkModeFunctionsFromDll(const wchar_t* dllName)
 	return true;
 }
 #endif
+
+// dpi functions
+
+static inline UINT WINAPI MyGetDpiForSystem()
+{
+	UINT dpi = USER_DEFAULT_SCREEN_DPI;
+	HDC hdc = ::GetDC(nullptr);
+	if (hdc != nullptr)
+	{
+		dpi = ::GetDeviceCaps(hdc, LOGPIXELSX);
+		::ReleaseDC(nullptr, hdc);
+	}
+	return dpi;
+}
+
+[[nodiscard]] static inline int Scale(int x)
+{
+	static const UINT dpi = MyGetDpiForSystem();
+	return ::MulDiv(x, dpi, USER_DEFAULT_SCREEN_DPI);
+}
+
+//
 
 static constexpr size_t MAX_LOADSTRING = 32;
 
@@ -179,7 +202,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, HWND& hMain)
 	g_hInst = hInstance; // Store instance handle in our global variable
 
 	hMain = CreateWindowExW(0, g_szWindowClass.c_str(), g_szTitle.c_str(), WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, 800, 550, nullptr, nullptr, hInstance, nullptr);
+		CW_USEDEFAULT, 0, Scale(800), Scale(550), nullptr, nullptr, hInstance, nullptr);
 
 	if (hMain == nullptr)
 	{
@@ -405,134 +428,139 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return hCtrl;
 			};
 
-			static constexpr int yRow = 40;
+			static const int yRow = Scale(40);
 
-			static constexpr int xPosCtrl = 10;
-			static constexpr int yPosCtrl = 20;
-			static constexpr int yPosCtrlEnd = 6;
-			static constexpr int xGap = 10;
-			static constexpr int yGap = 4;
+			static const int xPosCtrl = Scale(10);
+			static const int yPosCtrl = Scale(20);
+			static const int yPosCtrlEnd = Scale(6);
+			static const int xGap = Scale(10);
+			static const int yGap = Scale(4);
 
-			static constexpr int heightCtrl = 20;
-			static constexpr int heightCtrlGap = 2;
-			static constexpr int heightProgressGap = 5;
-			static constexpr int heightPush = 23;
-			static constexpr int heightPushGap = 4;
-			static constexpr int heightEdit = 22;
-			static constexpr int heightEditGap = 6;
-			static constexpr int heightTrackbar = 30;
-			static constexpr int heightTabCtrl = 76;
-			static constexpr int heightListBox = 100;
-			static constexpr int heightListView = 126;
-			static constexpr int heightTreeView = 90;
+			static const int heightCtrl = Scale(20);
+			static const int heightCtrlGap = Scale(2);
+			static const int heightProgressGap = Scale(5);
+			static const int heightPush = Scale(23);
+			static const int heightPushGap = Scale(4);
+			static const int heightEdit = Scale(22);
+			static const int heightEditGap = Scale(6);
+			static const int heightTrackbar = Scale(30);
+			static const int heightTabCtrl = Scale(76);
+			static const int heightListBox = Scale(100);
+			static const int heightListView = Scale(126);
+			static const int heightTreeView = Scale(90);
 
-			static constexpr int xPos1stCol = 10;
-			static constexpr int xPos1stColCtrl = xPos1stCol + xPosCtrl;
+			static const int xPos1stCol = 10;
+			static const int xPos1stColCtrl = xPos1stCol + xPosCtrl;
 
-			static constexpr int wGroup1stCol = 230;
-			static constexpr int wGroup2ndCol = 160;
-			static constexpr int wGroup3rdCol = 160;
-			static constexpr int wGroup4thCol = 160;
+			static const int wGroup1stCol = Scale(230);
+			static const int wGroup2ndCol = Scale(160);
+			static const int wGroup3rdCol = Scale(160);
+			static const int wGroup4thCol = Scale(160);
 
-			static constexpr int wBtn = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 2;
-			static constexpr int wCheck = wBtn * 2;
+			static const int wBtn = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 2;
+			static const int wCheck = wBtn * 2;
 
-			static constexpr int wProgressLabel = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 4;
-			static constexpr int wProgress = ((wGroup1stCol - (2 * xPosCtrl) - xGap) / 4) * 3;
+			static const int wProgressLabel = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 4;
+			static const int wProgress = ((wGroup1stCol - (2 * xPosCtrl) - xGap) / 4) * 3;
 
-			static constexpr int xProgress = xPosCtrl + wProgressLabel + (xGap * 2);
+			static const int xProgress = xPosCtrl + wProgressLabel + (xGap * 2);
 
-			static constexpr int wEditCombo = wGroup2ndCol - (2 * xPosCtrl);
+			static const int wEditCombo = wGroup2ndCol - (2 * xPosCtrl);
 
-			static constexpr int wCtrl3rdCol = wGroup3rdCol - (2 * xPosCtrl);
+			static const int wCtrl3rdCol = wGroup3rdCol - (2 * xPosCtrl);
 
-			static constexpr int heightGBPush = yPosCtrl + ((heightPush + heightPushGap) * 3) + yPosCtrlEnd;
-			static constexpr int heightGBCheck = yPosCtrl + ((heightCtrl + heightCtrlGap) * 6) + yPosCtrlEnd;
-			static constexpr int heightGBProgress = yPosCtrl + ((heightCtrl + heightProgressGap) * 4) + yPosCtrlEnd;
+			static const int heightGBPush = yPosCtrl + ((heightPush + heightPushGap) * 3) + yPosCtrlEnd;
+			static const int heightGBCheck = yPosCtrl + ((heightCtrl + heightCtrlGap) * 6) + yPosCtrlEnd;
+			static const int heightGBProgress = yPosCtrl + ((heightCtrl + heightProgressGap) * 4) + yPosCtrlEnd;
 
-			static constexpr int heightGBRadio = yPosCtrl + ((heightCtrl + heightCtrlGap) * 4) + yPosCtrlEnd;
-			static constexpr int heightGBEdit = yPosCtrl + ((heightEdit + heightEditGap) * 4) + yPosCtrlEnd;
-			static constexpr int heightGBCombo = yPosCtrl + ((heightEdit + heightEditGap) * 4) + yPosCtrlEnd;
+			static const int heightGBRadio = yPosCtrl + ((heightCtrl + heightCtrlGap) * 4) + yPosCtrlEnd;
+			static const int heightGBEdit = yPosCtrl + ((heightEdit + heightEditGap) * 4) + yPosCtrlEnd;
+			static const int heightGBCombo = yPosCtrl + ((heightEdit + heightEditGap) * 4) + yPosCtrlEnd;
 
-			static constexpr int heightGBLink = yPosCtrl + ((heightCtrl + heightCtrlGap) * 1) + yPosCtrlEnd;
-			static constexpr int heightGBUpDown = yPosCtrl + ((heightEdit + heightEditGap) * 1) + yPosCtrlEnd;
-			static constexpr int heightGBTrackbar = yPosCtrl + ((heightTrackbar + heightEditGap) * 1) + yPosCtrlEnd;
+			static const int heightGBLink = yPosCtrl + ((heightCtrl + heightCtrlGap) * 1) + yPosCtrlEnd;
+			static const int heightGBUpDown = yPosCtrl + ((heightEdit + heightEditGap) * 1) + yPosCtrlEnd;
+			static const int heightGBTrackbar = yPosCtrl + ((heightTrackbar + heightEditGap) * 1) + yPosCtrlEnd;
 
-			static constexpr int heightGBTabCtrl = yPosCtrl + ((heightTabCtrl + heightEditGap) * 1) + yPosCtrlEnd;
+			static const int heightGBTabCtrl = yPosCtrl + ((heightTabCtrl + heightEditGap) * 1) + yPosCtrlEnd;
 
-			static constexpr int yGBCheck = yRow + heightGBPush + yGap;
-			static constexpr int yGBProgress = yGBCheck + heightGBCheck + yGap;
+			static const int yGBCheck = yRow + heightGBPush + yGap;
+			static const int yGBProgress = yGBCheck + heightGBCheck + yGap;
 
-			static constexpr int yGBEdit = yRow + heightGBRadio + yGap;
-			static constexpr int yGBCombo = yGBEdit + heightGBEdit + yGap;
+			static const int yGBEdit = yRow + heightGBRadio + yGap;
+			static const int yGBCombo = yGBEdit + heightGBEdit + yGap;
 
-			static constexpr int yGBUpDown = yRow + heightGBLink + yGap;
-			static constexpr int yGBTrackbar = yGBUpDown + heightGBUpDown + yGap;
+			static const int yGBUpDown = yRow + heightGBLink + yGap;
+			static const int yGBTrackbar = yGBUpDown + heightGBUpDown + yGap;
 
-			static constexpr int yGBTabCtrl = yGBTrackbar + heightGBTrackbar + yGap;
-			static constexpr int ySTListBox = yGBTabCtrl + heightGBTabCtrl + yGap;
+			static const int yGBTabCtrl = yGBTrackbar + heightGBTrackbar + yGap;
+			static const int ySTListBox = yGBTabCtrl + heightGBTabCtrl + yGap;
 
-			static constexpr int ySTTreeView = yRow + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
+			static const int ySTTreeView = yRow + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
 
-			static constexpr int xPosSplit = xPos1stColCtrl + xGap + wBtn;
+			static const int xPosSplit = xPos1stColCtrl + xGap + wBtn;
 
-			static constexpr int xPos2ndCol = xPos1stCol + xGap + wGroup1stCol;
-			static constexpr int xPos2ndColCtrl = xPos2ndCol + xPosCtrl;
+			static const int xPos2ndCol = xPos1stCol + xGap + wGroup1stCol;
+			static const int xPos2ndColCtrl = xPos2ndCol + xPosCtrl;
 
-			static constexpr int xPos3rdCol = xPos2ndCol + xGap + wGroup2ndCol;
-			static constexpr int xPos3rdColCtrl = xPos3rdCol + xPosCtrl;
+			static const int xPos3rdCol = xPos2ndCol + xGap + wGroup2ndCol;
+			static const int xPos3rdColCtrl = xPos3rdCol + xPosCtrl;
 
-			static constexpr int xPos4thCol = xPos3rdCol + xGap + wGroup3rdCol;
+			static const int xPos4thCol = xPos3rdCol + xGap + wGroup3rdCol;
 
-			static constexpr int yPush1 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 0);
-			static constexpr int yPush2 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 1);
-			static constexpr int yPush3 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 2);
+			static const int yPush1 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 0);
+			static const int yPush2 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 1);
+			static const int yPush3 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 2);
 
-			static constexpr int yCheck1 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
-			static constexpr int yCheck2 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 1);
-			static constexpr int yCheck3 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 2);
-			static constexpr int yCheck4 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 3);
-			static constexpr int yCheck5 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 4);
-			static constexpr int yCheck6 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 5);
+			static const int yCheck1 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
+			static const int yCheck2 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 1);
+			static const int yCheck3 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 2);
+			static const int yCheck4 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 3);
+			static const int yCheck5 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 4);
+			static const int yCheck6 = yGBCheck + yPosCtrl + ((heightCtrl + heightCtrlGap) * 5);
 
-			static constexpr int yProgress1 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 0);
-			static constexpr int yProgress2 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 1);
-			static constexpr int yProgress3 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 2);
-			static constexpr int yProgress4 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 3);
+			static const int yProgress1 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 0);
+			static const int yProgress2 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 1);
+			static const int yProgress3 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 2);
+			static const int yProgress4 = yGBProgress + yPosCtrl + ((heightCtrl + heightProgressGap) * 3);
 
-			static constexpr int yRadio1 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
-			static constexpr int yRadio2 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 1);
-			static constexpr int yRadio3 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 2);
-			static constexpr int yRadio4 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 3);
+			static const int yRadio1 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
+			static const int yRadio2 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 1);
+			static const int yRadio3 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 2);
+			static const int yRadio4 = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 3);
 
-			static constexpr int yEdit1 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 0);
-			static constexpr int yEdit2 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 1);
-			static constexpr int yEdit3 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 2);
-			static constexpr int yEdit4 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 3);
+			static const int yEdit1 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 0);
+			static const int yEdit2 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 1);
+			static const int yEdit3 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 2);
+			static const int yEdit4 = yGBEdit + yPosCtrl + ((heightEdit + heightEditGap) * 3);
 
-			static constexpr int yCombo1 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 0);
-			static constexpr int yCombo2 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 1);
-			static constexpr int yCombo3 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 2);
-			static constexpr int yCombo4 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 3);
+			static const int yCombo1 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 0);
+			static const int yCombo2 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 1);
+			static const int yCombo3 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 2);
+			static const int yCombo4 = yGBCombo + yPosCtrl + ((heightEdit + heightEditGap) * 3);
 
-			static constexpr int yLink = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
-			static constexpr int yUpDown = yGBUpDown + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
-			static constexpr int yTrackbar = yGBTrackbar + yPosCtrl + ((heightTrackbar + heightEditGap) * 0);
+			static const int yLink = yRow + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
+			static const int yUpDown = yGBUpDown + yPosCtrl + ((heightCtrl + heightCtrlGap) * 0);
+			static const int yTrackbar = yGBTrackbar + yPosCtrl + ((heightTrackbar + heightEditGap) * 0);
 
-			static constexpr int yTabCtrl = yGBTabCtrl + yPosCtrl + ((heightTabCtrl + heightEditGap) * 0);
-			static constexpr int yListBox = ySTListBox + yPosCtrl;
+			static const int yTabCtrl = yGBTabCtrl + yPosCtrl + ((heightTabCtrl + heightEditGap) * 0);
+			static const int yListBox = ySTListBox + yPosCtrl;
 
-			static constexpr int yListView1 = yRow + yPosCtrl;
-			static constexpr int yListView2 = yListView1 + ((heightListView + yPosCtrlEnd) * 1) + yGap + 1;
+			static const int yListView1 = yRow + yPosCtrl;
+			static const int yListView2 = yListView1 + ((heightListView + yPosCtrlEnd) * 1) + yGap + 1;
 
-			static constexpr int yTreeView = ySTTreeView + yPosCtrl;
+			static const int yTreeView = ySTTreeView + yPosCtrl;
+
+			static const int xToolbar = Scale(100);
+			static const int wToolbar = xToolbar;
+
+			static const int offsetScroll = Scale(43);
 
 			// --- Rebar And Toolbars ---
 			HWND hRebar = createCtrl(REBARCLASSNAMEW, nullptr,
 				WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOMOVEY,
 				0, 0, 0, 0, IdCtrl::rebar);
 
-			static constexpr int imgSize = 16;
+			static const int imgSize = Scale(16);
 			static auto hImageList = ImageList_Create(imgSize, imgSize, ILC_COLOR32 | ILC_MASK, 1, 1);
 			auto hIcon = static_cast<HICON>(
 				LoadImageW(g_hInst, MAKEINTRESOURCEW(IDI_DEMO), IMAGE_ICON, imgSize, imgSize, LR_DEFAULTCOLOR));
@@ -550,20 +578,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 
 			auto createToolbar = [&](IdCtrl id) -> HWND
-				{
-					HWND hToolbar = createCtrl(TOOLBARCLASSNAMEW, nullptr,
-						TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_LIST | CCS_NORESIZE,
-						100, 0, 100, 0, id, 0, hRebar);
+			{
+				HWND hToolbar = createCtrl(TOOLBARCLASSNAMEW, nullptr,
+					TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_LIST | CCS_NORESIZE,
+					xToolbar, 0, wToolbar, 0, id, 0, hRebar);
 
-					SendMessageW(hToolbar, TB_BUTTONSTRUCTSIZE, static_cast<WPARAM>(sizeof(TBBUTTON)), 0);
-					SendMessageW(hToolbar, TB_SETIMAGELIST, 0, reinterpret_cast<LPARAM>(hImageList));
-					SendMessageW(hToolbar, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS | TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_HIDECLIPPEDBUTTONS);
+				SendMessageW(hToolbar, TB_BUTTONSTRUCTSIZE, static_cast<WPARAM>(sizeof(TBBUTTON)), 0);
+				SendMessageW(hToolbar, TB_SETIMAGELIST, 0, reinterpret_cast<LPARAM>(hImageList));
+				SendMessageW(hToolbar, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS | TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_HIDECLIPPEDBUTTONS);
 
-					SendMessageW(hToolbar, TB_ADDBUTTONS, static_cast<WPARAM>(tbb.size()), reinterpret_cast<LPARAM>(tbb.data()));
-					SendMessageW(hToolbar, TB_AUTOSIZE, 0, 0);
+				SendMessageW(hToolbar, TB_ADDBUTTONS, static_cast<WPARAM>(tbb.size()), reinterpret_cast<LPARAM>(tbb.data()));
+				SendMessageW(hToolbar, TB_AUTOSIZE, 0, 0);
 
-					return hToolbar;
-				};
+				return hToolbar;
+			};
 
 			tbb.at(0).iString = reinterpret_cast<INT_PTR>(L"Normal");
 
@@ -829,14 +857,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			std::wstring colText1 = L"Col 1";
 			col.pszText = colText1.data();
-			col.cx = 70;
+			col.cx = Scale(70);
 			ListView_InsertColumn(hListView, 0, &col);
 			ListView_InsertColumn(hListViewGrid, 0, &col);
 
 			std::wstring colText2 = L"Col 2";
 			col.pszText = colText2.data();
 			ListView_InsertColumn(hListViewGrid, 1, &col);
-			col.cx = 100;
+			col.cx = Scale(100);
 			ListView_InsertColumn(hListView, 1, &col);
 
 			// Add 5 items
@@ -897,7 +925,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// --- Scroll Bars ---
 			// Horizontal scroll bar
 			HWND hScrollH = createCtrl(WC_SCROLLBAR, nullptr, SBS_HORZ,
-				0, rcClient.bottom - 43, rcClient.right - heightCtrl, heightCtrl, IdCtrl::scrollH);
+				0, rcClient.bottom - offsetScroll, rcClient.right - heightCtrl, heightCtrl, IdCtrl::scrollH);
 
 			// Vertical scroll bar
 			RECT rcRebar{};
@@ -905,7 +933,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			const LONG heightRebar = rcRebar.bottom - rcRebar.top;
 
 			HWND hScrollV = createCtrl(WC_SCROLLBAR, nullptr, SBS_VERT,
-				rcClient.right - heightCtrl, heightRebar, heightCtrl, rcClient.bottom - 43 - heightRebar, IdCtrl::scrollV);
+				rcClient.right - heightCtrl, heightRebar, heightCtrl, rcClient.bottom - offsetScroll - heightRebar, IdCtrl::scrollV);
 
 			SCROLLINFO si{};
 			si.cbSize = sizeof(SCROLLINFO);
@@ -921,9 +949,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			HWND hStatus = createCtrl(STATUSCLASSNAMEW, nullptr, SBARS_SIZEGRIP,
 				0, 0, 0, 0, IdCtrl::statusbar);
 
-			static constexpr std::array<int, 3> widths{
-				120,
-				240,
+			static const std::array<int, 3> widths{
+				Scale(120),
+				Scale(240),
 				-1 // Extend to full width
 			};
 			SendMessageW(hStatus, SB_SETPARTS, static_cast<WPARAM>(widths.size()), reinterpret_cast<LPARAM>(widths.data()));
@@ -1086,11 +1114,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			GetClientRect(GetDlgItem(hWnd, static_cast<int>(IdCtrl::rebar)), &rcRebar);
 			const LONG heightRebar = rcRebar.bottom - rcRebar.top;
 
+			static const int heightStatus = Scale(20);
+			static const int offsetScroll = Scale(43);
+
 			SetWindowPos(GetDlgItem(hWnd, static_cast<int>(IdCtrl::scrollH)), nullptr,
-				0, rcClient.bottom - 43, rcClient.right - 20, 20,
+				0, rcClient.bottom - offsetScroll, rcClient.right - heightStatus, heightStatus,
 				SWP_NOZORDER);
 			SetWindowPos(GetDlgItem(hWnd, static_cast<int>(IdCtrl::scrollV)), nullptr,
-				rcClient.right - 20, heightRebar, 20, rcClient.bottom - 43 - heightRebar,
+				rcClient.right - heightStatus, heightRebar, heightStatus, rcClient.bottom - offsetScroll - heightRebar,
 				SWP_NOZORDER);
 
 			return 0;

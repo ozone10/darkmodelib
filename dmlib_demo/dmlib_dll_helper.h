@@ -25,7 +25,7 @@ namespace dmlib_module
 	{
 		if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
 		{
-			pointer = reinterpret_cast<P>(proc);
+			pointer = reinterpret_cast<P>(reinterpret_cast<INT_PTR>(proc));
 			return true;
 		}
 		return false;
@@ -419,6 +419,9 @@ namespace DarkMode
 
 	using fnInitDarkMode = void (*)();
 	inline fnInitDarkMode initDarkMode = nullptr;
+
+	using fnDoesConfigFileExist = auto (*)() -> bool;
+	inline fnDoesConfigFileExist doesConfigFileExist = nullptr;
 
 	using fnIsEnabled = auto (*)() -> bool;
 	inline fnIsEnabled isEnabled = nullptr;

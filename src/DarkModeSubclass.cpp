@@ -42,6 +42,7 @@
 
 #include "DarkMode.h"
 #include "DarkModeColor.h"
+#include "DarkModeDpi.h"
 #include "DarkModeHook.h"
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 #include "DarkModeIni.h"
@@ -55,26 +56,6 @@
 #include <cstdint>
 //static constexpr DWORD DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum up to 8
-#endif
-
-#ifndef WM_DPICHANGED
-#define WM_DPICHANGED 0x02E0
-#endif
-
-#if 0 // maybe for future hidpi enhancement
-#ifndef WM_DPICHANGED_BEFOREPARENT
-#define WM_DPICHANGED_BEFOREPARENT 0x02E2
-#endif
-#endif
-
-#ifndef WM_DPICHANGED_AFTERPARENT
-#define WM_DPICHANGED_AFTERPARENT 0x02E3
-#endif
-
-#if 0 // maybe for future hidpi enhancement
-#ifndef WM_GETDPISCALEDSIZE
-#define WM_GETDPISCALEDSIZE 0x02E4
-#endif
 #endif
 
 /**
@@ -743,7 +724,7 @@ namespace DarkMode
 	 *
 	 * Wraps `InitDarkMode()` from DarkMode.h.
 	 */
-	static void initExperimentalDarkMode()
+	static void initExperimentalDarkModeAPI()
 	{
 		dmlib_win32api::InitDarkMode();
 	}
@@ -1026,7 +1007,8 @@ namespace DarkMode
 		{
 			if (!g_dmCfg.m_isInitExperimental)
 			{
-				DarkMode::initExperimentalDarkMode();
+				DarkMode::initExperimentalDarkModeAPI();
+				dmlib_dpi::InitDpiAPI();
 				g_dmCfg.m_isInitExperimental = true;
 			}
 
@@ -1836,8 +1818,9 @@ namespace DarkMode
 					{
 						RECT rcBtn{};
 						::GetClientRect(hWnd, &rcBtn);
-						m_szBtn.cx = rcBtn.right - rcBtn.left;
-						m_szBtn.cy = rcBtn.bottom - rcBtn.top;
+						const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
+						m_szBtn.cx = dmlib_dpi::Unscale(rcBtn.right - rcBtn.left, dpi);
+						m_szBtn.cy = dmlib_dpi::Unscale(rcBtn.bottom - rcBtn.top, dpi);
 						m_isSizeSet = (m_szBtn.cx != 0 && m_szBtn.cy != 0);
 					}
 					break;
@@ -1886,7 +1869,7 @@ namespace DarkMode
 		LOGFONT lf{};
 		if (SUCCEEDED(::GetThemeFont(hTheme, hdc, iPartID, iStateID, TMT_FONT, &lf)))
 		{
-			hFont = ::CreateFontIndirect(&lf);
+			hFont = ::CreateFontIndirectW(&lf);
 			isFontCreated = true;
 		}
 
@@ -1948,9 +1931,9 @@ namespace DarkMode
 		::GetClientRect(hWnd, &rcClient);
 
 		std::wstring buffer;
-		const auto bufferLen = static_cast<size_t>(::GetWindowTextLength(hWnd));
+		const auto bufferLen = static_cast<size_t>(::GetWindowTextLengthW(hWnd));
 		buffer.resize(bufferLen + 1, L'\0');
-		::GetWindowText(hWnd, buffer.data(), static_cast<int>(buffer.length()));
+		::GetWindowTextW(hWnd, buffer.data(), static_cast<int>(buffer.length()));
 
 		SIZE szBox{};
 		::GetThemePartSize(hTheme, hdc, iPartID, iStateID, nullptr, TS_DRAW, &szBox);
@@ -2191,6 +2174,17 @@ namespace DarkMode
 			case WM_DPICHANGED_AFTERPARENT:
 			{
 				themeData.closeTheme();
+				if (pButtonData->m_isSizeSet)
+				{
+					SIZE szBtn{};
+					if (Button_GetIdealSize(hWnd, &szBtn) == TRUE)
+					{
+						const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
+						const int cx = std::min<LONG>(szBtn.cx, dmlib_dpi::Scale(pButtonData->m_szBtn.cx, dpi));
+						const int cy = std::min<LONG>(szBtn.cy, dmlib_dpi::Scale(pButtonData->m_szBtn.cy, dpi));
+						::SetWindowPos(hWnd, nullptr, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+					}
+				}
 				return 0;
 			}
 
@@ -2307,7 +2301,7 @@ namespace DarkMode
 		LOGFONT lf{};
 		if (SUCCEEDED(::GetThemeFont(hTheme, hdc, iPartID, iStateID, TMT_FONT, &lf)))
 		{
-			hFont = ::CreateFontIndirect(&lf);
+			hFont = ::CreateFontIndirectW(&lf);
 			isFontCreated = true;
 		}
 
@@ -2322,11 +2316,11 @@ namespace DarkMode
 		// Text rectangle part
 
 		std::wstring buffer;
-		const auto bufferLen = static_cast<size_t>(::GetWindowTextLength(hWnd));
+		const auto bufferLen = static_cast<size_t>(::GetWindowTextLengthW(hWnd));
 		if (bufferLen > 0)
 		{
 			buffer.resize(bufferLen + 1, L'\0');
-			::GetWindowText(hWnd, buffer.data(), static_cast<int>(buffer.length()));
+			::GetWindowTextW(hWnd, buffer.data(), static_cast<int>(buffer.length()));
 		}
 
 		const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
@@ -2342,7 +2336,7 @@ namespace DarkMode
 		if (!buffer.empty())
 		{
 			SIZE szText{};
-			::GetTextExtentPoint32(hdc, buffer.c_str(), static_cast<int>(bufferLen), &szText);
+			::GetTextExtentPoint32W(hdc, buffer.c_str(), static_cast<int>(bufferLen), &szText);
 
 			const int centerPosX = isCenter ? ((rcClient.right - rcClient.left - szText.cx) / 2) : 7;
 
@@ -2356,7 +2350,7 @@ namespace DarkMode
 		else // There is no text, use "M" to get metrics to move top edge down
 		{
 			SIZE szText{};
-			::GetTextExtentPoint32(hdc, L"M", 1, &szText);
+			::GetTextExtentPoint32W(hdc, L"M", 1, &szText);
 			rcBackground.top += szText.cy / 2;
 		}
 
@@ -2833,14 +2827,14 @@ namespace DarkMode
 				static constexpr std::array<POINTFLOAT, 3> ptsArrowUp{ { {0.0F, 1.0F}, {0.5F, 0.0F}, {1.0F, 1.0F} } };
 				static constexpr std::array<POINTFLOAT, 3> ptsArrowDown{ { {0.0F, 0.0F}, {0.5F, 1.0F}, {1.0F, 0.0F} } };
 
-				static constexpr float scaleFactor = 3.0F;
+				static constexpr auto scaleFactor = 3L;
 				static constexpr auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
-				const auto baseSize = (static_cast<float>(size.cy - offsetSize) / scaleFactor) + offsetSize;
+				const auto baseSize = static_cast<float>(dmlib_dpi::Scale(((size.cy - offsetSize) / scaleFactor) + offsetSize, ::GetParent(hWnd)));
 
 				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
-					POINTFLOAT sizeArrow{ baseSize, baseSize };
-					float offsetPosX = 0.0F;
-					float offsetPosY = 0.0F;
+					auto sizeArrow = POINTFLOAT{ baseSize, baseSize };
+					auto offsetPosX = 0.0F;
+					auto offsetPosY = 0.0F;
 					std::array<POINTFLOAT, 3> ptsArrowSelected{};
 					if (isHorz)
 					{
@@ -2881,8 +2875,8 @@ namespace DarkMode
 					}
 
 					const COLORREF clrSelected = getGlyphColor(isHot);
-					const GdiObject hBrush{ hdc, ::CreateSolidBrush(clrSelected) };
-					const GdiObject hPen{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
+					const auto hBrush = GdiObject{ hdc, ::CreateSolidBrush(clrSelected) };
+					const auto hPen = GdiObject{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
 
 					::Polygon(hdc, ptsArrow.data(), static_cast<int>(ptsArrow.size()));
 				};
@@ -2892,7 +2886,7 @@ namespace DarkMode
 			}
 			else
 			{
-				const GdiObject hFont{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+				const auto hFont = GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
 
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
 				const LONG offset = isHorz ? 1 : 0;
@@ -3583,6 +3577,22 @@ namespace DarkMode
 		LONG m_xScroll = ::GetSystemMetrics(SM_CXVSCROLL);
 		LONG m_yScroll = ::GetSystemMetrics(SM_CYVSCROLL);
 		bool m_isHot = false;
+
+		BorderMetricsData() = delete;
+
+		explicit BorderMetricsData(HWND hWnd)
+		{
+			setMetricsForDpi(dmlib_dpi::GetDpiForParent(hWnd));
+		}
+
+		void setMetricsForDpi(UINT dpi)
+		{
+			m_dpi = dpi;
+			m_xEdge = dmlib_dpi::GetSystemMetricsForDpi(SM_CXEDGE, m_dpi);
+			m_yEdge = dmlib_dpi::GetSystemMetricsForDpi(SM_CYEDGE, m_dpi);
+			m_xScroll = dmlib_dpi::GetSystemMetricsForDpi(SM_CXVSCROLL, m_dpi);
+			m_yScroll = dmlib_dpi::GetSystemMetricsForDpi(SM_CYVSCROLL, m_dpi);
+		}
 	};
 
 	/**
@@ -3700,6 +3710,7 @@ namespace DarkMode
 			case WM_DPICHANGED:
 			case WM_DPICHANGED_AFTERPARENT:
 			{
+				pBorderMetricsData->setMetricsForDpi((uMsg == WM_DPICHANGED) ? LOWORD(wParam) : dmlib_dpi::GetDpiForParent(hWnd));
 				DarkMode::redrawWindowFrame(hWnd);
 				return 0;
 			}
@@ -3771,7 +3782,7 @@ namespace DarkMode
 	 */
 	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, SubclassID::customBorder);
+		DarkMode::SetSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, SubclassID::customBorder, hWnd);
 	}
 
 	/**
@@ -4744,7 +4755,7 @@ namespace DarkMode
 			&& hasTheme
 			&& SUCCEEDED(::GetThemeFont(hTheme, hdc, HP_HEADERITEM, HIS_NORMAL, TMT_FONT, &lf)))
 		{
-			fontData.setFont(::CreateFontIndirect(&lf));
+			fontData.setFont(::CreateFontIndirectW(&lf));
 		}
 
 		HFONT hFont = (fontData.hasFont()) ? fontData.getFont() : reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0));
@@ -5315,7 +5326,7 @@ namespace DarkMode
 				if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
 				{
 					lf = ncm.lfStatusFont;
-					pStatusBarData->m_fontData.setFont(::CreateFontIndirect(&lf));
+					pStatusBarData->m_fontData.setFont(::CreateFontIndirectW(&lf));
 				}
 
 				if (uMsg != WM_THEMECHANGED)
@@ -5355,7 +5366,7 @@ namespace DarkMode
 		{
 			lf = ncm.lfStatusFont;
 		}
-		DarkMode::SetSubclass<StatusBarData>(hWnd, StatusBarSubclass, SubclassID::statusBar, ::CreateFontIndirect(&lf));
+		DarkMode::SetSubclass<StatusBarData>(hWnd, StatusBarSubclass, SubclassID::statusBar, ::CreateFontIndirectW(&lf));
 	}
 
 	/**
@@ -7062,6 +7073,7 @@ namespace DarkMode
 				::SetTextColor(lpnmcd->hdc, isHot ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
 				::SetBkMode(lpnmcd->hdc, TRANSPARENT);
 
+				const auto hFont = GdiObject{ lpnmcd->hdc, reinterpret_cast<HFONT>(::SendMessage(lpnmcd->hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP;
 				::DrawText(lpnmcd->hdc, L"»", -1, &rbBand.rcChevronLocation, dtFlags);
 			}

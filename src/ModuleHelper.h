@@ -19,7 +19,7 @@ namespace dmlib_module
 	{
 		if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
 		{
-			pointer = reinterpret_cast<P>(proc);
+			pointer = reinterpret_cast<P>(reinterpret_cast<INT_PTR>(proc));
 			return true;
 		}
 		return false;
