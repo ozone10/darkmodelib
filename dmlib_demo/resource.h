@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by darkmodelibdemo.rc
+// Used by demo.rc
 //
 #define IDD_DEMO_DIALOG                 101
 #define IDS_APP_TITLE                   102

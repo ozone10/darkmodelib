@@ -5,14 +5,14 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "darkmodelib", "vs.proj\darkmodelib.vcxproj", "{C08C7F8C-C0BF-4AF8-A333-9948017B462B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Win32DarkmodelibGUIDemo", "Win32DarkmodelibGUIDemo\darkmodelibdemo.vcxproj", "{92D0D423-2D49-44D0-8C82-813AD377455D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dmlib_demo", "dmlib_demo\demo.vcxproj", "{92D0D423-2D49-44D0-8C82-813AD377455D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C08C7F8C-C0BF-4AF8-A333-9948017B462B} = {C08C7F8C-C0BF-4AF8-A333-9948017B462B}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "darkmodelib-DLL", "vs.proj\darkmodelib-DLL.vcxproj", "{40AF6A7D-B4E7-4919-B38A-75F625E36AF5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Win32DarkmodelibGUIDemo-DLL", "Win32DarkmodelibGUIDemo\darkmodelibdemo-DLL.vcxproj", "{4B91DFD9-B1CC-4E38-BF39-12A9661EE249}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dmlib_demo-DLL", "dmlib_demo\demo-DLL.vcxproj", "{4B91DFD9-B1CC-4E38-BF39-12A9661EE249}"
 	ProjectSection(ProjectDependencies) = postProject
 		{40AF6A7D-B4E7-4919-B38A-75F625E36AF5} = {40AF6A7D-B4E7-4919-B38A-75F625E36AF5}
 	EndProjectSection

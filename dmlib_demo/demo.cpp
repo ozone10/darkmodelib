@@ -7,7 +7,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "darkmodelibdemo.h"
+#include "demo.h"
 #if !defined(DMLIB_DLL)
 #include "DarkModeSubclass.h"
 #else

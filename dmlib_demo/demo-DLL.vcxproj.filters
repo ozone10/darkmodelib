@@ -18,7 +18,7 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="darkmodelibdemo.h">
+    <ClInclude Include="demo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
@@ -26,22 +26,22 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="darkmodelibdemo.cpp">
+    <ClCompile Include="demo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="darkmodelibdemo.rc">
+    <ResourceCompile Include="demo.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="darkmodelibdemo.ico">
+    <Image Include="demo.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="darkmodelibdemo.manifest">
+    <Manifest Include="demo.manifest">
       <Filter>Resource Files</Filter>
     </Manifest>
   </ItemGroup>

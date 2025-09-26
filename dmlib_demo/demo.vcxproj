@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project=".\darkmodelibdemo.Cpp.Default.props" />
+  <Import Project=".\demo.Cpp.Default.props" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
@@ -31,12 +31,12 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{92d0d423-2d49-44d0-8c82-813ad377455d}</ProjectGuid>
-    <RootNamespace>darkmodelibdemo</RootNamespace>
-    <ProjectName>Win32DarkmodelibGUIDemo</ProjectName>
+    <RootNamespace>demo</RootNamespace>
+    <ProjectName>dmlib-demo</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <Import Project=".\darkmodelibdemo.Cpp.props" />
+  <Import Project=".\demo.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
@@ -46,28 +46,28 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <OutDir>..\build\darkmodelibdemo\$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\build\obj-darkmodelibdemo\$(Platform)-$(Configuration)\</IntDir>
+    <OutDir>..\build\demo\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\build\obj-demo\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Label="Shared">
     <Link>
@@ -77,20 +77,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="darkmodelibdemo.h" />
+    <ClInclude Include="demo.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="darkmodelibdemo.cpp" />
+    <ClCompile Include="demo.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="darkmodelibdemo.rc" />
+    <ResourceCompile Include="demo.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="darkmodelibdemo.ico" />
+    <Image Include="demo.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="darkmodelibdemo.manifest" />
+    <Manifest Include="demo.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
