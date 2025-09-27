@@ -40,13 +40,13 @@
 #include <memory>
 #include <string>
 
-#include "DarkMode.h"
-#include "DarkModeColor.h"
-#include "DarkModeDpi.h"
-#include "DarkModeHook.h"
+#include "DmlibColor.h"
+#include "DmlibDpi.h"
+#include "DmlibHook.h"
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
-#include "DarkModeIni.h"
+#include "DmlibIni.h"
 #endif
+#include "DmlibWinApi.h"
 
 #include "UAHMenuBar.h"
 
@@ -5928,7 +5928,7 @@ namespace DarkMode
 	 *
 	 * Sets transparent background via `TBS_TRANSPARENTBKGND` flag
 	 * and applies themed tooltips for trackbar buttons.
-	 * 
+	 *
 	 * @param hWnd  Handle to the trackbar control.
 	 * @param p     Parameters controlling whether to apply theming.
 	 *

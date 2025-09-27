@@ -23,7 +23,7 @@
 extern bool g_darkModeSupported;
 extern bool g_darkModeEnabled;
 
-#include "DarkModeHook.h"
+#include "DmlibHook.h"
 
 #include "IatHook.h"
 #include "ModuleHelper.h"

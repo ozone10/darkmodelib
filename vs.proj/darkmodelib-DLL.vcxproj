@@ -86,24 +86,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DarkModeSubclass.h" />
-    <ClInclude Include="..\src\DarkMode.h" />
-    <ClInclude Include="..\src\DarkModeColor.h" />
-    <ClInclude Include="..\src\DarkModeDpi.h" />
-    <ClInclude Include="..\src\DarkModeIni.h" />
+    <ClInclude Include="..\src\DmlibColor.h" />
+    <ClInclude Include="..\src\DmlibDpi.h" />
+    <ClInclude Include="..\src\DmlibHook.h" />
+    <ClInclude Include="..\src\DmlibIni.h" />
+    <ClInclude Include="..\src\DmlibWinApi.h" />
     <ClInclude Include="..\src\IatHook.h" />
-    <ClInclude Include="..\src\DarkModeHook.h" />
     <ClInclude Include="..\src\ModuleHelper.h" />
     <ClInclude Include="..\src\StdAfx.h" />
     <ClInclude Include="..\src\UAHMenuBar.h" />
     <ClInclude Include="..\src\Version.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\DarkMode.cpp" />
-    <ClCompile Include="..\src\DarkModeColor.cpp" />
-    <ClCompile Include="..\src\DarkModeDpi.cpp" />
-    <ClCompile Include="..\src\DarkModeHook.cpp" />
-    <ClCompile Include="..\src\DarkModeIni.cpp" />
     <ClCompile Include="..\src\DarkModeSubclass.cpp" />
+    <ClCompile Include="..\src\DmlibColor.cpp" />
+    <ClCompile Include="..\src\DmlibDpi.cpp" />
+    <ClCompile Include="..\src\DmlibHook.cpp" />
+    <ClCompile Include="..\src\DmlibIni.cpp" />
+    <ClCompile Include="..\src\DmlibWinApi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\dmlib.rc" />

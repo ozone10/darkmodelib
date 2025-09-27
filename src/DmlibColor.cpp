@@ -20,7 +20,7 @@
 #define NOMINMAX
 #endif
 
-#include "DarkModeColor.h"
+#include "DmlibColor.h"
 
 DarkMode::Colors dmlib_color::getLightColors()
 {

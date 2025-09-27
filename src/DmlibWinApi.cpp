@@ -25,9 +25,9 @@
 #define NOMINMAX
 #endif
 
-#include "DarkMode.h"
+#include "DmlibWinApi.h"
 
-#include "DarkModeHook.h"
+#include "DmlibHook.h"
 #include "ModuleHelper.h"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800

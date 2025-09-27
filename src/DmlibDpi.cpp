@@ -23,7 +23,7 @@
 #define NOMINMAX
 #endif
 
-#include "DarkModeDpi.h"
+#include "DmlibDpi.h"
 
 #include "ModuleHelper.h"
 

@@ -20,9 +20,9 @@
 #define NOMINMAX
 #endif
 
-#include "DarkModeIni.h"
+#include "DmlibIni.h"
 
-#include "DarkModeColor.h"
+#include "DmlibColor.h"
 
 #include <algorithm>
 #include <array>
