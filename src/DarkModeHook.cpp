@@ -25,6 +25,7 @@ extern bool g_darkModeEnabled;
 
 #include "DarkModeHook.h"
 
+#include "IatHook.h"
 #include "ModuleHelper.h"
 
 #include <uxtheme.h>
@@ -35,16 +36,6 @@ extern bool g_darkModeEnabled;
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 #include <mutex>
 #include <unordered_set>
-#endif
-
-#if !defined(_DARKMODELIB_EXTERNAL_IATHOOK)
-#include "IatHook.h"
-#else
-extern PIMAGE_THUNK_DATA FindAddressByName(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, const char* funcName);
-extern PIMAGE_THUNK_DATA FindAddressByOrdinal(void* moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, uint16_t ordinal);
-extern PIMAGE_THUNK_DATA FindIatThunkInModule(void* moduleBase, const char* dllName, const char* funcName);
-extern PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, const char* funcName);
-extern PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void* moduleBase, const char* dllName, uint16_t ordinal);
 #endif
 
 using fnFindThunkInModule = auto (*)(void* moduleBase, const char* dllName, const char* funcName) -> PIMAGE_THUNK_DATA;
@@ -113,7 +104,7 @@ struct HookData
 
 		if (m_ord != 0)
 		{
-			return FindDelayLoadThunkInModule(hMod, m_dllName, m_ord);
+			return iat_hook::FindDelayLoadThunkInModule(hMod, m_dllName, m_ord);
 		}
 
 		return nullptr;
@@ -235,7 +226,7 @@ void dmlib_hook::FixDarkScrollBar()
 	const ModuleHandle moduleComctl(L"comctl32.dll");
 	if (moduleComctl.isLoaded())
 	{
-		auto* addr = FindDelayLoadThunkInModule(moduleComctl.get(), "uxtheme.dll", 49); // OpenNcThemeData
+		auto* addr = iat_hook::FindDelayLoadThunkInModule(moduleComctl.get(), "uxtheme.dll", 49); // OpenNcThemeData
 		if (addr != nullptr) // && pfOpenNcThemeData != nullptr) // checked in InitDarkMode
 		{
 			ReplaceFunction<fnOpenNcThemeData>(addr, MyOpenNcThemeData);
@@ -320,7 +311,7 @@ bool dmlib_hook::HookSysColor()
 		MyGetSysColor,
 		"user32.dll",
 		static_cast<const char*>("GetSysColor"),
-		FindIatThunkInModule);
+		iat_hook::FindIatThunkInModule);
 }
 
 void dmlib_hook::UnhookSysColor()
@@ -467,7 +458,7 @@ bool dmlib_hook::HookThemeColor()
 			MyGetThemeColor,
 			"uxtheme.dll",
 			static_cast<const char*>("GetThemeColor"),
-			static_cast<fnFindThunkInModule>(FindDelayLoadThunkInModule))
+			static_cast<fnFindThunkInModule>(iat_hook::FindDelayLoadThunkInModule))
 		&& HookFunction<fnDrawThemeBackgroundEx>(g_hookDataDrawThemeBackgroundEx,
 			MyDrawThemeBackgroundEx,
 			"uxtheme.dll",

@@ -141,7 +141,6 @@ namespace DarkMode
 		verMajor,         ///< Major version number of the library.
 		verMinor,         ///< Minor version number of the library.
 		verRevision,      ///< Revision/patch number of the library.
-		iathookExternal,  ///< Indicates if external IAT hooking is used.
 		iniConfigUsed,    ///< True if `.ini` file configuration is supported.
 		allowOldOS,       ///< '1' if older Windows 10 versions are allowed, '2' if all older Windows are allowed.
 		useDlgProcCtl,    ///< True if WM_CTLCOLORxxx can be handled directly in dialog procedure.

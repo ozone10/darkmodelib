@@ -144,15 +144,6 @@ namespace DarkMode
 				return DM_VERSION_REVISION;
 			}
 
-			case LibInfo::iathookExternal:
-			{
-#if defined(_DARKMODELIB_EXTERNAL_IATHOOK)
-				return TRUE;
-#else
-				return FALSE;
-#endif
-			}
-
 			case LibInfo::iniConfigUsed:
 			{
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
