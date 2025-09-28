@@ -60,43 +60,6 @@ static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum
 #endif
 
 /**
- * @brief Retrieves the class name of a given window.
- *
- * This function wraps the Win32 API `GetClassNameW` to return the class name
- * of a window as a wide string (`std::wstring`).
- *
- * @param hWnd Handle to the target window.
- * @return The class name of the window as a `std::wstring`.
- *
- * @note The maximum length is capped at 32 characters (including the null terminator),
- *       which suffices for standard Windows window classes.
- */
-static std::wstring getWndClassName(HWND hWnd)
-{
-	static constexpr int strLen = 32;
-	std::wstring className(strLen, L'\0');
-	className.resize(static_cast<size_t>(::GetClassNameW(hWnd, className.data(), strLen)));
-	return className;
-}
-
-/**
- * @brief Compares the class name of a window with a specified string.
- *
- * This function retrieves the class name of the given window handle
- * and compares it to the provided class name.
- *
- * @param hWnd              Handle to the window whose class name is to be checked.
- * @param classNameToCmp    Pointer to a null-terminated wide string representing the class name to compare against.
- * @return `true` if the window's class name matches the specified string; otherwise `false`.
- *
- * @see getWndClassName()
- */
-static bool cmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
-{
-	return (getWndClassName(hWnd) == classNameToCmp);
-}
-
-/**
  * @namespace DarkMode
  * @brief Provides dark mode theming, subclassing, and rendering utilities for most Win32 controls.
  */
@@ -1040,207 +1003,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @class ThemeData
-	 * @brief RAII-style wrapper for `HTHEME` handle tied to a specific theme class.
-	 *
-	 * Prevents leaks by managing the lifecycle of a theme handle opened via `OpenThemeData()`.
-	 * Ensures handles are released properly in the destructor via `CloseThemeData()`.
-	 *
-	 * Usage:
-	 * - Construct with a valid theme class name (e.g. `L"Button"`).
-	 * - Call `ensureTheme(HWND)` before drawing to open the theme handle.
-	 * - Access the active handle via `getHTheme()`.
-	 *
-	 * Copying and moving are explicitly disabled to preserve exclusive ownership.
-	 */
-	class ThemeData
-	{
-	public:
-		ThemeData() = delete;
-
-		explicit ThemeData(const wchar_t* themeClass) noexcept
-			: m_themeClass(themeClass)
-		{}
-
-		ThemeData(const ThemeData&) = delete;
-		ThemeData& operator=(const ThemeData&) = delete;
-
-		ThemeData(ThemeData&&) = delete;
-		ThemeData& operator=(ThemeData&&) = delete;
-
-		~ThemeData()
-		{
-			closeTheme();
-		}
-
-		bool ensureTheme(HWND hWnd) noexcept
-		{
-			if (m_hTheme == nullptr && m_themeClass != nullptr)
-			{
-				m_hTheme = ::OpenThemeData(hWnd, m_themeClass);
-			}
-			return m_hTheme != nullptr;
-		}
-
-		void closeTheme() noexcept
-		{
-			if (m_hTheme != nullptr)
-			{
-				::CloseThemeData(m_hTheme);
-				m_hTheme = nullptr;
-			}
-		}
-
-		[[nodiscard]] const HTHEME& getHTheme() const noexcept
-		{
-			return m_hTheme;
-		}
-
-	private:
-		const wchar_t* m_themeClass = nullptr;
-		HTHEME m_hTheme = nullptr;
-	};
-
-	/**
-	 * @class BufferData
-	 * @brief RAII-style utility for double buffer technique.
-	 *
-	 * Allocates and resizes an offscreen buffer for flicker-free GDI drawing. When
-	 * `ensureBuffer()` is called with a target HDC and client rect, it creates or resizes
-	 * a memory device context and bitmap accordingly. Automatically releases resources
-	 * via `releaseBuffer()` and destructor.
-	 *
-	 * Usage:
-	 * - Call `ensureBuffer()` before painting.
-	 * - Draw to `getHMemDC()`.
-	 * - BitBlt back to screen in WM_PAINT.
-	 *
-	 * Copying and moving are explicitly disabled to preserve exclusive ownership.
-	 */
-	class BufferData
-	{
-	public:
-		BufferData() = default;
-
-		BufferData(const BufferData&) = delete;
-		BufferData& operator=(const BufferData&) = delete;
-
-		BufferData(BufferData&&) = delete;
-		BufferData& operator=(BufferData&&) = delete;
-
-		~BufferData()
-		{
-			releaseBuffer();
-		}
-
-		bool ensureBuffer(HDC hdc, const RECT& rcClient) noexcept
-		{
-			const int width = rcClient.right - rcClient.left;
-			const int height = rcClient.bottom - rcClient.top;
-
-			if (m_szBuffer.cx != width || m_szBuffer.cy != height)
-			{
-				releaseBuffer();
-				m_hMemDC = ::CreateCompatibleDC(hdc);
-				m_hMemBmp = ::CreateCompatibleBitmap(hdc, width, height);
-				m_holdBmp = static_cast<HBITMAP>(::SelectObject(m_hMemDC, m_hMemBmp));
-				m_szBuffer = { width, height };
-			}
-
-			return m_hMemDC != nullptr && m_hMemBmp != nullptr;
-		}
-
-		void releaseBuffer() noexcept
-		{
-			if (m_hMemDC != nullptr)
-			{
-				::SelectObject(m_hMemDC, m_holdBmp);
-				::DeleteObject(m_hMemBmp);
-				::DeleteDC(m_hMemDC);
-
-				m_hMemDC = nullptr;
-				m_hMemBmp = nullptr;
-				m_holdBmp = nullptr;
-				m_szBuffer = { 0, 0 };
-			}
-		}
-
-		[[nodiscard]] const HDC& getHMemDC() const noexcept
-		{
-			return m_hMemDC;
-		}
-
-	private:
-		HDC m_hMemDC = nullptr;
-		HBITMAP m_hMemBmp = nullptr;
-		HBITMAP m_holdBmp = nullptr;
-		SIZE m_szBuffer{};
-	};
-
-	/**
-	 * @class FontData
-	 * @brief RAII-style wrapper for managing a GDI font (`HFONT`) resource.
-	 *
-	 * Ensures safe creation, assignment, and destruction of fonts in GDI-based UI code.
-	 * Automatically deletes the font in the destructor or when replaced via `setFont()`.
-	 *
-	 * Usage:
-	 * - Use `setFont()` to assign a new font, deleting any previous one.
-	 * - `getFont()` provides access to the current `HFONT`.
-	 * - `hasFont()` checks if a valid font is currently held.
-	 *
-	 * Copying and moving are explicitly disabled to preserve exclusive ownership.
-	 */
-	class FontData
-	{
-	public:
-		FontData() = default;
-
-		explicit FontData(HFONT hFont) noexcept
-			: m_hFont(hFont)
-		{}
-
-		FontData(const FontData&) = delete;
-		FontData& operator=(const FontData&) = delete;
-
-		FontData(FontData&&) = delete;
-		FontData& operator=(FontData&&) = delete;
-
-		~FontData()
-		{
-			FontData::destroyFont();
-		}
-
-		void setFont(HFONT newFont) noexcept
-		{
-			FontData::destroyFont();
-			m_hFont = newFont;
-		}
-
-		[[nodiscard]] const HFONT& getFont() const noexcept
-		{
-			return m_hFont;
-		}
-
-		[[nodiscard]] bool hasFont() const noexcept
-		{
-			return m_hFont != nullptr;
-		}
-
-		void destroyFont() noexcept
-		{
-			if (FontData::hasFont())
-			{
-				::DeleteObject(m_hFont);
-				m_hFont = nullptr;
-			}
-		}
-
-	private:
-		HFONT m_hFont = nullptr;
-	};
-
-	/**
 	 * @struct ButtonData
 	 * @brief Stores button theming state and original size metadata.
 	 *
@@ -1263,7 +1025,7 @@ namespace DarkMode
 	 */
 	struct ButtonData
 	{
-		ThemeData m_themeData{ VSCLASS_BUTTON };
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_BUTTON };
 		SIZE m_szBtn{};
 
 		int m_iStateID = 0;
@@ -2096,8 +1858,8 @@ namespace DarkMode
 	 */
 	struct UpDownData
 	{
-		ThemeData m_themeData{ VSCLASS_SPIN };
-		BufferData m_bufferData;
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_SPIN };
+		dmlib_subclass::BufferData m_bufferData;
 
 		RECT m_rcClient{};
 		RECT m_rcPrev{};
@@ -2111,7 +1873,7 @@ namespace DarkMode
 		explicit UpDownData(HWND hWnd)
 			: m_cornerRoundness(
 				(DarkMode::isAtLeastWindows11()
-					&& cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
+					&& dmlib_subclass::cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
 				? (dmlib_paint::kWin11CornerRoundness + 1)
 				: 0)
 			, m_isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
@@ -2583,7 +2345,7 @@ namespace DarkMode
 	 */
 	struct TabData
 	{
-		BufferData m_bufferData;
+		dmlib_subclass::BufferData m_bufferData;
 	};
 
 	/**
@@ -2916,7 +2678,7 @@ namespace DarkMode
 				if (LOWORD(wParam) == WM_CREATE)
 				{
 					auto hUpDown = reinterpret_cast<HWND>(lParam);
-					if (cmpWndClassName(hUpDown, UPDOWN_CLASS))
+					if (dmlib_subclass::cmpWndClassName(hUpDown, UPDOWN_CLASS))
 					{
 						DarkMode::setUpDownCtrlSubclass(hUpDown);
 						return 0;
@@ -3356,8 +3118,8 @@ namespace DarkMode
 	 */
 	struct ComboBoxData
 	{
-		ThemeData m_themeData{ VSCLASS_COMBOBOX };
-		BufferData m_bufferData;
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_COMBOBOX };
+		dmlib_subclass::BufferData m_bufferData;
 
 		LONG_PTR m_cbStyle = CBS_SIMPLE;
 
@@ -3780,7 +3542,7 @@ namespace DarkMode
 			if (!DarkMode::isThemePrefered() && p.m_subclass)
 			{
 				HWND hParent = ::GetParent(hWnd);
-				if ((hParent == nullptr || getWndClassName(hParent) != WC_COMBOBOXEX))
+				if ((hParent == nullptr || dmlib_subclass::getWndClassName(hParent) != WC_COMBOBOXEX))
 				{
 					DarkMode::setComboBoxCtrlSubclass(hWnd);
 				}
@@ -4173,9 +3935,9 @@ namespace DarkMode
 	 */
 	struct HeaderData
 	{
-		ThemeData m_themeData{ VSCLASS_HEADER };
-		BufferData m_bufferData;
-		FontData m_fontData{ nullptr };
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_HEADER };
+		dmlib_subclass::BufferData m_bufferData;
+		dmlib_subclass::FontData m_fontData{ nullptr };
 
 		POINT m_pt{ LONG_MIN, LONG_MIN };
 		bool m_isHot = false;
@@ -4578,9 +4340,9 @@ namespace DarkMode
 	 */
 	struct StatusBarData
 	{
-		ThemeData m_themeData{ VSCLASS_STATUS };
-		BufferData m_bufferData;
-		FontData m_fontData;
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_STATUS };
+		dmlib_subclass::BufferData m_bufferData;
+		dmlib_subclass::FontData m_fontData;
 
 		StatusBarData() = delete;
 
@@ -4897,8 +4659,8 @@ namespace DarkMode
 	 */
 	struct ProgressBarData
 	{
-		ThemeData m_themeData{ VSCLASS_PROGRESS };
-		BufferData m_bufferData;
+		dmlib_subclass::ThemeData m_themeData{ VSCLASS_PROGRESS };
+		dmlib_subclass::BufferData m_bufferData;
 
 		int m_iStateID = PBFS_PARTIAL;
 
@@ -5488,7 +5250,7 @@ namespace DarkMode
 	static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 	{
 		const auto& p = *reinterpret_cast<DarkModeParams*>(lParam);
-		const std::wstring className = getWndClassName(hWnd);
+		const std::wstring className = dmlib_subclass::getWndClassName(hWnd);
 
 		if (className == WC_BUTTON)
 		{
@@ -5837,7 +5599,7 @@ namespace DarkMode
 
 				auto hChild = reinterpret_cast<HWND>(lParam);
 				const bool isChildEnabled = ::IsWindowEnabled(hChild) == TRUE;
-				const std::wstring className = getWndClassName(hChild);
+				const std::wstring className = dmlib_subclass::getWndClassName(hChild);
 
 				auto hdc = reinterpret_cast<HDC>(wParam);
 
@@ -6650,7 +6412,7 @@ namespace DarkMode
 				auto* lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
 				if (lpnmhdr->code == NM_CUSTOMDRAW)
 				{
-					const std::wstring className = getWndClassName(lpnmhdr->hwndFrom);
+					const std::wstring className = dmlib_subclass::getWndClassName(lpnmhdr->hwndFrom);
 
 					if (className == TOOLBARCLASSNAME)
 					{
@@ -6935,7 +6697,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pMenuThemeData = reinterpret_cast<ThemeData*>(dwRefData);
+		auto* pMenuThemeData = reinterpret_cast<dmlib_subclass::ThemeData*>(dwRefData);
 
 		if (uMsg != WM_NCDESTROY && (!DarkMode::isEnabled() || !pMenuThemeData->ensureTheme(hWnd)))
 		{
@@ -7014,7 +6776,7 @@ namespace DarkMode
 	 */
 	void setWindowMenuBarSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar, VSCLASS_MENU);
+		dmlib_subclass::SetSubclass<dmlib_subclass::ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar, VSCLASS_MENU);
 	}
 
 	/**
@@ -7029,7 +6791,7 @@ namespace DarkMode
 	 */
 	void removeWindowMenuBarSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar);
 	}
 
 	/**
@@ -8401,7 +8163,7 @@ namespace DarkMode
 		}
 
 	private:
-		ThemeData m_themeData{ L"DarkMode_Explorer::TaskDialog" };
+		dmlib_subclass::ThemeData m_themeData{ L"DarkMode_Explorer::TaskDialog" };
 		COLORREF m_clrText = RGB(255, 255, 255);
 		COLORREF m_clrBg = RGB(44, 44, 44);
 		HBRUSH m_hBrushBg = nullptr;
@@ -8443,7 +8205,7 @@ namespace DarkMode
 
 			case WM_ERASEBKGND:
 			{
-				const std::wstring className = getWndClassName(hWnd);
+				const std::wstring className = dmlib_subclass::getWndClassName(hWnd);
 
 				if (className == L"CtrlNotifySink")
 				{
@@ -8503,7 +8265,7 @@ namespace DarkMode
 	 */
 	static BOOL CALLBACK DarkTaskEnumChildProc(HWND hWnd, [[maybe_unused]] LPARAM lParam)
 	{
-		const std::wstring className = getWndClassName(hWnd);
+		const std::wstring className = dmlib_subclass::getWndClassName(hWnd);
 
 		if (className == L"CtrlNotifySink")
 		{
@@ -8621,7 +8383,7 @@ namespace DarkMode
 		BOOL* pfVerificationFlagChecked
 	)
 	{
-		if (DarkMode::isAtLeastWindows11)
+		if (DarkMode::isAtLeastWindows11())
 		{
 			dmlib_hook::hookThemeColor();
 		}
