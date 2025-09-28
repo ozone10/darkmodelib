@@ -168,7 +168,7 @@ static void UnhookFunction(HookData<T>& hookData)
 using fnOpenNcThemeData = auto (WINAPI*)(HWND hWnd, LPCWSTR pszClassList) -> HTHEME; // ordinal 49
 static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 
-bool dmlib_hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
+bool dmlib_hook::loadOpenNcThemeData(const HMODULE& hUxtheme)
 {
 	return LoadFn(hUxtheme, pfOpenNcThemeData, 49);
 }
@@ -178,13 +178,13 @@ bool dmlib_hook::LoadOpenNcThemeData(const HMODULE& hUxtheme)
 static std::unordered_set<HWND> g_darkScrollBarWindows;
 static std::mutex g_darkScrollBarMutex;
 
-void dmlib_hook::EnableDarkScrollBarForWindowAndChildren(HWND hWnd)
+void dmlib_hook::enableDarkScrollBarForWindowAndChildren(HWND hWnd)
 {
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
 	g_darkScrollBarWindows.insert(hWnd);
 }
 
-static bool IsWindowOrParentUsingDarkScrollBar(HWND hWnd)
+static bool isWindowOrParentUsingDarkScrollBar(HWND hWnd)
 {
 	HWND hRoot = GetAncestor(hWnd, GA_ROOT);
 
@@ -211,7 +211,7 @@ static HTHEME WINAPI MyOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
 	if (scrollBarClassName == pszClassList)
 	{
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 1)
-		if (IsWindowOrParentUsingDarkScrollBar(hWnd))
+		if (isWindowOrParentUsingDarkScrollBar(hWnd))
 #endif
 		{
 			hWnd = nullptr;
@@ -221,7 +221,7 @@ static HTHEME WINAPI MyOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
 	return pfOpenNcThemeData(hWnd, pszClassList);
 }
 
-void dmlib_hook::FixDarkScrollBar()
+void dmlib_hook::fixDarkScrollBar()
 {
 	const ModuleHandle moduleComctl(L"comctl32.dll");
 	if (moduleComctl.isLoaded())
@@ -244,7 +244,7 @@ static COLORREF g_clrWindow = RGB(32, 32, 32);
 static COLORREF g_clrText = RGB(224, 224, 224);
 static COLORREF g_clrTGridlines = RGB(100, 100, 100);
 
-void dmlib_hook::SetMySysColor(int nIndex, COLORREF clr)
+void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
 {
 	switch (nIndex)
 	{
@@ -309,7 +309,7 @@ static DWORD WINAPI MyGetSysColor(int nIndex)
  *
  * @return `true` if the hook was installed successfully.
  */
-bool dmlib_hook::HookSysColor()
+bool dmlib_hook::hookSysColor()
 {
 	return HookFunction<fnGetSysColor>(
 		g_hookDataGetSysColor,
@@ -326,7 +326,7 @@ bool dmlib_hook::HookSysColor()
  * It ensures that system colors return to normal without requiring
  * prior state checks.
  */
-void dmlib_hook::UnhookSysColor()
+void dmlib_hook::unhookSysColor()
 {
 	UnhookFunction<fnGetSysColor>(g_hookDataGetSysColor);
 }
@@ -436,7 +436,7 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	return S_OK;
 }
 
-bool dmlib_hook::HookThemeColor()
+bool dmlib_hook::hookThemeColor()
 {
 	if (g_hDarkTheme == nullptr)
 	{
@@ -477,7 +477,7 @@ bool dmlib_hook::HookThemeColor()
 			kDrawThemeBackgroundExOrdinal);
 }
 
-void dmlib_hook::UnhookThemeColor()
+void dmlib_hook::unhookThemeColor()
 {
 	UnhookFunction<fnGetThemeColor>(g_hookDataGetThemeColor);
 	UnhookFunction<fnDrawThemeBackgroundEx>(g_hookDataDrawThemeBackgroundEx);

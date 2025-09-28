@@ -15,17 +15,17 @@
 namespace dmlib_hook
 {
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-	bool LoadOpenNcThemeData(const HMODULE& hUxtheme);
-	void EnableDarkScrollBarForWindowAndChildren(HWND hWnd);
-	void FixDarkScrollBar();
+	bool loadOpenNcThemeData(const HMODULE& hUxtheme);
+	void enableDarkScrollBarForWindowAndChildren(HWND hWnd);
+	void fixDarkScrollBar();
 #endif
 
-	void SetMySysColor(int nIndex, COLORREF clr);
+	void setMySysColor(int nIndex, COLORREF clr);
 	/// Hooks system color to support runtime customization.
-	bool HookSysColor();
+	bool hookSysColor();
 	/// Unhooks system color overrides and restores default color behavior.
-	void UnhookSysColor();
+	void unhookSysColor();
 
-	bool HookThemeColor();
-	void UnhookThemeColor();
+	bool hookThemeColor();
+	void unhookThemeColor();
 } // namespace dmlib_hook

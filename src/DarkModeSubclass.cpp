@@ -599,16 +599,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Initializes undocumented dark mode API.
-	 *
-	 * Wraps `InitDarkMode()` from DarkMode.h.
-	 */
-	static void initExperimentalDarkModeAPI()
-	{
-		dmlib_win32api::InitDarkMode();
-	}
-
-	/**
 	 * @brief Enables or disables dark mode using undocumented API.
 	 *
 	 * Optionally applies a scroll bar fix for dark mode inconsistencies.
@@ -697,7 +687,7 @@ namespace DarkMode
 	 * If the INI file does not exist, default dark mode behavior is applied via
 	 * @ref DarkMode::setDarkModeConfigEx.
 	 *
-	 * @param iniName Name of INI file (resolved via @ref GetIniPath).
+	 * @param iniName Name of INI file (resolved via @ref getIniPath).
 	 *
 	 * @note When `DarkModeType::classic` is set, system colors are used instead of themed ones.
 	 */
@@ -708,8 +698,8 @@ namespace DarkMode
 			return;
 		}
 
-		const auto iniPath = dmlib_ini::GetIniPath(iniName);
-		g_dmCfg.m_iniExist = dmlib_ini::FileExists(iniPath);
+		const auto iniPath = dmlib_ini::getIniPath(iniName);
+		g_dmCfg.m_iniExist = dmlib_ini::fileExists(iniPath);
 		if (g_dmCfg.m_iniExist)
 		{
 			DarkMode::initDarkModeConfig(::GetPrivateProfileIntW(L"main", L"mode", 1, iniPath.c_str()));
@@ -728,7 +718,7 @@ namespace DarkMode
 
 			DarkMode::setMicaConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"mica", 0, iniPath.c_str()));
 			DarkMode::setRoundCornerConfig(::GetPrivateProfileIntW(sectionBase.c_str(), L"roundCorner", 0, iniPath.c_str()));
-			dmlib_ini::SetClrFromIni(iniPath, sectionBase, L"borderColor", &g_dmCfg.m_borderColor);
+			dmlib_ini::setClrFromIni(iniPath, sectionBase, L"borderColor", &g_dmCfg.m_borderColor);
 			if (g_dmCfg.m_borderColor == kDwmwaClrDefaultRGBCheck)
 			{
 				g_dmCfg.m_borderColor = DWMWA_COLOR_DEFAULT;
@@ -794,12 +784,12 @@ namespace DarkMode
 
 			for (const auto& entry : viewColors)
 			{
-				dmlib_ini::SetClrFromIni(iniPath, sectionColorsView, entry.key, entry.clr);
+				dmlib_ini::setClrFromIni(iniPath, sectionColorsView, entry.key, entry.clr);
 			}
 
 			for (const auto& entry : baseColors)
 			{
-				dmlib_ini::SetClrFromIni(iniPath, sectionColors, entry.key, entry.clr);
+				dmlib_ini::setClrFromIni(iniPath, sectionColors, entry.key, entry.clr);
 			}
 
 			DarkMode::updateThemeBrushesAndPens();
@@ -886,7 +876,7 @@ namespace DarkMode
 		{
 			if (!g_dmCfg.m_isInitExperimental)
 			{
-				DarkMode::initExperimentalDarkModeAPI();
+				dmlib_win32api::InitDarkMode();
 				dmlib_dpi::InitDpiAPI();
 				g_dmCfg.m_isInitExperimental = true;
 			}
@@ -1094,7 +1084,7 @@ namespace DarkMode
 	 */
 	void setSysColor(int nIndex, COLORREF color)
 	{
-		dmlib_hook::SetMySysColor(nIndex, color);
+		dmlib_hook::setMySysColor(nIndex, color);
 	}
 
 	/**
@@ -1106,7 +1096,7 @@ namespace DarkMode
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			return dmlib_hook::HookThemeColor();
+			return dmlib_hook::hookThemeColor();
 		}
 		return false;
 	}
@@ -1122,7 +1112,7 @@ namespace DarkMode
 	{
 		if (DarkMode::isAtLeastWindows11())
 		{
-			dmlib_hook::UnhookThemeColor();
+			dmlib_hook::unhookThemeColor();
 		}
 	}
 
@@ -1136,7 +1126,7 @@ namespace DarkMode
 	void enableDarkScrollBarForWindowAndChildren([[maybe_unused]] HWND hWnd)
 	{
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-		dmlib_hook::EnableDarkScrollBarForWindowAndChildren(hWnd);
+		dmlib_hook::enableDarkScrollBarForWindowAndChildren(hWnd);
 #endif
 	}
 
@@ -1391,8 +1381,8 @@ namespace DarkMode
 						RECT rcBtn{};
 						::GetClientRect(hWnd, &rcBtn);
 						const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
-						m_szBtn.cx = dmlib_dpi::Unscale(rcBtn.right - rcBtn.left, dpi);
-						m_szBtn.cy = dmlib_dpi::Unscale(rcBtn.bottom - rcBtn.top, dpi);
+						m_szBtn.cx = dmlib_dpi::unscale(rcBtn.right - rcBtn.left, dpi);
+						m_szBtn.cy = dmlib_dpi::unscale(rcBtn.bottom - rcBtn.top, dpi);
 						m_isSizeSet = (m_szBtn.cx != 0 && m_szBtn.cy != 0);
 					}
 					break;
@@ -1752,8 +1742,8 @@ namespace DarkMode
 					if (Button_GetIdealSize(hWnd, &szBtn) == TRUE)
 					{
 						const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
-						const int cx = std::min<LONG>(szBtn.cx, dmlib_dpi::Scale(pButtonData->m_szBtn.cx, dpi));
-						const int cy = std::min<LONG>(szBtn.cy, dmlib_dpi::Scale(pButtonData->m_szBtn.cy, dpi));
+						const int cx = std::min<LONG>(szBtn.cx, dmlib_dpi::scale(pButtonData->m_szBtn.cx, dpi));
+						const int cy = std::min<LONG>(szBtn.cy, dmlib_dpi::scale(pButtonData->m_szBtn.cy, dpi));
 						::SetWindowPos(hWnd, nullptr, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 					}
 				}
@@ -2405,7 +2395,7 @@ namespace DarkMode
 
 				static constexpr auto scaleFactor = 3L;
 				static constexpr auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
-				const auto baseSize = static_cast<float>(dmlib_dpi::Scale(((size.cy - offsetSize) / scaleFactor) + offsetSize, ::GetParent(hWnd)));
+				const auto baseSize = static_cast<float>(dmlib_dpi::scale(((size.cy - offsetSize) / scaleFactor) + offsetSize, ::GetParent(hWnd)));
 
 				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
 					auto sizeArrow = POINTFLOAT{ baseSize, baseSize };
@@ -3927,7 +3917,7 @@ namespace DarkMode
 			case WM_NCDESTROY:
 			{
 				::RemoveWindowSubclass(hWnd, ComboBoxExSubclass, uIdSubclass);
-				dmlib_hook::UnhookSysColor();
+				dmlib_hook::unhookSysColor();
 				break;
 			}
 
@@ -3976,13 +3966,13 @@ namespace DarkMode
 				{
 					case CBN_DROPDOWN:
 					{
-						dmlib_hook::HookSysColor();
+						dmlib_hook::hookSysColor();
 						break;
 					}
 
 					case CBN_CLOSEUP:
 					{
-						dmlib_hook::UnhookSysColor();
+						dmlib_hook::unhookSysColor();
 						break;
 					}
 
@@ -4030,7 +4020,7 @@ namespace DarkMode
 	void removeComboBoxExCtrlSubclass(HWND hWnd)
 	{
 		dmlib_subclass::RemoveSubclass(hWnd, ComboBoxExSubclass, dmlib_subclass::SubclassID::comboBoxEx);
-		dmlib_hook::UnhookSysColor();
+		dmlib_hook::unhookSysColor();
 	}
 
 	/**
@@ -4079,7 +4069,7 @@ namespace DarkMode
 			case WM_NCDESTROY:
 			{
 				::RemoveWindowSubclass(hWnd, ListViewSubclass, uIdSubclass);
-				dmlib_hook::UnhookSysColor();
+				dmlib_hook::unhookSysColor();
 				break;
 			}
 
@@ -4102,9 +4092,9 @@ namespace DarkMode
 
 				if (hasGridlines)
 				{
-					dmlib_hook::HookSysColor();
+					dmlib_hook::hookSysColor();
 					const LRESULT retVal = ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
-					dmlib_hook::UnhookSysColor();
+					dmlib_hook::unhookSysColor();
 					return retVal;
 				}
 				break;

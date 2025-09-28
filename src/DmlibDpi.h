@@ -48,38 +48,38 @@ namespace dmlib_dpi
 
 	[[nodiscard]] int GetSystemMetricsForDpi(int nIndex, UINT dpi);
 
-	[[nodiscard]] inline int Scale(int x, UINT toDpi, UINT fromDpi)
+	[[nodiscard]] inline int scale(int x, UINT toDpi, UINT fromDpi)
 	{
 		return ::MulDiv(x, static_cast<int>(toDpi), static_cast<int>(fromDpi));
 	}
 
-	[[nodiscard]] inline int Scale(int x, UINT dpi)
+	[[nodiscard]] inline int scale(int x, UINT dpi)
 	{
-		return dmlib_dpi::Scale(x, dpi, USER_DEFAULT_SCREEN_DPI);
+		return dmlib_dpi::scale(x, dpi, USER_DEFAULT_SCREEN_DPI);
 	}
 
-	[[nodiscard]] inline int Unscale(int x, UINT dpi)
+	[[nodiscard]] inline int unscale(int x, UINT dpi)
 	{
-		return dmlib_dpi::Scale(x, USER_DEFAULT_SCREEN_DPI, dpi);
+		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dpi);
 	}
 
-	[[nodiscard]] inline int Scale(int x, HWND hWnd)
+	[[nodiscard]] inline int scale(int x, HWND hWnd)
 	{
-		return dmlib_dpi::Scale(x, dmlib_dpi::GetDpiForWindow(hWnd), USER_DEFAULT_SCREEN_DPI);
+		return dmlib_dpi::scale(x, dmlib_dpi::GetDpiForWindow(hWnd), USER_DEFAULT_SCREEN_DPI);
 	}
 
-	[[nodiscard]] inline int Unscale(int x, HWND hWnd)
+	[[nodiscard]] inline int unscale(int x, HWND hWnd)
 	{
-		return dmlib_dpi::Scale(x, USER_DEFAULT_SCREEN_DPI, dmlib_dpi::GetDpiForWindow(hWnd));
+		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dmlib_dpi::GetDpiForWindow(hWnd));
 	}
 
 	[[nodiscard]] inline int ScaleFont(int pt, UINT dpi)
 	{
-		return -(dmlib_dpi::Scale(pt, dpi, 72));
+		return -(dmlib_dpi::scale(pt, dpi, 72));
 	}
 
 	[[nodiscard]] inline int ScaleFont(int pt, HWND hWnd)
 	{
-		return -(dmlib_dpi::Scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), 72));
+		return -(dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), 72));
 	}
 } // namespace dmlib_dpi

@@ -311,6 +311,9 @@ DWORD dmlib_win32api::GetWindowsBuildNumber()
 	return g_buildNumber;
 }
 
+/**
+ * @brief Initializes undocumented dark mode API.
+ */
 void dmlib_win32api::InitDarkMode()
 {
 	static bool isInit = false;
@@ -353,7 +356,7 @@ void dmlib_win32api::InitDarkMode()
 					&& ptrFnOrd132NotNullptr
 #endif
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-					&& dmlib_hook::LoadOpenNcThemeData(hUxtheme)
+					&& dmlib_hook::loadOpenNcThemeData(hUxtheme)
 #endif
 					&& dmlib_module::LoadFn(hUxtheme, pfRefreshImmersiveColorPolicyState, 104)
 					&& dmlib_module::LoadFn(hUxtheme, pfAllowDarkModeForWindow, 133)
@@ -390,9 +393,9 @@ void dmlib_win32api::SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScro
 		dmlib_win32api::AllowDarkModeForApp(useDark);
 		FlushMenuThemes();
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-		if (fixDarkScrollbar)
+		if (dmlib_hook::fixDarkScrollbar)
 		{
-			FixDarkScrollBar();
+			dmlib_hook::fixDarkScrollBar();
 		}
 #endif
 		g_darkModeEnabled = useDark && ShouldAppsUseDarkMode() && !dmlib_win32api::IsHighContrast();

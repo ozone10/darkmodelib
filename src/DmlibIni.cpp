@@ -39,7 +39,7 @@
  *
  * @note Returns a path like: `C:\\Path\\To\\Executable\\YourFile.ini`
  */
-std::wstring dmlib_ini::GetIniPath(const std::wstring& iniFilename)
+std::wstring dmlib_ini::getIniPath(const std::wstring& iniFilename)
 {
 	std::array<wchar_t, MAX_PATH> buffer{};
 	const auto strLen = static_cast<size_t>(::GetModuleFileNameW(nullptr, buffer.data(), MAX_PATH));
@@ -68,7 +68,7 @@ std::wstring dmlib_ini::GetIniPath(const std::wstring& iniFilename)
  * @param[in] filePath Path to the file to check.
  * @return `true` if the file exists and is not a directory, otherwise `false`.
  */
-bool dmlib_ini::FileExists(const std::wstring& filePath)
+bool dmlib_ini::fileExists(const std::wstring& filePath)
 {
 	const DWORD dwAttrib = ::GetFileAttributesW(filePath.c_str());
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY));
@@ -88,7 +88,7 @@ bool dmlib_ini::FileExists(const std::wstring& filePath)
  *
  * @note The value must be exactly 6 hexadecimal digits and represent an RGB color.
  */
-bool dmlib_ini::SetClrFromIni(
+bool dmlib_ini::setClrFromIni(
 	const std::wstring& iniFilePath,
 	const std::wstring& sectionName,
 	const std::wstring& keyName,

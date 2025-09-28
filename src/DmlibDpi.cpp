@@ -54,7 +54,7 @@ static UINT WINAPI DummyGetDpiForWindow([[maybe_unused]] HWND hwnd)
 
 static int WINAPI DummyGetSystemMetricsForDpi(int nIndex, UINT dpi)
 {
-	return dmlib_dpi::Scale(::GetSystemMetrics(nIndex), dpi);
+	return dmlib_dpi::scale(::GetSystemMetrics(nIndex), dpi);
 }
 
 bool dmlib_dpi::InitDpiAPI()

@@ -31,6 +31,7 @@ namespace dmlib_win32api
 	[[nodiscard]] bool IsColorSchemeChangeMessage(LPARAM lParam);
 	[[nodiscard]] bool IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam);
 	void AllowDarkModeForApp(bool allow);
+	/// Initializes undocumented dark mode API.
 	void InitDarkMode();
 	void SetDarkMode(bool useDark, bool fixDarkScrollbar);
 	[[nodiscard]] bool IsWindows10();
