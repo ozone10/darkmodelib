@@ -934,7 +934,7 @@ namespace DarkMode
 			&& dmlib_win32api::IsColorSchemeChangeMessage(lParam))
 		{
 			// fnShouldAppsUseDarkMode (ordinal 132) is not reliable on 1903+, use DarkMode::isDarkModeReg() instead
-			const bool isDarkModeUsed = DarkMode::isDarkModeReg() && !dmlib_win32api::IsHighContrast();
+			const bool isDarkModeUsed = (DarkMode::isDarkModeReg() && !dmlib_win32api::IsHighContrast());
 			if (DarkMode::isExperimentalActive() != isDarkModeUsed)
 			{
 				if (g_dmCfg.m_isInit)
@@ -962,8 +962,7 @@ namespace DarkMode
 		LPCWSTR lpSubKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 		LPCWSTR lpValue = L"AppsUseLightTheme";
 
-		const auto result = ::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize);
-		if (result != ERROR_SUCCESS)
+		if (::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize) != ERROR_SUCCESS)
 		{
 			return false;
 		}
