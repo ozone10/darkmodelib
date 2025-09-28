@@ -599,67 +599,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Enables or disables dark mode using undocumented API.
-	 *
-	 * Optionally applies a scroll bar fix for dark mode inconsistencies.
-	 *
-	 * @param useDark           Enable dark mode when `true`, disable when `false`.
-	 * @param fixDarkScrollBar  Apply scroll bar fix if `true`.
-	 */
-	static void setDarkMode(bool useDark, bool fixDarkScrollBar = true)
-	{
-		dmlib_win32api::SetDarkMode(useDark, fixDarkScrollBar);
-	}
-
-	/**
-	 * @brief Enables or disables dark mode support for a specific window.
-	 *
-	 * @param hWnd  Window handle to apply dark mode.
-	 * @param allow Whether to allow (`true`) or disallow (`false`) dark mode.
-	 * @return `true` if successfully applied.
-	 */
-	static bool allowDarkModeForWindow(HWND hWnd, bool allow)
-	{
-		return dmlib_win32api::AllowDarkModeForWindow(hWnd, allow);
-	}
-
-#if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
-	/**
-	 * @brief Refreshes the title bar theme color for legacy systems.
-	 *
-	 * Used only on old Windows 10 systems when `_DARKMODELIB_ALLOW_OLD_OS`
-	 * is defined with non-zero unsigned value.
-	 *
-	 * @param hWnd Handle to the window to update.
-	 */
-	static void setTitleBarThemeColor(HWND hWnd)
-	{
-		dmlib_win32api:::RefreshTitleBarThemeColor(hWnd);
-	}
-#endif
-
-	/**
-	 * @brief Checks whether a `WM_SETTINGCHANGE` message indicates a color scheme switch.
-	 *
-	 * @param lParam LPARAM from a system message.
-	 * @return `true` if the message signals a theme mode change.
-	 */
-	[[nodiscard]] static bool isColorSchemeChangeMessage(LPARAM lParam)
-	{
-		return dmlib_win32api::IsColorSchemeChangeMessage(lParam);
-	}
-
-	/**
-	 * @brief Determines if high contrast mode is currently active.
-	 *
-	 * @return `true` if high contrast is enabled via system accessibility settings.
-	 */
-	[[nodiscard]] static bool isHighContrast()
-	{
-		return dmlib_win32api::IsHighContrast();
-	}
-
-	/**
 	 * @brief Determines if themed styling should be preferred over subclassing.
 	 *
 	 * Requires support for experimental theming and Windows 10 or later.
@@ -829,7 +768,7 @@ namespace DarkMode
 		DarkMode::initDarkModeConfig(dmType);
 
 		const bool useDark = g_dmCfg.m_dmType == DarkModeType::dark;
-		DarkMode::setDarkMode(useDark, true);
+		dmlib_win32api::SetDarkMode(useDark, true);
 	}
 
 	/**
@@ -1028,10 +967,11 @@ namespace DarkMode
 	 */
 	bool handleSettingChange(LPARAM lParam)
 	{
-		if (DarkMode::isExperimentalSupported() && DarkMode::isColorSchemeChangeMessage(lParam))
+		if (DarkMode::isExperimentalSupported()
+			&& dmlib_win32api::IsColorSchemeChangeMessage(lParam))
 		{
 			// fnShouldAppsUseDarkMode (ordinal 132) is not reliable on 1903+, use DarkMode::isDarkModeReg() instead
-			const bool isDarkModeUsed = DarkMode::isDarkModeReg() && !DarkMode::isHighContrast();
+			const bool isDarkModeUsed = DarkMode::isDarkModeReg() && !dmlib_win32api::IsHighContrast();
 			if (DarkMode::isExperimentalActive() != isDarkModeUsed)
 			{
 				if (g_dmCfg.m_isInit)
@@ -7292,8 +7232,8 @@ namespace DarkMode
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 		else
 		{
-			DarkMode::allowDarkModeForWindow(hWnd, DarkMode::isExperimentalActive());
-			DarkMode::setTitleBarThemeColor(hWnd);
+			dmlib_win32api::AllowDarkModeForWindow(hWnd, DarkMode::isExperimentalActive());
+			dmlib_win32api:::RefreshTitleBarThemeColor(hWnd);
 		}
 #endif
 		// on Windows 10 title bar needs refresh when changing colors
@@ -7332,14 +7272,14 @@ namespace DarkMode
 	 *
 	 * @see DarkMode::isExperimentalSupported()
 	 * @see DarkMode::isExperimentalActive()
-	 * @see DarkMode::allowDarkModeForWindow()
+	 * @see dmlib_win32api::AllowDarkModeForWindow()
 	 * @see DarkMode::setDarkThemeExperimental()
 	 */
 	void setDarkThemeExperimentalEx(HWND hWnd, const wchar_t* themeClassName)
 	{
 		if (DarkMode::isExperimentalSupported())
 		{
-			DarkMode::allowDarkModeForWindow(hWnd, DarkMode::isExperimentalActive());
+			dmlib_win32api::AllowDarkModeForWindow(hWnd, DarkMode::isExperimentalActive());
 			::SetWindowTheme(hWnd, themeClassName, nullptr);
 		}
 	}
