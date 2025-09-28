@@ -90,6 +90,8 @@
     <ClInclude Include="..\src\DmlibDpi.h" />
     <ClInclude Include="..\src\DmlibHook.h" />
     <ClInclude Include="..\src\DmlibIni.h" />
+    <ClInclude Include="..\src\DmlibPaintHelper.h" />
+    <ClInclude Include="..\src\DmlibSubclass.h" />
     <ClInclude Include="..\src\DmlibWinApi.h" />
     <ClInclude Include="..\src\IatHook.h" />
     <ClInclude Include="..\src\ModuleHelper.h" />
@@ -103,6 +105,8 @@
     <ClCompile Include="..\src\DmlibDpi.cpp" />
     <ClCompile Include="..\src\DmlibHook.cpp" />
     <ClCompile Include="..\src\DmlibIni.cpp" />
+    <ClCompile Include="..\src\DmlibPaintHelper.cpp" />
+    <ClCompile Include="..\src\DmlibSubclass.cpp" />
     <ClCompile Include="..\src\DmlibWinApi.cpp" />
   </ItemGroup>
   <ItemGroup>

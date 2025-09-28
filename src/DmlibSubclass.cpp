@@ -8,12 +8,6 @@
  */
 
 
-#define DM_VERSION_MAJOR    0
-#define DM_VERSION_MINOR    29
-#define DM_VERSION_REVISION 0
+#pragma once
 
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-
-#define DM_VERSION "Darkmodelib v0.29.0"
-#define DM_COPYRIGHT "Copyright (c) 2024-2025 ozone10"
+#include "DmlibSubclass.h"

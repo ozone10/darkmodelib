@@ -380,19 +380,6 @@ namespace DarkMode
 	DMLIB_API void setDefaultColors(bool updateBrushesAndOther);
 
 	// ========================================================================
-	// Paint Helpers
-	// ========================================================================
-
-	/// Paints a rounded rectangle using the specified pen and brush.
-	DMLIB_API void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height);
-	/// Paints a rectangle using the specified pen and brush.
-	DMLIB_API void paintRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush);
-	/// Paints an unfilled rounded rectangle (frame only).
-	DMLIB_API void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width, int height);
-	/// Paints an unfilled rounded rectangle (frame only).
-	DMLIB_API void paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen);
-
-	// ========================================================================
 	// Control Subclassing
 	// ========================================================================
 

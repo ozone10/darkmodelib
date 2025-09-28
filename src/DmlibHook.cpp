@@ -304,6 +304,11 @@ static DWORD WINAPI MyGetSysColor(int nIndex)
 	}
 }
 
+/**
+ * @brief Hooks system color to support runtime customization.
+ *
+ * @return `true` if the hook was installed successfully.
+ */
 bool dmlib_hook::HookSysColor()
 {
 	return HookFunction<fnGetSysColor>(
@@ -314,6 +319,13 @@ bool dmlib_hook::HookSysColor()
 		iat_hook::FindIatThunkInModule);
 }
 
+/**
+ * @brief Unhooks system color overrides and restores default color behavior.
+ *
+ * This function is safe to call even if no color hook is currently installed.
+ * It ensures that system colors return to normal without requiring
+ * prior state checks.
+ */
 void dmlib_hook::UnhookSysColor()
 {
 	UnhookFunction<fnGetSysColor>(g_hookDataGetSysColor);

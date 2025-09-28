@@ -21,7 +21,9 @@ namespace dmlib_hook
 #endif
 
 	void SetMySysColor(int nIndex, COLORREF clr);
+	/// Hooks system color to support runtime customization.
 	bool HookSysColor();
+	/// Unhooks system color overrides and restores default color behavior.
 	void UnhookSysColor();
 
 	bool HookThemeColor();

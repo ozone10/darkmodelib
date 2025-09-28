@@ -37,7 +37,6 @@
 
 #include <array>
 #include <cmath>
-#include <memory>
 #include <string>
 
 #include "DmlibColor.h"
@@ -46,6 +45,8 @@
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 #include "DmlibIni.h"
 #endif
+#include "DmlibPaintHelper.h"
+#include "DmlibSubclass.h"
 #include "DmlibWinApi.h"
 
 #include "UAHMenuBar.h"
@@ -208,32 +209,6 @@ namespace DarkMode
 	};
 
 	/**
-	 * @brief Defines control subclass ID values.
-	 */
-	enum class SubclassID :std::uint8_t
-	{
-		button = 42,
-		groupbox,
-		upDown,
-		tabPaint,
-		tabUpDown,
-		customBorder,
-		comboBox,
-		comboBoxEx,
-		listView,
-		header,
-		statusBar,
-		progressBar,
-		staticText,
-		windowEraseBg,
-		windowCtlColor,
-		windowNotify,
-		windowMenuBar,
-		windowSettingChange,
-		taskDlg
-	};
-
-	/**
 	 * @struct DarkModeParams
 	 * @brief Defines theming and subclassing parameters for child controls.
 	 *
@@ -250,9 +225,6 @@ namespace DarkMode
 		bool m_subclass = false;
 		bool m_theme = false;
 	};
-
-	/// Base roundness value for various controls, such as toolbar iconic buttons and combo boxes
-	static constexpr int kWin11CornerRoundness = 4;
 
 	/// Threshold range around 50.0 where TreeView uses classic style instead of light/dark.
 	static constexpr double kMiddleGrayRange = 2.0;
@@ -283,90 +255,6 @@ namespace DarkMode
 #endif
 		} g_dmCfg;
 	} // anonymous namespace
-
-	/**
-	 * @class GdiObject
-	 * @brief RAII wrapper for managing GDI objects in a device context.
-	 *
-	 * Automatically selects a GDI object (e.g., brush, pen, font) into a device context (DC),
-	 * stores the previous object, and restores it upon destruction. Optionally deletes the
-	 * selected object unless marked as shared.
-	 *
-	 * Logic:
-	 * - Prevents resource leaks and ensures proper cleanup of GDI objects.
-	 * - Supports shared objects (e.g., system fonts or brushes) via the `isShared` flag.
-	 * - Uses `SelectObject()` to apply and restore the DC state.
-	 * - Deletes the object via `DeleteObject()` unless shared.
-	 *
-	 * Constructors:
-	 * - `GdiObject(HDC hdc, HGDIOBJ obj, bool isShared)`
-	 *   Selects the object into the DC and marks it as shared or owned.
-	 * - `GdiObject(HDC hdc, HGDIOBJ obj)`
-	 *   Convenience constructor for non-shared objects.
-	 *
-	 * Destructor:
-	 * - Automatically restores the previous object and deletes the selected one if owned.
-	 *
-	 * Methods:
-	 * - `void deleteObj()`
-	 *   Manually restores and deletes the object (if not shared).
-	 *
-	 * @note The default constructor is deleted to enforce explicit initialization.
-	 */
-	class GdiObject
-	{
-	public:
-		GdiObject() = delete;
-		explicit GdiObject(HDC hdc, HGDIOBJ obj, bool isShared) noexcept
-			: m_hdc(hdc)
-			, m_hObj(obj)
-			, m_isShared(isShared)
-		{
-			if (m_hObj != nullptr)
-			{
-				m_holdObj = ::SelectObject(hdc, obj);
-			}
-		}
-
-		explicit GdiObject(HDC hdc, HGDIOBJ obj) noexcept
-			: GdiObject(hdc, obj, false)
-		{}
-
-		~GdiObject()
-		{
-			deleteObj();
-		}
-
-		void deleteObj() noexcept
-		{
-			if (m_hObj != nullptr)
-			{
-				::SelectObject(m_hdc, m_holdObj);
-				if (!m_isShared)
-				{
-					::DeleteObject(m_hObj);
-					m_hObj = nullptr;
-				}
-			}
-		}
-
-		GdiObject(const GdiObject&) = delete;
-		GdiObject& operator=(const GdiObject&) = delete;
-
-		GdiObject(GdiObject&&) = delete;
-		GdiObject& operator=(GdiObject&&) = delete;
-
-		explicit operator HGDIOBJ() const noexcept
-		{
-			return m_hObj;
-		}
-
-	private:
-		HDC m_hdc = nullptr;
-		HGDIOBJ m_hObj = nullptr;
-		HGDIOBJ m_holdObj = nullptr;
-		bool m_isShared = false;
-	};
 
 	static dmlib_color::Theme& getTheme()
 	{
@@ -1210,28 +1098,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Hooks system color to support runtime customization.
-	 *
-	 * @return `true` if the hook was installed successfully.
-	 */
-	static bool hookSysColor()
-	{
-		return dmlib_hook::HookSysColor();
-	}
-
-	/**
-	 * @brief Unhooks system color overrides and restores default color behavior.
-	 *
-	 * This function is safe to call even if no color hook is currently installed.
-	 * It ensures that system colors return to normal without requiring
-	 * prior state checks.
-	 */
-	static void unhookSysColor()
-	{
-		dmlib_hook::UnhookSysColor();
-	}
-
-	/**
 	 * @brief Hooks `GetThemeColor` to support dark colors.
 	 *
 	 * @return `true` if the hook was installed successfully.
@@ -1272,83 +1138,6 @@ namespace DarkMode
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 		dmlib_hook::EnableDarkScrollBarForWindowAndChildren(hWnd);
 #endif
-	}
-
-	/**
-	 * @brief Paints a rounded rectangle using the specified pen and brush.
-	 *
-	 * Draws a rounded rectangle defined by `rect`, using the provided pen (`hpen`) and brush (`hBrush`)
-	 * for the edge and fill, respectively. Preserves previous GDI object selections.
-	 *
-	 * @param hdc       Handle to the device context.
-	 * @param rect      Rectangle bounds for the shape.
-	 * @param hpen      Pen used to draw the edge.
-	 * @param hBrush    Brush used to inner fill.
-	 * @param width     Horizontal corner radius.
-	 * @param height    Vertical corner radius.
-	 */
-	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height)
-	{
-		auto holdBrush = ::SelectObject(hdc, hBrush);
-		auto holdPen = ::SelectObject(hdc, hpen);
-		::RoundRect(hdc, rect.left, rect.top, rect.right, rect.bottom, width, height);
-		::SelectObject(hdc, holdBrush);
-		::SelectObject(hdc, holdPen);
-	}
-
-	/**
-	 * @brief Paints a rectangle using the specified pen and brush.
-	 *
-	 * Draws a rectangle defined by `rect`, using the provided pen (`hpen`) and brush (`hBrush`)
-	 * for the edge and fill, respectively. Preserves previous GDI object selections.
-	 * Forwards to `DarkMode::paintRoundRect` with `width` and `height` parameters with `0` value.
-	 *
-	 * @param hdc       Handle to the device context.
-	 * @param rect      Rectangle bounds for the shape.
-	 * @param hpen      Pen used to draw the edge.
-	 * @param hBrush    Brush used to inner fill.
-	 *
-	 * @see DarkMode::paintRoundRect()
-	 */
-	void paintRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush)
-	{
-		paintRoundRect(hdc, rect, hpen, hBrush, 0, 0);
-	}
-
-	/**
-	 * @brief Paints an unfilled rounded rectangle (frame only).
-	 *
-	 * Forwards to `DarkMode::paintRoundRect` and uses a `NULL_BRUSH`
-	 * to omit the inner fill, drawing only the rounded frame.
-	 *
-	 * @param hdc       Handle to the device context.
-	 * @param rect      Rectangle bounds for the frame.
-	 * @param hpen      Pen used to draw the edge.
-	 * @param width     Horizontal corner radius.
-	 * @param height    Vertical corner radius.
-	 *
-	 * @see DarkMode::paintRoundRect()
-	 */
-	void paintRoundFrameRect(HDC hdc, const RECT& rect, HPEN hpen, int width, int height)
-	{
-		DarkMode::paintRoundRect(hdc, rect, hpen, static_cast<HBRUSH>(::GetStockObject(NULL_BRUSH)), width, height);
-	}
-
-	/**
-	 * @brief Paints an unfilled rectangle (frame only).
-	 *
-	 * Forwards to `DarkMode::paintRoundFrameRect`
-	 * with `width` and `height` parameters with `0` value.
-	 *
-	 * @param hdc       Handle to the device context.
-	 * @param rect      Rectangle bounds for the frame.
-	 * @param hpen      Pen used to draw the edge.
-	 *
-	 * @see DarkMode::paintRoundFrameRect()
-	 */
-	void paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen)
-	{
-		DarkMode::paintRoundFrameRect(hdc, rect, hpen, 0, 0);
 	}
 
 	/**
@@ -1551,214 +1340,6 @@ namespace DarkMode
 	private:
 		HFONT m_hFont = nullptr;
 	};
-
-	/**
-	 * @brief Attaches a typed subclass procedure with custom data to a window.
-	 *
-	 * If the subclass ID is not already attached, allocates a `T` instance using the given
-	 * `param` and stores it as subclass reference data. Ownership is transferred to the system.
-	 *
-	 * @tparam T            The user-defined data type associated with the subclass.
-	 * @tparam Param        Type used to initialize `T`.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
-	 * @param param         Constructor argument forwarded to `T`.
-	 * @return TRUE on success, FALSE on failure, -1 if subclass already set.
-	 */
-	template <typename T, typename Param>
-	static auto SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID, const Param& param) -> int
-	{
-		const auto subclassID = static_cast<UINT_PTR>(subID);
-		if (::GetWindowSubclass(hWnd, subclassProc, subclassID, nullptr) == FALSE)
-		{
-			auto pData = std::make_unique<T>(param);
-			if (::SetWindowSubclass(hWnd, subclassProc, subclassID, reinterpret_cast<DWORD_PTR>(pData.get())) == TRUE)
-			{
-				pData.release();
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return -1;
-	}
-
-	/**
-	 * @brief Attaches a typed subclass procedure with default-constructed data.
-	 *
-	 * Same logic as the other overload, but constructs `T` using its default constructor.
-	 *
-	 * @tparam T            The user-defined data type associated with the subclass.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
-	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
-	 */
-	template <typename T>
-	static auto SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID) -> int
-	{
-		const auto subclassID = static_cast<UINT_PTR>(subID);
-		if (::GetWindowSubclass(hWnd, subclassProc, subclassID, nullptr) == FALSE)
-		{
-			auto pData = std::make_unique<T>();
-			if (::SetWindowSubclass(hWnd, subclassProc, subclassID, reinterpret_cast<DWORD_PTR>(pData.get())) == TRUE)
-			{
-				pData.release();
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return -1;
-	}
-
-	/**
-	 * @brief Attaches an untyped subclass (no reference data).
-	 *
-	 * Sets a subclass with no associated custom data.
-	 *
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
-	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
-	 */
-	static int SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID)
-	{
-		const auto subclassID = static_cast<UINT_PTR>(subID);
-		if (::GetWindowSubclass(hWnd, subclassProc, subclassID, nullptr) == FALSE)
-		{
-			return ::SetWindowSubclass(hWnd, subclassProc, subclassID, 0);
-		}
-		return -1;
-	}
-
-	/**
-	 * @brief Removes a subclass and deletes associated user data (if provided).
-	 *
-	 * Retrieves and deletes user-defined `T` data stored in subclass reference
-	 * (unless `T = void`, in which case no delete is performed). Then removes the subclass.
-	 *
-	 * @tparam T            Optional type of reference data to delete.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
-	 * @return TRUE on success, FALSE on failure, -1 if not present.
-	 */
-	template <typename T = void>
-	static auto RemoveSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID) -> int
-	{
-		T* pData = nullptr;
-		const auto subclassID = static_cast<UINT_PTR>(subID);
-		if (::GetWindowSubclass(hWnd, subclassProc, subclassID, reinterpret_cast<DWORD_PTR*>(&pData)) == TRUE)
-		{
-			if constexpr (!std::is_void_v<T>)
-			{
-				if (pData != nullptr)
-				{
-					delete pData;
-					pData = nullptr;
-				}
-			}
-			return ::RemoveWindowSubclass(hWnd, subclassProc, subclassID);
-		}
-		return -1;
-	}
-
-	/**
-	 * @brief Performs double-buffered painting using a memory DC and a custom paint function.
-	 *
-	 * Allocates and manages an off-screen buffer via `BufferData`, clips to the paint region,
-	 * executes the provided paint function, and blits the result to the target DC.
-	 *
-	 * @tparam T            Control data type containing a `m_bufferData` member.
-	 * @tparam PaintFunc    Callable object (lambda or function) that performs painting.
-	 * @param ctrlData      Reference to control-specific data (must contain `m_bufferData`).
-	 * @param hdc           Target device context.
-	 * @param ps            Paint structure from `BeginPaint`.
-	 * @param paintFunc     Custom paint routine.
-	 * @param rcClient      Client rectangle of the control.
-	 *
-	 * @see BufferData
-	 */
-	template<typename T, typename PaintFunc>
-	static void PaintWithBuffer(
-		T& ctrlData,
-		HDC hdc,
-		const PAINTSTRUCT& ps,
-		PaintFunc&& paintFunc,
-		const RECT& rcClient
-	)
-	{
-		auto& bufferData = ctrlData.m_bufferData;
-
-		if (bufferData.ensureBuffer(hdc, rcClient))
-		{
-			const auto& hMemDC = bufferData.getHMemDC();
-			const int savedState = ::SaveDC(hMemDC);
-
-			::IntersectClipRect(
-				hMemDC,
-				ps.rcPaint.left, ps.rcPaint.top,
-				ps.rcPaint.right, ps.rcPaint.bottom
-			);
-
-			std::forward<PaintFunc>(paintFunc)();
-
-			::RestoreDC(hMemDC, savedState);
-
-			::BitBlt(
-				hdc,
-				ps.rcPaint.left, ps.rcPaint.top,
-				ps.rcPaint.right - ps.rcPaint.left,
-				ps.rcPaint.bottom - ps.rcPaint.top,
-				hMemDC,
-				ps.rcPaint.left, ps.rcPaint.top,
-				SRCCOPY
-			);
-		}
-	}
-
-	/**
-	 * @brief Overload of `paintWithBuffer` that automatically retrieves the client rect.
-	 *
-	 * Extracts the client rectangle from the window handle,
-	 * then forwards it to the main `paintWithBuffer` implementation.
-	 *
-	 * @tparam T            Control data type containing a `m_bufferData` member.
-	 * @tparam PaintFunc    Callable object (lambda or function) that performs painting.
-	 * @param ctrlData      Reference to control-specific data (must contain `m_bufferData`).
-	 * @param hdc           Target device context.
-	 * @param ps            Paint structure from `BeginPaint`.
-	 * @param paintFunc     Custom paint routine.
-	 * @param hWnd          Handle to the control window.
-	 *
-	 * @see DarkMode::PaintWithBuffer(const T&, HDC, const PAINTSTRUCT&, PaintFunc&&, const RECT&)
-	 */
-	template<typename T, typename PaintFunc>
-	static void PaintWithBuffer(
-		T& ctrlData,
-		HDC hdc,
-		const PAINTSTRUCT& ps,
-		PaintFunc&& paintFunc,
-		HWND hWnd
-	)
-	{
-		RECT rcClient{};
-		::GetClientRect(hWnd, &rcClient);
-
-		DarkMode::PaintWithBuffer(ctrlData, hdc, ps, std::forward<PaintFunc>(paintFunc), rcClient);
-	}
-
-	/**
-	 * @brief Checks whether a RECT defines a non-empty, valid area.
-	 *
-	 * @param rc The rectangle to validate.
-	 * @return `true`  If rc has positive width and height (right > left and bottom > top).
-	 * @return `false` Otherwise.
-	 */
-	[[nodiscard]] static bool isRectValid(const RECT& rc)
-	{
-		return (rc.right > rc.left && rc.bottom > rc.top);
-	}
 
 	/**
 	 * @struct ButtonData
@@ -2234,7 +1815,7 @@ namespace DarkMode
 	 */
 	void setCheckboxOrRadioBtnCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<ButtonData>(hWnd, ButtonSubclass, SubclassID::button, hWnd);
+		dmlib_subclass::SetSubclass<ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button, hWnd);
 	}
 
 	/**
@@ -2249,7 +1830,7 @@ namespace DarkMode
 	 */
 	void removeCheckboxOrRadioBtnCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<ButtonData>(hWnd, ButtonSubclass, SubclassID::button);
+		dmlib_subclass::RemoveSubclass<ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button);
 	}
 
 	/**
@@ -2349,7 +1930,7 @@ namespace DarkMode
 		::GetThemeBackgroundContentRect(hTheme, hdc, BP_GROUPBOX, iStateID, &rcBackground, &rcContent);
 		::ExcludeClipRect(hdc, rcContent.left, rcContent.top, rcContent.right, rcContent.bottom);
 
-		DarkMode::paintFrameRect(hdc, rcBackground, DarkMode::getEdgePen()); // main frame
+		dmlib_paint::paintFrameRect(hdc, rcBackground, DarkMode::getEdgePen()); // main frame
 
 		::SelectClipRgn(hdc, nullptr);
 
@@ -2490,7 +2071,7 @@ namespace DarkMode
 	 */
 	void setGroupboxCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<ButtonData>(hWnd, GroupboxSubclass, SubclassID::groupbox);
+		dmlib_subclass::SetSubclass<ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
 	}
 
 	/**
@@ -2505,7 +2086,7 @@ namespace DarkMode
 	 */
 	void removeGroupboxCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<ButtonData>(hWnd, GroupboxSubclass, SubclassID::groupbox);
+		dmlib_subclass::RemoveSubclass<ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
 	}
 
 	/**
@@ -2629,7 +2210,11 @@ namespace DarkMode
 		UpDownData() = delete;
 
 		explicit UpDownData(HWND hWnd)
-			: m_cornerRoundness((DarkMode::isAtLeastWindows11() && CmpWndClassName(::GetParent(hWnd), WC_TABCONTROL)) ? (kWin11CornerRoundness + 1) : 0)
+			: m_cornerRoundness(
+				(DarkMode::isAtLeastWindows11()
+					&& CmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
+				? (dmlib_paint::kWin11CornerRoundness + 1)
+				: 0)
 			, m_isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
 		{
 			updateRect(hWnd);
@@ -2788,7 +2373,7 @@ namespace DarkMode
 				}
 
 				const int roundness = upDownData.m_cornerRoundness;
-				DarkMode::paintRoundRect(hdc, rect, hPen, hBrush, roundness, roundness);
+				dmlib_paint::paintRoundRect(hdc, rect, hPen, hBrush, roundness, roundness);
 			};
 
 			paintUpDownBtn(upDownData.m_rcPrev, isHotPrev);
@@ -2866,8 +2451,8 @@ namespace DarkMode
 					}
 
 					const COLORREF clrSelected = getGlyphColor(isHot);
-					const auto hBrush = GdiObject{ hdc, ::CreateSolidBrush(clrSelected) };
-					const auto hPen = GdiObject{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
+					const auto hBrush = dmlib_paint::GdiObject{ hdc, ::CreateSolidBrush(clrSelected) };
+					const auto hPen = dmlib_paint::GdiObject{ hdc, ::CreatePen(PS_SOLID, 1, clrSelected) };
 
 					::Polygon(hdc, ptsArrow.data(), static_cast<int>(ptsArrow.size()));
 				};
@@ -2877,7 +2462,7 @@ namespace DarkMode
 			}
 			else
 			{
-				const auto hFont = GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+				const auto hFont = dmlib_paint::GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
 
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
 				const LONG offset = isHorz ? 1 : 0;
@@ -2955,7 +2540,7 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (!DarkMode::isRectValid(ps.rcPaint))
+				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
@@ -2974,7 +2559,7 @@ namespace DarkMode
 					::OffsetRect(&rcClient, 2, 0);
 				}
 
-				DarkMode::PaintWithBuffer<UpDownData>(*pUpDownData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<UpDownData>(*pUpDownData, hdc, ps,
 					[&]() { DarkMode::paintUpDown(hWnd, hMemDC, *pUpDownData); },
 					rcClient);
 
@@ -3045,7 +2630,7 @@ namespace DarkMode
 	 */
 	void setUpDownCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<UpDownData>(hWnd, UpDownSubclass, SubclassID::upDown, hWnd);
+		dmlib_subclass::SetSubclass<UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown, hWnd);
 		DarkMode::setDarkExplorerTheme(hWnd);
 	}
 
@@ -3061,7 +2646,7 @@ namespace DarkMode
 	 */
 	void removeUpDownCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<UpDownData>(hWnd, UpDownSubclass, SubclassID::upDown);
+		dmlib_subclass::RemoveSubclass<UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown);
 	}
 
 	/**
@@ -3334,7 +2919,7 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (!DarkMode::isRectValid(ps.rcPaint))
+				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
@@ -3342,7 +2927,7 @@ namespace DarkMode
 
 				RECT rcClient{};
 				::GetClientRect(hWnd, &rcClient);
-				DarkMode::PaintWithBuffer<TabData>(*pTabData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<TabData>(*pTabData, hdc, ps,
 					[&]() { DarkMode::paintTab(hWnd, hMemDC, rcClient); },
 					hWnd);
 
@@ -3377,7 +2962,7 @@ namespace DarkMode
 	 */
 	static void setTabCtrlPaintSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<TabData>(hWnd, TabPaintSubclass, SubclassID::tabPaint);
+		dmlib_subclass::SetSubclass<TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
 	}
 
 	/**
@@ -3392,7 +2977,7 @@ namespace DarkMode
 	 */
 	static void removeTabCtrlPaintSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<TabData>(hWnd, TabPaintSubclass, SubclassID::tabPaint);
+		dmlib_subclass::RemoveSubclass<TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
 	}
 
 	/**
@@ -3462,7 +3047,7 @@ namespace DarkMode
 	 */
 	void setTabCtrlUpDownSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, TabUpDownSubclass, SubclassID::tabUpDown);
+		dmlib_subclass::SetSubclass(hWnd, TabUpDownSubclass, dmlib_subclass::SubclassID::tabUpDown);
 	}
 
 	/**
@@ -3477,7 +3062,7 @@ namespace DarkMode
 	 */
 	void removeTabCtrlUpDownSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, TabUpDownSubclass, SubclassID::tabUpDown);
+		dmlib_subclass::RemoveSubclass(hWnd, TabUpDownSubclass, dmlib_subclass::SubclassID::tabUpDown);
 	}
 
 	/**
@@ -3620,7 +3205,7 @@ namespace DarkMode
 		HPEN hPen = ::CreatePen(PS_SOLID, 1, (::IsWindowEnabled(hWnd) == TRUE) ? DarkMode::getBackgroundColor() : DarkMode::getDlgBackgroundColor());
 		RECT rcInner{ rcClient };
 		::InflateRect(&rcInner, -1, -1);
-		DarkMode::paintFrameRect(hdc, rcInner, hPen);
+		dmlib_paint::paintFrameRect(hdc, rcInner, hPen);
 		::DeleteObject(hPen);
 
 		POINT ptCursor{};
@@ -3632,7 +3217,7 @@ namespace DarkMode
 
 		HPEN hEnabledPen = ((borderMetricsData.m_isHot && isHot) || hasFocus ? DarkMode::getHotEdgePen() : DarkMode::getEdgePen());
 
-		DarkMode::paintFrameRect(hdc, rcClient, (::IsWindowEnabled(hWnd) == TRUE) ? hEnabledPen : DarkMode::getDisabledEdgePen());
+		dmlib_paint::paintFrameRect(hdc, rcClient, (::IsWindowEnabled(hWnd) == TRUE) ? hEnabledPen : DarkMode::getDisabledEdgePen());
 
 		::ReleaseDC(hWnd, hdc);
 	}
@@ -3773,7 +3358,7 @@ namespace DarkMode
 	 */
 	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, SubclassID::customBorder, hWnd);
+		dmlib_subclass::SetSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder, hWnd);
 	}
 
 	/**
@@ -3789,7 +3374,7 @@ namespace DarkMode
 	 */
 	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, SubclassID::customBorder);
+		dmlib_subclass::RemoveSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder);
 	}
 
 	/**
@@ -3839,7 +3424,7 @@ namespace DarkMode
 				DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass(hWnd);
 			}
 
-			if (::GetWindowSubclass(hWnd, CustomBorderSubclass, static_cast<UINT_PTR>(SubclassID::customBorder), nullptr) == TRUE)
+			if (::GetWindowSubclass(hWnd, CustomBorderSubclass, static_cast<UINT_PTR>(dmlib_subclass::SubclassID::customBorder), nullptr) == TRUE)
 			{
 				const bool enableClientEdge = !DarkMode::isEnabled();
 				DarkMode::setWindowExStyle(hWnd, enableClientEdge, WS_EX_CLIENTEDGE);
@@ -4082,14 +3667,14 @@ namespace DarkMode
 			}
 
 			HPEN hInnerPen = ::CreatePen(PS_SOLID, 1, isDisabled ? DarkMode::getDlgBackgroundColor() : DarkMode::getBackgroundColor());
-			DarkMode::paintFrameRect(hdc, rcInner, hInnerPen);
+			dmlib_paint::paintFrameRect(hdc, rcInner, hInnerPen);
 			::DeleteObject(hInnerPen);
 			::InflateRect(&rcInner, -1, -1);
 			::FillRect(hdc, &rcInner, isDisabled ? DarkMode::getDlgBackgroundBrush() : DarkMode::getCtrlBackgroundBrush());
 		}
 
-		static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness : 0;
-		DarkMode::paintRoundFrameRect(hdc, rcClient, hPen, roundness, roundness);
+		static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness : 0;
+		dmlib_paint::paintRoundFrameRect(hdc, rcClient, hPen, roundness, roundness);
 
 		::SelectObject(hdc, holdPen);
 	}
@@ -4157,13 +3742,13 @@ namespace DarkMode
 
 				if (pComboboxData->m_cbStyle != CBS_DROPDOWN)
 				{
-					if (!DarkMode::isRectValid(ps.rcPaint))
+					if (!dmlib_paint::isRectValid(ps.rcPaint))
 					{
 						::EndPaint(hWnd, &ps);
 						return 0;
 					}
 
-					DarkMode::PaintWithBuffer<ComboBoxData>(*pComboboxData, hdc, ps,
+					dmlib_paint::PaintWithBuffer<ComboBoxData>(*pComboboxData, hdc, ps,
 						[&]() { DarkMode::paintCombobox(hWnd, hMemDC, *pComboboxData); },
 						hWnd);
 				}
@@ -4225,7 +3810,7 @@ namespace DarkMode
 	void setComboBoxCtrlSubclass(HWND hWnd)
 	{
 		const auto cbStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE) & CBS_DROPDOWNLIST;
-		DarkMode::SetSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, SubclassID::comboBox, cbStyle);
+		dmlib_subclass::SetSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox, cbStyle);
 	}
 
 	/**
@@ -4240,7 +3825,7 @@ namespace DarkMode
 	 */
 	void removeComboBoxCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, SubclassID::comboBox);
+		dmlib_subclass::RemoveSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox);
 	}
 
 	/**
@@ -4342,7 +3927,7 @@ namespace DarkMode
 			case WM_NCDESTROY:
 			{
 				::RemoveWindowSubclass(hWnd, ComboBoxExSubclass, uIdSubclass);
-				DarkMode::unhookSysColor();
+				dmlib_hook::UnhookSysColor();
 				break;
 			}
 
@@ -4391,13 +3976,13 @@ namespace DarkMode
 				{
 					case CBN_DROPDOWN:
 					{
-						DarkMode::hookSysColor();
+						dmlib_hook::HookSysColor();
 						break;
 					}
 
 					case CBN_CLOSEUP:
 					{
-						DarkMode::unhookSysColor();
+						dmlib_hook::UnhookSysColor();
 						break;
 					}
 
@@ -4429,7 +4014,7 @@ namespace DarkMode
 	 */
 	void setComboBoxExCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, ComboBoxExSubclass, SubclassID::comboBoxEx);
+		dmlib_subclass::SetSubclass(hWnd, ComboBoxExSubclass, dmlib_subclass::SubclassID::comboBoxEx);
 	}
 
 	/**
@@ -4444,8 +4029,8 @@ namespace DarkMode
 	 */
 	void removeComboBoxExCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, ComboBoxExSubclass, SubclassID::comboBoxEx);
-		DarkMode::unhookSysColor();
+		dmlib_subclass::RemoveSubclass(hWnd, ComboBoxExSubclass, dmlib_subclass::SubclassID::comboBoxEx);
+		dmlib_hook::UnhookSysColor();
 	}
 
 	/**
@@ -4494,7 +4079,7 @@ namespace DarkMode
 			case WM_NCDESTROY:
 			{
 				::RemoveWindowSubclass(hWnd, ListViewSubclass, uIdSubclass);
-				DarkMode::unhookSysColor();
+				dmlib_hook::UnhookSysColor();
 				break;
 			}
 
@@ -4517,9 +4102,9 @@ namespace DarkMode
 
 				if (hasGridlines)
 				{
-					DarkMode::hookSysColor();
+					dmlib_hook::HookSysColor();
 					const LRESULT retVal = ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
-					DarkMode::unhookSysColor();
+					dmlib_hook::UnhookSysColor();
 					return retVal;
 				}
 				break;
@@ -4595,7 +4180,7 @@ namespace DarkMode
 	 */
 	void setListViewCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, ListViewSubclass, SubclassID::listView);
+		dmlib_subclass::SetSubclass(hWnd, ListViewSubclass, dmlib_subclass::SubclassID::listView);
 	}
 
 	/**
@@ -4610,7 +4195,7 @@ namespace DarkMode
 	 */
 	void removeListViewCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, ListViewSubclass, SubclassID::listView);
+		dmlib_subclass::RemoveSubclass(hWnd, ListViewSubclass, dmlib_subclass::SubclassID::listView);
 	}
 
 	/**
@@ -4937,13 +4522,13 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (!DarkMode::isRectValid(ps.rcPaint))
+				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				DarkMode::PaintWithBuffer<HeaderData>(*pHeaderData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<HeaderData>(*pHeaderData, hdc, ps,
 					[&]() { DarkMode::paintHeader(hWnd, hMemDC, *pHeaderData); },
 					hWnd);
 
@@ -5055,7 +4640,7 @@ namespace DarkMode
 	void setHeaderCtrlSubclass(HWND hWnd)
 	{
 		const bool hasBtnStyle = (::GetWindowLongPtr(hWnd, GWL_STYLE) & HDS_BUTTONS) == HDS_BUTTONS;
-		DarkMode::SetSubclass<HeaderData>(hWnd, HeaderSubclass, SubclassID::header, hasBtnStyle);
+		dmlib_subclass::SetSubclass<HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header, hasBtnStyle);
 	}
 
 	/**
@@ -5070,7 +4655,7 @@ namespace DarkMode
 	 */
 	void removeHeaderCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<HeaderData>(hWnd, HeaderSubclass, SubclassID::header);
+		dmlib_subclass::RemoveSubclass<HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header);
 	}
 
 	/**
@@ -5291,13 +4876,13 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (!DarkMode::isRectValid(ps.rcPaint))
+				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				DarkMode::PaintWithBuffer<StatusBarData>(*pStatusBarData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<StatusBarData>(*pStatusBarData, hdc, ps,
 					[&]() { DarkMode::paintStatusBar(hWnd, hMemDC, *pStatusBarData); },
 					hWnd);
 
@@ -5357,7 +4942,7 @@ namespace DarkMode
 		{
 			lf = ncm.lfStatusFont;
 		}
-		DarkMode::SetSubclass<StatusBarData>(hWnd, StatusBarSubclass, SubclassID::statusBar, ::CreateFontIndirectW(&lf));
+		dmlib_subclass::SetSubclass<StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar, ::CreateFontIndirectW(&lf));
 	}
 
 	/**
@@ -5372,7 +4957,7 @@ namespace DarkMode
 	 */
 	void removeStatusBarCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<StatusBarData>(hWnd, StatusBarSubclass, SubclassID::statusBar);
+		dmlib_subclass::RemoveSubclass<StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar);
 	}
 
 	/**
@@ -5481,7 +5066,7 @@ namespace DarkMode
 		RECT rcClient{};
 		::GetClientRect(hWnd, &rcClient);
 
-		DarkMode::paintRoundFrameRect(hdc, rcClient, DarkMode::getEdgePen(), 0, 0);
+		dmlib_paint::paintRoundFrameRect(hdc, rcClient, DarkMode::getEdgePen(), 0, 0);
 
 		::InflateRect(&rcClient, -1, -1);
 		rcClient.left = 1;
@@ -5553,13 +5138,13 @@ namespace DarkMode
 				PAINTSTRUCT ps{};
 				HDC hdc = ::BeginPaint(hWnd, &ps);
 
-				if (!DarkMode::isRectValid(ps.rcPaint))
+				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
 					::EndPaint(hWnd, &ps);
 					return 0;
 				}
 
-				DarkMode::PaintWithBuffer<ProgressBarData>(*pProgressBarData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<ProgressBarData>(*pProgressBarData, hdc, ps,
 					[&]() { DarkMode::paintProgressBar(hWnd, hMemDC, *pProgressBarData); },
 					hWnd);
 
@@ -5634,7 +5219,7 @@ namespace DarkMode
 	 */
 	void setProgressBarCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, SubclassID::progressBar, hWnd);
+		dmlib_subclass::SetSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar, hWnd);
 	}
 
 	/**
@@ -5649,7 +5234,7 @@ namespace DarkMode
 	 */
 	void removeProgressBarCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, SubclassID::progressBar);
+		dmlib_subclass::RemoveSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar);
 	}
 
 	/**
@@ -5789,7 +5374,7 @@ namespace DarkMode
 	 */
 	void setStaticTextCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<StaticTextData>(hWnd, StaticTextSubclass, SubclassID::staticText, hWnd);
+		dmlib_subclass::SetSubclass<StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText, hWnd);
 	}
 
 	/**
@@ -5804,7 +5389,7 @@ namespace DarkMode
 	 */
 	void removeStaticTextCtrlSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<StaticTextData>(hWnd, StaticTextSubclass, SubclassID::staticText);
+		dmlib_subclass::RemoveSubclass<StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText);
 	}
 
 	/**
@@ -6253,7 +5838,7 @@ namespace DarkMode
 	 */
 	void setWindowEraseBgSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, WindowEraseBgSubclass, SubclassID::windowEraseBg);
+		dmlib_subclass::SetSubclass(hWnd, WindowEraseBgSubclass, dmlib_subclass::SubclassID::windowEraseBg);
 	}
 
 	/**
@@ -6268,7 +5853,7 @@ namespace DarkMode
 	 */
 	void removeWindowEraseBgSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, WindowEraseBgSubclass, SubclassID::windowEraseBg);
+		dmlib_subclass::RemoveSubclass(hWnd, WindowEraseBgSubclass, dmlib_subclass::SubclassID::windowEraseBg);
 	}
 
 	/**
@@ -6372,7 +5957,7 @@ namespace DarkMode
 				}
 
 				DWORD_PTR dwRefDataStaticText = 0;
-				if (::GetWindowSubclass(hChild, StaticTextSubclass, static_cast<UINT_PTR>(SubclassID::staticText), &dwRefDataStaticText) == TRUE)
+				if (::GetWindowSubclass(hChild, StaticTextSubclass, static_cast<UINT_PTR>(dmlib_subclass::SubclassID::staticText), &dwRefDataStaticText) == TRUE)
 				{
 					const bool isTextEnabled = (reinterpret_cast<StaticTextData*>(dwRefDataStaticText))->m_isEnabled;
 					return DarkMode::onCtlColorDlgStaticText(hdc, isTextEnabled);
@@ -6410,7 +5995,7 @@ namespace DarkMode
 	 */
 	void setWindowCtlColorSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, WindowCtlColorSubclass, SubclassID::windowCtlColor);
+		dmlib_subclass::SetSubclass(hWnd, WindowCtlColorSubclass, dmlib_subclass::SubclassID::windowCtlColor);
 	}
 
 	/**
@@ -6425,7 +6010,7 @@ namespace DarkMode
 	 */
 	void removeWindowCtlColorSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, WindowCtlColorSubclass, SubclassID::windowCtlColor);
+		dmlib_subclass::RemoveSubclass(hWnd, WindowCtlColorSubclass, dmlib_subclass::SubclassID::windowCtlColor);
 	}
 
 	/**
@@ -6487,7 +6072,7 @@ namespace DarkMode
 			rcItem.right = rcDrop.left;
 		}
 
-		static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
+		static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness + 1 : 0;
 
 		// Paint part
 
@@ -6499,10 +6084,10 @@ namespace DarkMode
 			}
 			else
 			{
-				DarkMode::paintRoundRect(lptbcd->nmcd.hdc, rcItem, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
+				dmlib_paint::paintRoundRect(lptbcd->nmcd.hdc, rcItem, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
 				if (isDropDown)
 				{
-					DarkMode::paintRoundRect(lptbcd->nmcd.hdc, rcDrop, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
+					dmlib_paint::paintRoundRect(lptbcd->nmcd.hdc, rcDrop, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
 				}
 			}
 
@@ -6516,10 +6101,10 @@ namespace DarkMode
 			}
 			else
 			{
-				DarkMode::paintRoundRect(lptbcd->nmcd.hdc, rcItem, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
+				dmlib_paint::paintRoundRect(lptbcd->nmcd.hdc, rcItem, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
 				if (isDropDown)
 				{
-					DarkMode::paintRoundRect(lptbcd->nmcd.hdc, rcDrop, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
+					dmlib_paint::paintRoundRect(lptbcd->nmcd.hdc, rcDrop, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
 				}
 			}
 
@@ -6846,11 +6431,11 @@ namespace DarkMode
 
 		if ((lptvcd->nmcd.uItemState & CDIS_HOT) == CDIS_HOT)
 		{
-			DarkMode::paintRoundFrameRect(lptvcd->nmcd.hdc, rcFrame, DarkMode::getHotEdgePen(), 0, 0);
+			dmlib_paint::paintRoundFrameRect(lptvcd->nmcd.hdc, rcFrame, DarkMode::getHotEdgePen(), 0, 0);
 		}
 		else if ((lptvcd->nmcd.uItemState & CDIS_SELECTED) == CDIS_SELECTED)
 		{
-			DarkMode::paintRoundFrameRect(lptvcd->nmcd.hdc, rcFrame, DarkMode::getEdgePen(), 0, 0);
+			dmlib_paint::paintRoundFrameRect(lptvcd->nmcd.hdc, rcFrame, DarkMode::getEdgePen(), 0, 0);
 		}
 	}
 
@@ -6950,7 +6535,7 @@ namespace DarkMode
 				if (::IsWindowEnabled(lpnmcd->hdr.hwndFrom) == FALSE)
 				{
 					::FillRect(lpnmcd->hdc, &lpnmcd->rc, DarkMode::getDlgBackgroundBrush());
-					DarkMode::paintRoundFrameRect(lpnmcd->hdc, lpnmcd->rc, DarkMode::getEdgePen(), 0, 0);
+					dmlib_paint::paintRoundFrameRect(lpnmcd->hdc, lpnmcd->rc, DarkMode::getEdgePen(), 0, 0);
 				}
 				else
 				{
@@ -7047,24 +6632,24 @@ namespace DarkMode
 			if ((rbBand.fStyle & RBBS_USECHEVRON) == RBBS_USECHEVRON
 				&& (rbBand.rcChevronLocation.right - rbBand.rcChevronLocation.left) > 0)
 			{
-				static const int roundness = DarkMode::isAtLeastWindows11() ? kWin11CornerRoundness + 1 : 0;
+				static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness + 1 : 0;
 
 				const bool isHot = (rbBand.uChevronState & STATE_SYSTEM_HOTTRACKED) == STATE_SYSTEM_HOTTRACKED;
 				const bool isPressed = (rbBand.uChevronState & STATE_SYSTEM_PRESSED) == STATE_SYSTEM_PRESSED;
 
 				if (isHot)
 				{
-					DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
+					dmlib_paint::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getHotEdgePen(), DarkMode::getHotBackgroundBrush(), roundness, roundness);
 				}
 				else if (isPressed)
 				{
-					DarkMode::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
+					dmlib_paint::paintRoundRect(lpnmcd->hdc, rbBand.rcChevronLocation, DarkMode::getEdgePen(), DarkMode::getCtrlBackgroundBrush(), roundness, roundness);
 				}
 
 				::SetTextColor(lpnmcd->hdc, isHot ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
 				::SetBkMode(lpnmcd->hdc, TRANSPARENT);
 
-				const auto hFont = GdiObject{ lpnmcd->hdc, reinterpret_cast<HFONT>(::SendMessage(lpnmcd->hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
+				const auto hFont = dmlib_paint::GdiObject{ lpnmcd->hdc, reinterpret_cast<HFONT>(::SendMessage(lpnmcd->hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP;
 				::DrawText(lpnmcd->hdc, L"»", -1, &rbBand.rcChevronLocation, dtFlags);
 			}
@@ -7218,7 +6803,7 @@ namespace DarkMode
 	 */
 	void setWindowNotifyCustomDrawSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, WindowNotifySubclass, SubclassID::windowNotify);
+		dmlib_subclass::SetSubclass(hWnd, WindowNotifySubclass, dmlib_subclass::SubclassID::windowNotify);
 	}
 
 	/**
@@ -7233,7 +6818,7 @@ namespace DarkMode
 	 */
 	void removeWindowNotifyCustomDrawSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, WindowNotifySubclass, SubclassID::windowNotify);
+		dmlib_subclass::RemoveSubclass(hWnd, WindowNotifySubclass, dmlib_subclass::SubclassID::windowNotify);
 	}
 
 	/**
@@ -7530,7 +7115,7 @@ namespace DarkMode
 	 */
 	void setWindowMenuBarSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, SubclassID::windowMenuBar, VSCLASS_MENU);
+		dmlib_subclass::SetSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar, VSCLASS_MENU);
 	}
 
 	/**
@@ -7545,7 +7130,7 @@ namespace DarkMode
 	 */
 	void removeWindowMenuBarSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, SubclassID::windowMenuBar);
+		dmlib_subclass::RemoveSubclass<ThemeData>(hWnd, WindowMenuBarSubclass, dmlib_subclass::SubclassID::windowMenuBar);
 	}
 
 	/**
@@ -7613,7 +7198,7 @@ namespace DarkMode
 	 */
 	void setWindowSettingChangeSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass(hWnd, WindowSettingChangeSubclass, SubclassID::windowSettingChange);
+		dmlib_subclass::SetSubclass(hWnd, WindowSettingChangeSubclass, dmlib_subclass::SubclassID::windowSettingChange);
 	}
 
 	/**
@@ -7628,7 +7213,7 @@ namespace DarkMode
 	 */
 	void removeWindowSettingChangeSubclass(HWND hWnd)
 	{
-		DarkMode::RemoveSubclass(hWnd, WindowSettingChangeSubclass, SubclassID::windowSettingChange);
+		dmlib_subclass::RemoveSubclass(hWnd, WindowSettingChangeSubclass, dmlib_subclass::SubclassID::windowSettingChange);
 	}
 
 	/**
@@ -9007,7 +8592,7 @@ namespace DarkMode
 	 */
 	static void setDarkTaskDlgSubclass(HWND hWnd)
 	{
-		DarkMode::SetSubclass<TaskDlgData>(hWnd, DarkTaskDlgSubclass, SubclassID::taskDlg);
+		dmlib_subclass::SetSubclass<TaskDlgData>(hWnd, DarkTaskDlgSubclass, dmlib_subclass::SubclassID::taskDlg);
 	}
 
 	/**

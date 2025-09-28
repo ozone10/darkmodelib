@@ -85,10 +85,6 @@ EXPORTS
 	getHeaderHotBackgroundBrush
 	getHeaderEdgePen
 	setDefaultColors
-	paintRoundRect
-	paintRect
-	paintRoundFrameRect
-	paintFrameRect
 	setCheckboxOrRadioBtnCtrlSubclass
 	removeCheckboxOrRadioBtnCtrlSubclass
 	setGroupboxCtrlSubclass
