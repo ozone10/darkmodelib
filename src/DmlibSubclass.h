@@ -50,12 +50,12 @@ namespace dmlib_subclass
 	 * If the subclass ID is not already attached, allocates a `T` instance using the given
 	 * `param` and stores it as subclass reference data. Ownership is transferred to the system.
 	 *
-	 * @tparam T            The user-defined data type associated with the subclass.
-	 * @tparam Param        Type used to initialize `T`.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
-	 * @param param         Constructor argument forwarded to `T`.
+	 * @tparam      T               The user-defined data type associated with the subclass.
+	 * @tparam      Param           Type used to initialize `T`.
+	 * @param[in]   hWnd            Window handle.
+	 * @param[in]   subclassProc    Subclass procedure.
+	 * @param[in]   subID           Identifier for the subclass instance.
+	 * @param[in]   param           Constructor argument forwarded to `T`.
 	 * @return TRUE on success, FALSE on failure, -1 if subclass already set.
 	 */
 	template <typename T, typename Param>
@@ -80,10 +80,10 @@ namespace dmlib_subclass
 	 *
 	 * Same logic as the other overload, but constructs `T` using its default constructor.
 	 *
-	 * @tparam T            The user-defined data type associated with the subclass.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
+	 * @tparam      T               The user-defined data type associated with the subclass.
+	 * @param[in]   hWnd            Window handle.
+	 * @param[in]   subclassProc    Subclass procedure.
+	 * @param[in]   subID           Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
 	 */
 	template <typename T>
@@ -108,9 +108,9 @@ namespace dmlib_subclass
 	 *
 	 * Sets a subclass with no associated custom data.
 	 *
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
+	 * @param[in]   hWnd            Window handle.
+	 * @param[in]   subclassProc    Subclass procedure.
+	 * @param[in]   subID           Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
 	 */
 	inline int SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID)
@@ -129,10 +129,10 @@ namespace dmlib_subclass
 	 * Retrieves and deletes user-defined `T` data stored in subclass reference
 	 * (unless `T = void`, in which case no delete is performed). Then removes the subclass.
 	 *
-	 * @tparam T            Optional type of reference data to delete.
-	 * @param hWnd          Window handle.
-	 * @param subclassProc  Subclass procedure.
-	 * @param subID         Identifier for the subclass instance.
+	 * @tparam      T               Optional type of reference data to delete.
+	 * @param[in]   hWnd            Window handle.
+	 * @param[in]   subclassProc    Subclass procedure.
+	 * @param[in]   subID           Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if not present.
 	 */
 	template <typename T = void>

@@ -109,13 +109,13 @@ namespace dmlib_paint
 	 * Allocates and manages an off-screen buffer via `BufferData`, clips to the paint region,
 	 * executes the provided paint function, and blits the result to the target DC.
 	 *
-	 * @tparam T            Control data type containing a `m_bufferData` member.
-	 * @tparam PaintFunc    Callable object (lambda or function) that performs painting.
-	 * @param ctrlData      Reference to control-specific data (must contain `m_bufferData`).
-	 * @param hdc           Target device context.
-	 * @param ps            Paint structure from `BeginPaint`.
-	 * @param paintFunc     Custom paint routine.
-	 * @param rcClient      Client rectangle of the control.
+	 * @tparam      T           Control data type containing a `m_bufferData` member.
+	 * @tparam      PaintFunc   Callable object (lambda or function) that performs painting.
+	 * @param[in]   ctrlData    Reference to control-specific data (must contain `m_bufferData`).
+	 * @param[in]   hdc         Target device context.
+	 * @param[in]   ps          Paint structure from `BeginPaint`.
+	 * @param[in]   paintFunc   Custom paint routine.
+	 * @param[in]   hWnd        Handle to the control window.
 	 *
 	 * @see BufferData
 	 */
@@ -171,7 +171,7 @@ namespace dmlib_paint
 	 * @param[in]   paintFunc   Custom paint routine.
 	 * @param[in]   hWnd        Handle to the control window.
 	 *
-	 * @see DarkMode::PaintWithBuffer(const T&, HDC, const PAINTSTRUCT&, PaintFunc&&, const RECT&)
+	 * @see dmlib_paint::PaintWithBuffer(const T&, HDC, const PAINTSTRUCT&, PaintFunc&&, const RECT&)
 	 */
 	template<typename T, typename PaintFunc>
 	inline void PaintWithBuffer(

@@ -71,7 +71,7 @@ static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum
  * @note The maximum length is capped at 32 characters (including the null terminator),
  *       which suffices for standard Windows window classes.
  */
-static std::wstring GetWndClassName(HWND hWnd)
+static std::wstring getWndClassName(HWND hWnd)
 {
 	static constexpr int strLen = 32;
 	std::wstring className(strLen, L'\0');
@@ -89,11 +89,11 @@ static std::wstring GetWndClassName(HWND hWnd)
  * @param classNameToCmp    Pointer to a null-terminated wide string representing the class name to compare against.
  * @return `true` if the window's class name matches the specified string; otherwise `false`.
  *
- * @see GetWndClassName()
+ * @see getWndClassName()
  */
-static bool CmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
+static bool cmpWndClassName(HWND hWnd, const wchar_t* classNameToCmp)
 {
-	return (GetWndClassName(hWnd) == classNameToCmp);
+	return (getWndClassName(hWnd) == classNameToCmp);
 }
 
 /**
@@ -1009,8 +1009,6 @@ namespace DarkMode
 		return data == 0UL;
 	}
 
-	// from DarkMode.h
-
 	/**
 	 * @brief Overrides a specific system color with a custom color.
 	 *
@@ -1028,38 +1026,9 @@ namespace DarkMode
 	}
 
 	/**
-	 * @brief Hooks `GetThemeColor` to support dark colors.
-	 *
-	 * @return `true` if the hook was installed successfully.
-	 */
-	static bool hookThemeColor()
-	{
-		if (DarkMode::isAtLeastWindows11())
-		{
-			return dmlib_hook::hookThemeColor();
-		}
-		return false;
-	}
-
-	/**
-	 * @brief Unhooks `GetThemeColor` overrides and restores default color behavior.
-	 *
-	 * This function is safe to call even if no color hook is currently installed.
-	 * It ensures that theme colors return to normal without requiring
-	 * prior state checks.
-	 */
-	static void unhookThemeColor()
-	{
-		if (DarkMode::isAtLeastWindows11())
-		{
-			dmlib_hook::unhookThemeColor();
-		}
-	}
-
-	/**
 	 * @brief Makes scroll bars on the specified window and all its children consistent.
 	 *
-	 * Currently not widely used by default.
+	 * @note Currently not widely used by default.
 	 *
 	 * @param hWnd Handle to the parent window.
 	 */
@@ -2142,7 +2111,7 @@ namespace DarkMode
 		explicit UpDownData(HWND hWnd)
 			: m_cornerRoundness(
 				(DarkMode::isAtLeastWindows11()
-					&& CmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
+					&& cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
 				? (dmlib_paint::kWin11CornerRoundness + 1)
 				: 0)
 			, m_isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
@@ -2947,7 +2916,7 @@ namespace DarkMode
 				if (LOWORD(wParam) == WM_CREATE)
 				{
 					auto hUpDown = reinterpret_cast<HWND>(lParam);
-					if (CmpWndClassName(hUpDown, UPDOWN_CLASS))
+					if (cmpWndClassName(hUpDown, UPDOWN_CLASS))
 					{
 						DarkMode::setUpDownCtrlSubclass(hUpDown);
 						return 0;
@@ -3811,7 +3780,7 @@ namespace DarkMode
 			if (!DarkMode::isThemePrefered() && p.m_subclass)
 			{
 				HWND hParent = ::GetParent(hWnd);
-				if ((hParent == nullptr || GetWndClassName(hParent) != WC_COMBOBOXEX))
+				if ((hParent == nullptr || getWndClassName(hParent) != WC_COMBOBOXEX))
 				{
 					DarkMode::setComboBoxCtrlSubclass(hWnd);
 				}
@@ -5519,7 +5488,7 @@ namespace DarkMode
 	static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 	{
 		const auto& p = *reinterpret_cast<DarkModeParams*>(lParam);
-		const std::wstring className = GetWndClassName(hWnd);
+		const std::wstring className = getWndClassName(hWnd);
 
 		if (className == WC_BUTTON)
 		{
@@ -5868,7 +5837,7 @@ namespace DarkMode
 
 				auto hChild = reinterpret_cast<HWND>(lParam);
 				const bool isChildEnabled = ::IsWindowEnabled(hChild) == TRUE;
-				const std::wstring className = GetWndClassName(hChild);
+				const std::wstring className = getWndClassName(hChild);
 
 				auto hdc = reinterpret_cast<HDC>(wParam);
 
@@ -6681,7 +6650,7 @@ namespace DarkMode
 				auto* lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
 				if (lpnmhdr->code == NM_CUSTOMDRAW)
 				{
-					const std::wstring className = GetWndClassName(lpnmhdr->hwndFrom);
+					const std::wstring className = getWndClassName(lpnmhdr->hwndFrom);
 
 					if (className == TOOLBARCLASSNAME)
 					{
@@ -8474,7 +8443,7 @@ namespace DarkMode
 
 			case WM_ERASEBKGND:
 			{
-				const std::wstring className = GetWndClassName(hWnd);
+				const std::wstring className = getWndClassName(hWnd);
 
 				if (className == L"CtrlNotifySink")
 				{
@@ -8534,7 +8503,7 @@ namespace DarkMode
 	 */
 	static BOOL CALLBACK DarkTaskEnumChildProc(HWND hWnd, [[maybe_unused]] LPARAM lParam)
 	{
-		const std::wstring className = GetWndClassName(hWnd);
+		const std::wstring className = getWndClassName(hWnd);
 
 		if (className == L"CtrlNotifySink")
 		{
@@ -8652,9 +8621,15 @@ namespace DarkMode
 		BOOL* pfVerificationFlagChecked
 	)
 	{
-		DarkMode::hookThemeColor();
+		if (DarkMode::isAtLeastWindows11)
+		{
+			dmlib_hook::hookThemeColor();
+		}
 		const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
-		DarkMode::unhookThemeColor();
+		if (DarkMode::isAtLeastWindows11())
+		{
+			dmlib_hook::unhookThemeColor();
+		}
 		return retVal;
 	}
 } // namespace DarkMode

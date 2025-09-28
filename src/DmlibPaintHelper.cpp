@@ -46,14 +46,14 @@ void dmlib_paint::paintRoundRect(
  *
  * Draws a rectangle defined by `rect`, using the provided pen (`hpen`) and brush (`hBrush`)
  * for the edge and fill, respectively. Preserves previous GDI object selections.
- * Forwards to `DarkMode::paintRoundRect` with `width` and `height` parameters with `0` value.
+ * Forwards to `dmlib_paint::paintRoundRect` with `width` and `height` parameters with `0` value.
  *
  * @param[in]   hdc     Handle to the device context.
  * @param[in]   rect    Rectangle bounds for the shape.
  * @param[in]   hpen    Pen used to draw the edge.
  * @param[in]   hBrush  Brush used to inner fill.
  *
- * @see DarkMode::paintRoundRect()
+ * @see dmlib_paint::paintRoundRect()
  */
 void dmlib_paint::paintRect(
 	HDC hdc,
@@ -68,7 +68,7 @@ void dmlib_paint::paintRect(
 /**
  * @brief Paints an unfilled rounded rectangle (frame only).
  *
- * Forwards to `DarkMode::paintRoundRect` and uses a `NULL_BRUSH`
+ * Forwards to `dmlib_paint::paintRoundRect` and uses a `NULL_BRUSH`
  * to omit the inner fill, drawing only the rounded frame.
  *
  * @param[in]   hdc     Handle to the device context.
@@ -77,7 +77,7 @@ void dmlib_paint::paintRect(
  * @param[in]   width   Horizontal corner radius.
  * @param[in]   height  Vertical corner radius.
  *
- * @see DarkMode::paintRoundRect()
+ * @see dmlib_paint::paintRoundRect()
  */
 void dmlib_paint::paintRoundFrameRect(
 	HDC hdc,
@@ -93,14 +93,14 @@ void dmlib_paint::paintRoundFrameRect(
 /**
  * @brief Paints an unfilled rectangle (frame only).
  *
- * Forwards to `DarkMode::paintRoundFrameRect`
+ * Forwards to `dmlib_paint::paintRoundFrameRect`
  * with `width` and `height` parameters with `0` value.
  *
  * @param[in]   hdc     Handle to the device context.
  * @param[in]   rect    Rectangle bounds for the frame.
  * @param[in]   hpen    Pen used to draw the edge.
  *
- * @see DarkMode::paintRoundFrameRect()
+ * @see dmlib_paint::paintRoundFrameRect()
  */
 void dmlib_paint::paintFrameRect(
 	HDC hdc,

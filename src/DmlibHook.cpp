@@ -178,6 +178,13 @@ bool dmlib_hook::loadOpenNcThemeData(const HMODULE& hUxtheme)
 static std::unordered_set<HWND> g_darkScrollBarWindows;
 static std::mutex g_darkScrollBarMutex;
 
+/**
+ * @brief Makes scroll bars on the specified window and all its children consistent.
+ *
+ * @note Currently not widely used by default.
+ *
+ * @param[in] hWnd Handle to the parent window.
+ */
 void dmlib_hook::enableDarkScrollBarForWindowAndChildren(HWND hWnd)
 {
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
@@ -186,7 +193,7 @@ void dmlib_hook::enableDarkScrollBarForWindowAndChildren(HWND hWnd)
 
 static bool isWindowOrParentUsingDarkScrollBar(HWND hWnd)
 {
-	HWND hRoot = GetAncestor(hWnd, GA_ROOT);
+	HWND hRoot = ::GetAncestor(hWnd, GA_ROOT);
 
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
 	auto hasElement = [](const auto& container, HWND hWndToCheck) -> bool {
@@ -244,6 +251,18 @@ static COLORREF g_clrWindow = RGB(32, 32, 32);
 static COLORREF g_clrText = RGB(224, 224, 224);
 static COLORREF g_clrTGridlines = RGB(100, 100, 100);
 
+
+/**
+ * @brief Overrides a specific system color with a custom color.
+ *
+ * Currently supports:
+ * - `COLOR_WINDOW`: Background of ComboBoxEx list.
+ * - `COLOR_WINDOWTEXT`: Text color of ComboBoxEx list.
+ * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
+ *
+ * @param[in]   nIndex  One of the supported system color indices.
+ * @param[in]   color   Custom `COLORREF` value to apply.
+ */
 void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
 {
 	switch (nIndex)
@@ -436,6 +455,11 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	return S_OK;
 }
 
+/**
+ * @brief Hooks `GetThemeColor` and `DrawThemeBackgroundEx` to support dark colors.
+ *
+ * @return `true` if the hook was installed successfully.
+ */
 bool dmlib_hook::hookThemeColor()
 {
 	if (g_hDarkTheme == nullptr)
@@ -477,6 +501,14 @@ bool dmlib_hook::hookThemeColor()
 			kDrawThemeBackgroundExOrdinal);
 }
 
+
+/**
+ * @brief Unhooks `GetThemeColor` and `DrawThemeBackgroundEx` overrides and restores default color behavior.
+ *
+ * This function is safe to call even if no color hook is currently installed.
+ * It ensures that theme colors return to normal without requiring
+ * prior state checks.
+ */
 void dmlib_hook::unhookThemeColor()
 {
 	UnhookFunction<fnGetThemeColor>(g_hookDataGetThemeColor);
