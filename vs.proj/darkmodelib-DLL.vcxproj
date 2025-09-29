@@ -88,6 +88,7 @@
     <ClInclude Include="..\include\DarkModeSubclass.h" />
     <ClInclude Include="..\src\DmlibColor.h" />
     <ClInclude Include="..\src\DmlibDpi.h" />
+    <ClInclude Include="..\src\DmlibGlyph.h" />
     <ClInclude Include="..\src\DmlibHook.h" />
     <ClInclude Include="..\src\DmlibIni.h" />
     <ClInclude Include="..\src\DmlibPaintHelper.h" />
@@ -106,7 +107,6 @@
     <ClCompile Include="..\src\DmlibHook.cpp" />
     <ClCompile Include="..\src\DmlibIni.cpp" />
     <ClCompile Include="..\src\DmlibPaintHelper.cpp" />
-    <ClCompile Include="..\src\DmlibSubclass.cpp" />
     <ClCompile Include="..\src\DmlibWinApi.cpp" />
   </ItemGroup>
   <ItemGroup>

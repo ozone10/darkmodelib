@@ -54,6 +54,9 @@
     <ClInclude Include="..\src\DmlibSubclass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\DmlibGlyph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\DmlibWinApi.cpp">
@@ -75,9 +78,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\DmlibPaintHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\DmlibSubclass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

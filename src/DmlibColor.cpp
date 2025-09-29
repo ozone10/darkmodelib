@@ -24,7 +24,7 @@
 
 DarkMode::Colors dmlib_color::getLightColors()
 {
-	return DarkMode::Colors {
+	return DarkMode::Colors{
 		::GetSysColor(COLOR_3DFACE),        // background
 		::GetSysColor(COLOR_WINDOW),        // ctrlBackground
 		dmlib_color::HEXRGB(0xC0DCF3),      // hotBackground

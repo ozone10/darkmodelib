@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: MPL-2.0
 
 /*
  * Copyright (c) 2025 ozone10
@@ -41,6 +41,7 @@
 
 #include "DmlibColor.h"
 #include "DmlibDpi.h"
+#include "DmlibGlyph.h"
 #include "DmlibHook.h"
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 #include "DmlibIni.h"
@@ -561,20 +562,6 @@ namespace DarkMode
 		g_dmCfg.m_colorizeTitleBar = colorize;
 	}
 
-	/**
-	 * @brief Determines if themed styling should be preferred over subclassing.
-	 *
-	 * Requires support for experimental theming and Windows 10 or later.
-	 *
-	 * @return `true` if themed appearance is preferred and supported.
-	 */
-	[[nodiscard]] static bool isThemePrefered()
-	{
-		return (DarkMode::getLibInfo(static_cast<int>(LibInfo::preferTheme)) == TRUE)
-			&& DarkMode::isAtLeastWindows10()
-			&& DarkMode::isExperimentalSupported();
-	}
-
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 	/**
 	 * @brief Initializes dark mode configuration and colors from an INI file.
@@ -703,7 +690,7 @@ namespace DarkMode
 				g_dmCfg.m_colorizeTitleBar = (::GetPrivateProfileIntW(sectionBase.c_str(), L"colorizeTitleBar", 0, iniPath.c_str()) == 1);
 			}
 
-			DarkMode::setDarkMode(g_dmCfg.m_dmType == DarkMode::DarkModeType::dark, true);
+			dmlib_win32api::SetDarkMode(g_dmCfg.m_dmType == DarkMode::DarkModeType::dark, true);
 		}
 		else
 		{
@@ -1973,10 +1960,11 @@ namespace DarkMode
 
 		upDownData.m_wasHotNext = !isHotPrev && (::PtInRect(&upDownData.m_rcClient, ptCursor) == TRUE);
 
-		if (hasTheme && DarkMode::isAtLeastWindows11() && DarkMode::isThemePrefered())
+		if (hasTheme && DarkMode::isAtLeastWindows11() && dmlib_subclass::isThemePrefered())
 		{
 			// all 4 variants of up-down control buttons have enums with same values
-			auto getStateId = [&](bool isHot) -> int {
+			auto getStateId = [&](bool isHot) -> int
+			{
 				if (isDisabled)
 				{
 					return UPS_DISABLED;
@@ -2013,7 +2001,8 @@ namespace DarkMode
 		{
 			// Button part
 
-			auto paintUpDownBtn = [&](const RECT& rect, bool isHot) -> void {
+			auto paintUpDownBtn = [&](const RECT& rect, bool isHot) -> void
+			{
 				HBRUSH hBrush = nullptr;
 				HPEN hPen = nullptr;
 				if (isDisabled)
@@ -2041,7 +2030,8 @@ namespace DarkMode
 
 			// Glyph part
 
-			auto getGlyphColor = [&](bool isHot) -> COLORREF {
+			auto getGlyphColor = [&](bool isHot) -> COLORREF
+			{
 				if (isDisabled)
 				{
 					return DarkMode::getDisabledTextColor();
@@ -2067,7 +2057,8 @@ namespace DarkMode
 				static constexpr auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
 				const auto baseSize = static_cast<float>(dmlib_dpi::scale(((size.cy - offsetSize) / scaleFactor) + offsetSize, ::GetParent(hWnd)));
 
-				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void {
+				auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void
+				{
 					auto sizeArrow = POINTFLOAT{ baseSize, baseSize };
 					auto offsetPosX = 0.0F;
 					auto offsetPosY = 0.0F;
@@ -2129,11 +2120,11 @@ namespace DarkMode
 
 				RECT rcTextPrev{ upDownData.m_rcPrev.left, upDownData.m_rcPrev.top, upDownData.m_rcPrev.right, upDownData.m_rcPrev.bottom - offset };
 				::SetTextColor(hdc, getGlyphColor(isHotPrev));
-				::DrawText(hdc, isHorz ? L"<" : L"˄", -1, & rcTextPrev, dtFlags);
+				::DrawText(hdc, isHorz ? dmlib_glyph::kArrowLeft : dmlib_glyph::kArrowUp, -1, & rcTextPrev, dtFlags);
 
 				RECT rcTextNext{ upDownData.m_rcNext.left + offset, upDownData.m_rcNext.top, upDownData.m_rcNext.right, upDownData.m_rcNext.bottom - offset };
 				::SetTextColor(hdc, getGlyphColor(isHotNext));
-				::DrawText(hdc, isHorz ? L">" : L"˅", -1, & rcTextNext, dtFlags);
+				::DrawText(hdc, isHorz ? dmlib_glyph::kArrowRight : dmlib_glyph::kArrowDown, -1, & rcTextNext, dtFlags);
 			}
 		}
 	}
@@ -2443,7 +2434,8 @@ namespace DarkMode
 				// would be better, than getCtrlBackgroundBrush(),
 				// however default getBackgroundBrush() has almost same color
 				// as getDlgBackgroundBrush()
-				auto getBrush = [&]() -> HBRUSH {
+				auto getBrush = [&]() -> HBRUSH
+				{
 					if (isSelectedTab)
 					{
 						return DarkMode::getDlgBackgroundBrush();
@@ -3060,7 +3052,7 @@ namespace DarkMode
 		const bool hasScrollBar = ((nStyle & WS_HSCROLL) == WS_HSCROLL) || ((nStyle & WS_VSCROLL) == WS_VSCROLL);
 
 		// edit control without scroll bars
-		if (DarkMode::isThemePrefered()
+		if (dmlib_subclass::isThemePrefered()
 			&& p.m_theme
 			&& !isListBox
 			&& !hasScrollBar)
@@ -3185,7 +3177,8 @@ namespace DarkMode
 		RECT rcArrow{ cbi.rcButton };
 		rcArrow.left -= 1;
 
-		auto getBrush = [&]() -> HBRUSH {
+		auto getBrush = [&]() -> HBRUSH
+		{
 			if (isDisabled)
 			{
 				return DarkMode::getDlgBackgroundBrush();
@@ -3275,7 +3268,8 @@ namespace DarkMode
 			}
 			else
 			{
-				auto getTextClr = [&]() -> COLORREF {
+				auto getTextClr = [&]() -> COLORREF
+				{
 					if (isDisabled)
 					{
 						return DarkMode::getDisabledTextColor();
@@ -3290,7 +3284,7 @@ namespace DarkMode
 
 				::SetTextColor(hdc, getTextClr());
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
-				::DrawText(hdc, L"˅", -1, &rcArrow, dtFlags);
+				::DrawText(hdc, dmlib_glyph::kArrowDown, -1, &rcArrow, dtFlags);
 			}
 		}
 
@@ -3538,7 +3532,7 @@ namespace DarkMode
 				}
 			}
 
-			if (!DarkMode::isThemePrefered() && p.m_subclass)
+			if (!dmlib_subclass::isThemePrefered() && p.m_subclass)
 			{
 				HWND hParent = ::GetParent(hWnd);
 				if ((hParent == nullptr || dmlib_subclass::getWndClassName(hParent) != WC_COMBOBOXEX))
@@ -3888,7 +3882,7 @@ namespace DarkMode
 			DarkMode::setDarkListViewCheckboxes(hWnd);
 			DarkMode::setDarkTooltips(hWnd, static_cast<int>(ToolTipsType::listview));
 
-			if (DarkMode::isThemePrefered())
+			if (dmlib_subclass::isThemePrefered())
 			{
 				DarkMode::setDarkThemeExperimentalEx(hHeader, L"ItemsView");
 			}
@@ -3896,7 +3890,7 @@ namespace DarkMode
 
 		if (p.m_subclass)
 		{
-			if (!DarkMode::isThemePrefered())
+			if (!dmlib_subclass::isThemePrefered())
 			{
 				DarkMode::setHeaderCtrlSubclass(hHeader);
 			}
@@ -5815,19 +5809,18 @@ namespace DarkMode
 			return CDRF_DODEFAULT;
 		}
 
-		auto hFont = reinterpret_cast<HFONT>(::SendMessage(lptbcd->nmcd.hdr.hwndFrom, WM_GETFONT, 0, 0));
-		auto holdFont = static_cast<HFONT>(::SelectObject(lptbcd->nmcd.hdc, hFont));
-
 		RECT rcArrow{};
 		const auto idx = ::SendMessage(lptbcd->nmcd.hdr.hwndFrom, TB_COMMANDTOINDEX, lptbcd->nmcd.dwItemSpec, 0);
 		::SendMessage(lptbcd->nmcd.hdr.hwndFrom, TB_GETITEMDROPDOWNRECT, static_cast<WPARAM>(idx), reinterpret_cast<LPARAM>(&rcArrow));
 		rcArrow.left += 1;
-		rcArrow.bottom -= 3;
+		rcArrow.bottom -= dmlib_dpi::scale(3, lptbcd->nmcd.hdr.hwndFrom);
 
 		::SetBkMode(lptbcd->nmcd.hdc, TRANSPARENT);
 		::SetTextColor(lptbcd->nmcd.hdc, DarkMode::getTextColor());
-		::DrawText(lptbcd->nmcd.hdc, L"⏷", -1, &rcArrow, DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
-		::SelectObject(lptbcd->nmcd.hdc, holdFont);
+
+		const auto hFont = dmlib_paint::GdiObject{ lptbcd->nmcd.hdc, reinterpret_cast<HFONT>(::SendMessage(lptbcd->nmcd.hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
+		static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
+		::DrawText(lptbcd->nmcd.hdc, dmlib_glyph::kTriangleDown, -1, &rcArrow, dtFlags);
 
 		return CDRF_DODEFAULT;
 	}
@@ -6311,7 +6304,7 @@ namespace DarkMode
 
 				const auto hFont = dmlib_paint::GdiObject{ lpnmcd->hdc, reinterpret_cast<HFONT>(::SendMessage(lpnmcd->hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
 				static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP;
-				::DrawText(lpnmcd->hdc, L"»", -1, &rbBand.rcChevronLocation, dtFlags);
+				::DrawText(lpnmcd->hdc, dmlib_glyph::kChevron, -1, &rbBand.rcChevronLocation, dtFlags);
 			}
 
 			// paints gripper edge
@@ -7479,7 +7472,8 @@ namespace DarkMode
 	 */
 	double calculatePerceivedLightness(COLORREF clr)
 	{
-		auto linearValue = [](double colorChannel) -> double {
+		auto linearValue = [](double colorChannel) -> double
+		{
 			colorChannel /= 255.0;
 
 			static constexpr double treshhold = 0.04045;

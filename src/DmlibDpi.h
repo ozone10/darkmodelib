@@ -73,12 +73,12 @@ namespace dmlib_dpi
 		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dmlib_dpi::GetDpiForWindow(hWnd));
 	}
 
-	[[nodiscard]] inline int ScaleFont(int pt, UINT dpi)
+	[[nodiscard]] inline int scaleFont(int pt, UINT dpi)
 	{
 		return -(dmlib_dpi::scale(pt, dpi, 72));
 	}
 
-	[[nodiscard]] inline int ScaleFont(int pt, HWND hWnd)
+	[[nodiscard]] inline int scaleFont(int pt, HWND hWnd)
 	{
 		return -(dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), 72));
 	}

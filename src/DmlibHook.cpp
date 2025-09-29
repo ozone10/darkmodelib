@@ -42,7 +42,7 @@ using fnFindThunkInModule = auto (*)(void* moduleBase, const char* dllName, cons
 
 using fnGetSysColor = auto (WINAPI*)(int nIndex) -> DWORD;
 using fnGetThemeColor = auto (WINAPI*)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF* pColor) -> HRESULT;
-using fnDrawThemeBackgroundEx = auto (WINAPI*)(HTHEME hTheme, HDC hdc,  int iPartId,  int iStateId,  LPCRECT pRect, const DTBGOPTS* pOptions) -> HRESULT;
+using fnDrawThemeBackgroundEx = auto (WINAPI*)(HTHEME hTheme, HDC hdc, int iPartId, int iStateId, LPCRECT pRect, const DTBGOPTS* pOptions) -> HRESULT;
 
 template <typename P>
 static auto ReplaceFunction(IMAGE_THUNK_DATA* addr, const P& newFunction) -> P
@@ -196,13 +196,14 @@ static bool isWindowOrParentUsingDarkScrollBar(HWND hWnd)
 	HWND hRoot = ::GetAncestor(hWnd, GA_ROOT);
 
 	const std::lock_guard<std::mutex> lock(g_darkScrollBarMutex);
-	auto hasElement = [](const auto& container, HWND hWndToCheck) -> bool {
+	auto hasElement = [](const auto& container, HWND hWndToCheck) -> bool
+	{
 #if (defined(_MSC_VER) && (_MSVC_LANG >= 202002L)) || (__cplusplus >= 202002L)
 		return container.contains(hWndToCheck);
 #else
 		return container.count(hWndToCheck) != 0;
 #endif
-		};
+	};
 
 	if (hasElement(g_darkScrollBarWindows, hWnd))
 	{
