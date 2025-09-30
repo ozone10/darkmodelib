@@ -93,6 +93,7 @@
     <ClInclude Include="..\src\DmlibIni.h" />
     <ClInclude Include="..\src\DmlibPaintHelper.h" />
     <ClInclude Include="..\src\DmlibSubclass.h" />
+    <ClInclude Include="..\src\DmlibSubclassControl.h" />
     <ClInclude Include="..\src\DmlibWinApi.h" />
     <ClInclude Include="..\src\IatHook.h" />
     <ClInclude Include="..\src\ModuleHelper.h" />

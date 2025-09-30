@@ -48,6 +48,7 @@
 #endif
 #include "DmlibPaintHelper.h"
 #include "DmlibSubclass.h"
+#include "DmlibSubclassControl.h"
 #include "DmlibWinApi.h"
 
 #include "UAHMenuBar.h"
@@ -167,7 +168,7 @@ namespace DarkMode
 	 */
 	enum class WinMode : std::uint8_t
 	{
-		disabled,  ///< Manual — system mode is ignored.
+		disabled,  ///< Manual - system mode is ignored.
 		light,     ///< Use light theme if system is in light mode.
 		classic    ///< Use classic style if system is in light mode.
 	};
@@ -408,9 +409,9 @@ namespace DarkMode
 	 * Sets the active dark mode theming and system-following behavior according to the specified `dmType`:
 	 * - `0`: Light mode, do not follow system.
 	 * - `1` or default: Dark mode, do not follow system.
-	 * - `2`: *[Internal]* Follow system — light or dark depending on registry (see `DarkMode::isDarkModeReg()`).
+	 * - `2`: *[Internal]* Follow system - light or dark depending on registry (see `DarkMode::isDarkModeReg()`).
 	 * - `3`: Classic mode, do not follow system.
-	 * - `4`: *[Internal]* Follow system — classic or dark depending on registry.
+	 * - `4`: *[Internal]* Follow system - classic or dark depending on registry.
 	 *
 	 * @param dmType Integer representing the desired mode.
 	 *
@@ -989,71 +990,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct ButtonData
-	 * @brief Stores button theming state and original size metadata.
-	 *
-	 * Used for checkbox, radio, tri-state, or group box buttons. Used in conjunction
-	 * with subclassing of button controls to preserve original layout dimensions
-	 * and apply consistent visual styling. Captures the control's client size
-	 * for checkbox, radio, or tri-state buttons.
-	 *
-	 * Members:
-	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_BUTTON`.
-	 * - `m_szBtn` : Original size extracted from the button rectangle.
-	 * - `m_iStateID` : Current visual state ID (e.g. pressed, disabled, ...).
-	 * - `m_isSizeSet` : Indicates whether `m_szBtn` holds a valid measurement.
-	 *
-	 * Constructor behavior:
-	 * - When constructed with an `HWND`, attempts to extract the initial size if the button
-	 *   is a checkbox/radio/tri-state type without `BS_MULTILINE`.
-	 *
-	 * @see ThemeData
-	 */
-	struct ButtonData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_BUTTON };
-		SIZE m_szBtn{};
-
-		int m_iStateID = 0;
-		bool m_isSizeSet = false;
-
-		ButtonData() = default;
-
-		// Saves width and height from the resource file for use as restrictions.
-		// Currently unused / have no effect.
-		explicit ButtonData(HWND hWnd) noexcept
-		{
-			const auto nBtnStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
-			switch (nBtnStyle & BS_TYPEMASK)
-			{
-				case BS_CHECKBOX:
-				case BS_AUTOCHECKBOX:
-				case BS_3STATE:
-				case BS_AUTO3STATE:
-				case BS_RADIOBUTTON:
-				case BS_AUTORADIOBUTTON:
-				{
-					if ((nBtnStyle & BS_MULTILINE) != BS_MULTILINE)
-					{
-						RECT rcBtn{};
-						::GetClientRect(hWnd, &rcBtn);
-						const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
-						m_szBtn.cx = dmlib_dpi::unscale(rcBtn.right - rcBtn.left, dpi);
-						m_szBtn.cy = dmlib_dpi::unscale(rcBtn.bottom - rcBtn.top, dpi);
-						m_isSizeSet = (m_szBtn.cx != 0 && m_szBtn.cy != 0);
-					}
-					break;
-				}
-
-				default:
-				{
-					break;
-				}
-			}
-		}
-	};
-
-	/**
 	 * @brief Draws a themed owner drawn checkbox, radio, or tri-state button (excluding push-like buttons).
 	 *
 	 * Internally used by @ref DarkMode::paintButton to draw visual elements such as checkbox glyphs
@@ -1202,7 +1138,7 @@ namespace DarkMode
 	/**
 	 * @brief Paints a checkbox, radio, or tri-state button with state-based visuals.
 	 *
-	 * Determines the appropriate themed part and state ID based on the control’s
+	 * Determines the appropriate themed part and state ID based on the control's
 	 * style (e.g. `BS_CHECKBOX`, `BS_RADIOBUTTON`) and current button state flags
 	 * such as `BST_CHECKED`, `BST_PUSHED`, or `BST_HOT`.
 	 *
@@ -1218,7 +1154,7 @@ namespace DarkMode
 	 *
 	 * @see DarkMode::renderButton()
 	 */
-	static void paintButton(HWND hWnd, HDC hdc, ButtonData& buttonData)
+	static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonData)
 	{
 		const auto& hTheme = buttonData.m_themeData.getHTheme();
 
@@ -1343,7 +1279,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pButtonData = reinterpret_cast<ButtonData*>(dwRefData);
+		auto* pButtonData = reinterpret_cast<dmlib_subclass::ButtonData*>(dwRefData);
 		auto& themeData = pButtonData->m_themeData;
 
 		switch (uMsg)
@@ -1462,7 +1398,7 @@ namespace DarkMode
 	 */
 	void setCheckboxOrRadioBtnCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button, hWnd);
+		dmlib_subclass::SetSubclass<dmlib_subclass::ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button, hWnd);
 	}
 
 	/**
@@ -1477,7 +1413,7 @@ namespace DarkMode
 	 */
 	void removeCheckboxOrRadioBtnCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::ButtonData>(hWnd, ButtonSubclass, dmlib_subclass::SubclassID::button);
 	}
 
 	/**
@@ -1503,7 +1439,7 @@ namespace DarkMode
 	 *
 	 * @see DarkMode::paintRoundFrameRect()
 	 */
-	static void paintGroupbox(HWND hWnd, HDC hdc, const ButtonData& buttonData)
+	static void paintGroupbox(HWND hWnd, HDC hdc, const dmlib_subclass::ButtonData& buttonData)
 	{
 		const auto& hTheme = buttonData.m_themeData.getHTheme();
 
@@ -1633,7 +1569,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pButtonData = reinterpret_cast<ButtonData*>(dwRefData);
+		auto* pButtonData = reinterpret_cast<dmlib_subclass::ButtonData*>(dwRefData);
 		auto& themeData = pButtonData->m_themeData;
 
 		switch (uMsg)
@@ -1718,7 +1654,7 @@ namespace DarkMode
 	 */
 	void setGroupboxCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
+		dmlib_subclass::SetSubclass<dmlib_subclass::ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
 	}
 
 	/**
@@ -1733,7 +1669,7 @@ namespace DarkMode
 	 */
 	void removeGroupboxCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::ButtonData>(hWnd, GroupboxSubclass, dmlib_subclass::SubclassID::groupbox);
 	}
 
 	/**
@@ -1817,111 +1753,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct UpDownData
-	 * @brief Stores layout and state for a owner drawn up-down (spinner) control.
-	 *
-	 * Used to manage rectangle, buffer, and hit-test regions for owner-drawn subclassed
-	 * up-down controls, supporting both vertical and horizontal layouts.
-	 *
-	 * Members:
-	 * - `m_bufferData`: Buffer wrapper for flicker-free custom painting.
-	 * - `m_rcClient`: Current client rectangle of the control.
-	 * - `m_rcPrev`, `m_rcNext`: Rectangles for the up/down or left/right arrow buttons.
-	 * - `m_cornerRoundness`: Optional roundness for corners (used in Windows 11+ with tabs).
-	 * - `m_isHorizontal`: `true` if the control is horizontal (`UDS_HORZ` style).
-	 * - `m_wasHotNext`: Last hover state (used for hover feedback).
-	 *
-	 * Constructor behavior:
-	 * - Detects orientation from `GWL_STYLE`.
-	 * - Initializes corner styling based on OS and parent class.
-	 * - Extracts rectangles for arrow segments immediately.
-	 *
-	 * Usage:
-	 * - `updateRect(HWND)`: Refreshes rectangle from control handle.
-	 * - `updateRect(RECT)`: Checks for rectangle change and updates it.
-	 *
-	 * @see BufferData
-	 */
-	struct UpDownData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_SPIN };
-		dmlib_subclass::BufferData m_bufferData;
-
-		RECT m_rcClient{};
-		RECT m_rcPrev{};
-		RECT m_rcNext{};
-		int m_cornerRoundness = 0;
-		bool m_isHorizontal = false;
-		bool m_wasHotNext = false;
-
-		UpDownData() = delete;
-
-		explicit UpDownData(HWND hWnd)
-			: m_cornerRoundness(
-				(DarkMode::isAtLeastWindows11()
-					&& dmlib_subclass::cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
-				? (dmlib_paint::kWin11CornerRoundness + 1)
-				: 0)
-			, m_isHorizontal((::GetWindowLongPtr(hWnd, GWL_STYLE) & UDS_HORZ) == UDS_HORZ)
-		{
-			updateRect(hWnd);
-		}
-
-		void updateRectUpDown() noexcept
-		{
-			if (m_isHorizontal)
-			{
-				const RECT rcArrowLeft{
-					m_rcClient.left, m_rcClient.top,
-					m_rcClient.right - ((m_rcClient.right - m_rcClient.left) / 2), m_rcClient.bottom
-				};
-
-				const RECT rcArrowRight{
-					rcArrowLeft.right, m_rcClient.top,
-					m_rcClient.right, m_rcClient.bottom
-				};
-
-				m_rcPrev = rcArrowLeft;
-				m_rcNext = rcArrowRight;
-			}
-			else
-			{
-				static constexpr LONG offset = 2;
-
-				const RECT rcArrowTop{
-					m_rcClient.left + offset, m_rcClient.top,
-					m_rcClient.right, m_rcClient.bottom - ((m_rcClient.bottom - m_rcClient.top) / 2)
-				};
-
-				const RECT rcArrowBottom{
-					m_rcClient.left + offset, rcArrowTop.bottom,
-					m_rcClient.right, m_rcClient.bottom
-				};
-
-				m_rcPrev = rcArrowTop;
-				m_rcNext = rcArrowBottom;
-			}
-		}
-
-		void updateRect(HWND hWnd) noexcept
-		{
-			::GetClientRect(hWnd, &m_rcClient);
-			updateRectUpDown();
-		}
-
-		bool updateRect(RECT rcClientNew) noexcept
-		{
-			if (::EqualRect(&m_rcClient, &rcClientNew) == FALSE)
-			{
-				m_rcClient = rcClientNew;
-				updateRectUpDown();
-				return true;
-			}
-			return false;
-		}
-	};
-
-	/**
 	 * @brief Custom paints an up-down (spinner) control.
 	 *
 	 * Draws the two-button spinner control using either themed drawing or manual
@@ -1939,7 +1770,7 @@ namespace DarkMode
 	 *
 	 * @see UpDownData
 	 */
-	static void paintUpDown(HWND hWnd, HDC hdc, UpDownData& upDownData)
+	static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownData)
 	{
 		auto& themeData = upDownData.m_themeData;
 		const bool hasTheme = themeData.ensureTheme(hWnd);
@@ -2153,7 +1984,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pUpDownData = reinterpret_cast<UpDownData*>(dwRefData);
+		auto* pUpDownData = reinterpret_cast<dmlib_subclass::UpDownData*>(dwRefData);
 		auto& themeData = pUpDownData->m_themeData;
 		const auto& hMemDC = pUpDownData->m_bufferData.getHMemDC();
 
@@ -2210,7 +2041,7 @@ namespace DarkMode
 					::OffsetRect(&rcClient, 2, 0);
 				}
 
-				dmlib_paint::PaintWithBuffer<UpDownData>(*pUpDownData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<dmlib_subclass::UpDownData>(*pUpDownData, hdc, ps,
 					[&]() { DarkMode::paintUpDown(hWnd, hMemDC, *pUpDownData); },
 					rcClient);
 
@@ -2281,7 +2112,7 @@ namespace DarkMode
 	 */
 	void setUpDownCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown, hWnd);
+		dmlib_subclass::SetSubclass<dmlib_subclass::UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown, hWnd);
 		DarkMode::setDarkExplorerTheme(hWnd);
 	}
 
@@ -2297,7 +2128,7 @@ namespace DarkMode
 	 */
 	void removeUpDownCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::UpDownData>(hWnd, UpDownSubclass, dmlib_subclass::SubclassID::upDown);
 	}
 
 	/**
@@ -2323,20 +2154,6 @@ namespace DarkMode
 			::SetWindowTheme(hWnd, p.m_themeClassName, nullptr);
 		}
 	}
-
-	/**
-	 * @struct TabData
-	 * @brief Simple wrapper for `BufferData`.
-	 *
-	 * Members:
-	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
-	 *
-	 * @see BufferData
-	 */
-	struct TabData
-	{
-		dmlib_subclass::BufferData m_bufferData;
-	};
 
 	/**
 	 * @brief Custom paints tab items.
@@ -2528,7 +2345,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pTabData = reinterpret_cast<TabData*>(dwRefData);
+		auto* pTabData = reinterpret_cast<dmlib_subclass::TabData*>(dwRefData);
 		const auto& hMemDC = pTabData->m_bufferData.getHMemDC();
 
 		switch (uMsg)
@@ -2579,7 +2396,7 @@ namespace DarkMode
 
 				RECT rcClient{};
 				::GetClientRect(hWnd, &rcClient);
-				dmlib_paint::PaintWithBuffer<TabData>(*pTabData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<dmlib_subclass::TabData>(*pTabData, hdc, ps,
 					[&]() { DarkMode::paintTab(hWnd, hMemDC, rcClient); },
 					hWnd);
 
@@ -2614,7 +2431,7 @@ namespace DarkMode
 	 */
 	static void setTabCtrlPaintSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
+		dmlib_subclass::SetSubclass<dmlib_subclass::TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
 	}
 
 	/**
@@ -2629,7 +2446,7 @@ namespace DarkMode
 	 */
 	static void removeTabCtrlPaintSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::TabData>(hWnd, TabPaintSubclass, dmlib_subclass::SubclassID::tabPaint);
 	}
 
 	/**
@@ -2780,50 +2597,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct BorderMetricsData
-	 * @brief Stores system border and scroll bar metrics.
-	 *
-	 * Captures system metrics related to edit or list box control borders and scroll bars,
-	 * along with the current DPI setting and a hot state flag.
-	 *
-	 * Members:
-	 * - `m_dpi` : Current DPI value (defaults to `USER_DEFAULT_SCREEN_DPI`).
-	 * - `m_xEdge` : Width of a border (`SM_CXEDGE`).
-	 * - `m_yEdge` : Height of a border (`SM_CYEDGE`).
-	 * - `m_xScroll` : Width of a vertical scroll bar (`SM_CXVSCROLL`).
-	 * - `m_yScroll` : Height of a horizontal scroll bar (`SM_CYVSCROLL`).
-	 * - `m_isHot` : Indicates whether the border is in a "hot" (hovered) state.
-	 *
-	 * @note Values are initialized from `GetSystemMetrics()` at construction time.
-	 *       Currently there is no dynamic handling for dpi changes.
-	 */
-	struct BorderMetricsData
-	{
-		UINT m_dpi = USER_DEFAULT_SCREEN_DPI;
-		LONG m_xEdge = ::GetSystemMetrics(SM_CXEDGE);
-		LONG m_yEdge = ::GetSystemMetrics(SM_CYEDGE);
-		LONG m_xScroll = ::GetSystemMetrics(SM_CXVSCROLL);
-		LONG m_yScroll = ::GetSystemMetrics(SM_CYVSCROLL);
-		bool m_isHot = false;
-
-		BorderMetricsData() = delete;
-
-		explicit BorderMetricsData(HWND hWnd)
-		{
-			setMetricsForDpi(dmlib_dpi::GetDpiForParent(hWnd));
-		}
-
-		void setMetricsForDpi(UINT dpi)
-		{
-			m_dpi = dpi;
-			m_xEdge = dmlib_dpi::GetSystemMetricsForDpi(SM_CXEDGE, m_dpi);
-			m_yEdge = dmlib_dpi::GetSystemMetricsForDpi(SM_CYEDGE, m_dpi);
-			m_xScroll = dmlib_dpi::GetSystemMetricsForDpi(SM_CXVSCROLL, m_dpi);
-			m_yScroll = dmlib_dpi::GetSystemMetricsForDpi(SM_CYVSCROLL, m_dpi);
-		}
-	};
-
-	/**
 	 * @brief Paints a custom non-client border for list box and edit controls.
 	 *
 	 * Paints an inner and outer border using custom colors.
@@ -2832,7 +2605,7 @@ namespace DarkMode
 	 * @param hWnd              Handle to the target list box or edit control.
 	 * @param borderMetricsData Precomputed system metrics and hot state.
 	 */
-	static void ncPaintCustomBorder(HWND hWnd, const BorderMetricsData& borderMetricsData)
+	static void ncPaintCustomBorder(HWND hWnd, const dmlib_subclass::BorderMetricsData& borderMetricsData)
 	{
 		HDC hdc = ::GetWindowDC(hWnd);
 		RECT rcClient{};
@@ -2897,7 +2670,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pBorderMetricsData = reinterpret_cast<BorderMetricsData*>(dwRefData);
+		auto* pBorderMetricsData = reinterpret_cast<dmlib_subclass::BorderMetricsData*>(dwRefData);
 
 		switch (uMsg)
 		{
@@ -3010,7 +2783,7 @@ namespace DarkMode
 	 */
 	void setCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder, hWnd);
+		dmlib_subclass::SetSubclass<dmlib_subclass::BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder, hWnd);
 	}
 
 	/**
@@ -3026,7 +2799,7 @@ namespace DarkMode
 	 */
 	void removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::BorderMetricsData>(hWnd, CustomBorderSubclass, dmlib_subclass::SubclassID::customBorder);
 	}
 
 	/**
@@ -3085,43 +2858,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct ComboBoxData
-	 * @brief Stores theme and buffer data for a combo box control, along with its style.
-	 *
-	 * Used to manage theming and double-buffered painting for combo box controls.
-	 * Holds both the visual style information and the control's creation style for
-	 * conditional drawing logic.
-	 *
-	 * Members:
-	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_COMBOBOX`.
-	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
-	 * - `m_cbStyle` : Combo box style flags (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`).
-	 *
-	 * Constructor behavior:
-	 * - Deleted default constructor to enforce explicit style initialization.
-	 * - Explicit constructor taking `cbStyle` to set `m_cbStyle`.
-	 *
-	 * @note The style value is typically retrieved via `GetWindowLongPtr(hWnd, GWL_STYLE)`
-	 *       when subclassing the combo box.
-	 *
-	 * @see ThemeData
-	 * @see BufferData
-	 */
-	struct ComboBoxData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_COMBOBOX };
-		dmlib_subclass::BufferData m_bufferData;
-
-		LONG_PTR m_cbStyle = CBS_SIMPLE;
-
-		ComboBoxData() = delete;
-
-		explicit ComboBoxData(LONG_PTR cbStyle) noexcept
-			: m_cbStyle(cbStyle)
-		{}
-	};
-
-	/**
 	 * @brief Custom paints a combo box control.
 	 *
 	 * This function handles owner-drawn drawing of a combo box, adapting its
@@ -3148,7 +2884,7 @@ namespace DarkMode
 	 *
 	 * @see ComboBoxData
 	 */
-	static void paintCombobox(HWND hWnd, HDC hdc, ComboBoxData& comboBoxData)
+	static void paintCombobox(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData)
 	{
 		auto& themeData = comboBoxData.m_themeData;
 		const auto& hTheme = themeData.getHTheme();
@@ -3356,7 +3092,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pComboboxData = reinterpret_cast<ComboBoxData*>(dwRefData);
+		auto* pComboboxData = reinterpret_cast<dmlib_subclass::ComboBoxData*>(dwRefData);
 		auto& themeData = pComboboxData->m_themeData;
 		const auto& hMemDC = pComboboxData->m_bufferData.getHMemDC();
 
@@ -3402,7 +3138,7 @@ namespace DarkMode
 						return 0;
 					}
 
-					dmlib_paint::PaintWithBuffer<ComboBoxData>(*pComboboxData, hdc, ps,
+					dmlib_paint::PaintWithBuffer<dmlib_subclass::ComboBoxData>(*pComboboxData, hdc, ps,
 						[&]() { DarkMode::paintCombobox(hWnd, hMemDC, *pComboboxData); },
 						hWnd);
 				}
@@ -3464,7 +3200,7 @@ namespace DarkMode
 	void setComboBoxCtrlSubclass(HWND hWnd)
 	{
 		const auto cbStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE) & CBS_DROPDOWNLIST;
-		dmlib_subclass::SetSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox, cbStyle);
+		dmlib_subclass::SetSubclass<dmlib_subclass::ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox, cbStyle);
 	}
 
 	/**
@@ -3479,7 +3215,7 @@ namespace DarkMode
 	 */
 	void removeComboBoxCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::ComboBoxData>(hWnd, ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox);
 	}
 
 	/**
@@ -3902,49 +3638,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct HeaderData
-	 * @brief Stores theme, buffer, and font data for a header control, along with its style and state information.
-	 *
-	 * Used to manage theming and double-buffered painting for header controls.
-	 * Holds the button visual style information and the control's state for
-	 * conditional drawing logic.
-	 *
-	 * Members:
-	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_HEADER`.
-	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
-	 * - `m_fontData` : Font resource wrapper for text drawing.
-	 * - `m_pt` : Last known mouse position in client coordinates (LONG_MIN if uninitialized).
-	 * - `m_isHot` : True if the mouse is currently over a header item.
-	 * - `m_hasBtnStyle` : True if the header uses button-style items (`HDF_BUTTON`).
-	 * - `m_isPressed` : True if a header item is currently pressed.
-	 *
-	 * Constructor behavior:
-	 * - Deleted default constructor to enforce explicit initialization.
-	 * - Explicit constructor taking `hasBtnStyle` to set `m_hasBtnStyle`.
-	 *
-	 * @see ThemeData
-	 * @see BufferData
-	 * @see FontData
-	 */
-	struct HeaderData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_HEADER };
-		dmlib_subclass::BufferData m_bufferData;
-		dmlib_subclass::FontData m_fontData{ nullptr };
-
-		POINT m_pt{ LONG_MIN, LONG_MIN };
-		bool m_isHot = false;
-		bool m_hasBtnStyle = true;
-		bool m_isPressed = false;
-
-		HeaderData() = delete;
-
-		explicit HeaderData(bool hasBtnStyle) noexcept
-			: m_hasBtnStyle(hasBtnStyle)
-		{}
-	};
-
-	/**
 	 * @brief Custom paints a header control.
 	 *
 	 * Draws the background, text, hot/pressed states, and optional sort arrows
@@ -3964,7 +3657,7 @@ namespace DarkMode
 	 *
 	 * @see HeaderData
 	 */
-	static void paintHeader(HWND hWnd, HDC hdc, HeaderData& headerData)
+	static void paintHeader(HWND hWnd, HDC hdc, dmlib_subclass::HeaderData& headerData)
 	{
 		auto& themeData = headerData.m_themeData;
 		const auto& hTheme = themeData.getHTheme();
@@ -4138,7 +3831,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pHeaderData = reinterpret_cast<HeaderData*>(dwRefData);
+		auto* pHeaderData = reinterpret_cast<dmlib_subclass::HeaderData*>(dwRefData);
 		auto& themeData = pHeaderData->m_themeData;
 		const auto& hMemDC = pHeaderData->m_bufferData.getHMemDC();
 
@@ -4182,7 +3875,7 @@ namespace DarkMode
 					return 0;
 				}
 
-				dmlib_paint::PaintWithBuffer<HeaderData>(*pHeaderData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<dmlib_subclass::HeaderData>(*pHeaderData, hdc, ps,
 					[&]() { DarkMode::paintHeader(hWnd, hMemDC, *pHeaderData); },
 					hWnd);
 
@@ -4294,7 +3987,7 @@ namespace DarkMode
 	void setHeaderCtrlSubclass(HWND hWnd)
 	{
 		const bool hasBtnStyle = (::GetWindowLongPtr(hWnd, GWL_STYLE) & HDS_BUTTONS) == HDS_BUTTONS;
-		dmlib_subclass::SetSubclass<HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header, hasBtnStyle);
+		dmlib_subclass::SetSubclass<dmlib_subclass::HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header, hasBtnStyle);
 	}
 
 	/**
@@ -4309,40 +4002,8 @@ namespace DarkMode
 	 */
 	void removeHeaderCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::HeaderData>(hWnd, HeaderSubclass, dmlib_subclass::SubclassID::header);
 	}
-
-	/**
-	 * @struct StatusBarData
-	 * @brief Stores theme, buffer, and font data for a status bar control.
-	 *
-	 * Used to manage theming and double-buffered painting for status bar controls.
-	 *
-	 * Members:
-	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_HEADER`.
-	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
-	 * - `m_fontData` : Font resource wrapper for text drawing.
-	 *
-	 * Constructor behavior:
-	 * - Deleted default constructor to enforce explicit font initialization.
-	 * - Explicit constructor taking `HFONT` to initialize `m_fontData`.
-	 *
-	 * @see ThemeData
-	 * @see BufferData
-	 * @see FontData
-	 */
-	struct StatusBarData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_STATUS };
-		dmlib_subclass::BufferData m_bufferData;
-		dmlib_subclass::FontData m_fontData;
-
-		StatusBarData() = delete;
-
-		explicit StatusBarData(const HFONT& hFont) noexcept
-			: m_fontData(hFont)
-		{}
-	};
 
 	/**
 	 * @brief Custom paints a status bar control.
@@ -4357,7 +4018,7 @@ namespace DarkMode
 	 *
 	 * @see StatusBarData
 	 */
-	static void paintStatusBar(HWND hWnd, HDC hdc, StatusBarData& statusBarData)
+	static void paintStatusBar(HWND hWnd, HDC hdc, dmlib_subclass::StatusBarData& statusBarData)
 	{
 		const auto& hFont = statusBarData.m_fontData.getFont();
 
@@ -4492,7 +4153,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pStatusBarData = reinterpret_cast<StatusBarData*>(dwRefData);
+		auto* pStatusBarData = reinterpret_cast<dmlib_subclass::StatusBarData*>(dwRefData);
 		auto& themeData = pStatusBarData->m_themeData;
 		const auto& hMemDC = pStatusBarData->m_bufferData.getHMemDC();
 
@@ -4536,7 +4197,7 @@ namespace DarkMode
 					return 0;
 				}
 
-				dmlib_paint::PaintWithBuffer<StatusBarData>(*pStatusBarData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<dmlib_subclass::StatusBarData>(*pStatusBarData, hdc, ps,
 					[&]() { DarkMode::paintStatusBar(hWnd, hMemDC, *pStatusBarData); },
 					hWnd);
 
@@ -4596,7 +4257,7 @@ namespace DarkMode
 		{
 			lf = ncm.lfStatusFont;
 		}
-		dmlib_subclass::SetSubclass<StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar, ::CreateFontIndirectW(&lf));
+		dmlib_subclass::SetSubclass<dmlib_subclass::StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar, ::CreateFontIndirectW(&lf));
 	}
 
 	/**
@@ -4611,7 +4272,7 @@ namespace DarkMode
 	 */
 	void removeStatusBarCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::StatusBarData>(hWnd, StatusBarSubclass, dmlib_subclass::SubclassID::statusBar);
 	}
 
 	/**
@@ -4631,36 +4292,6 @@ namespace DarkMode
 			DarkMode::setStatusBarCtrlSubclass(hWnd);
 		}
 	}
-
-	/**
-	 * @struct ProgressBarData
-	 * @brief Stores theme and buffer data for a progress bar control, along with its current state.
-	 *
-	 * Used to manage theming and double-buffered painting for progress bar controls.
-	 * Captures the current visual state (normal, paused, error) via `PBM_GETSTATE`.
-	 *
-	 * Members:
-	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_PROGRESS`.
-	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
-	 * - `m_iStateID` : Current progress bar state (e.g., `PBFS_NORMAL`, `PBFS_PAUSED`, `PBFS_ERROR`, `PBFS_PARTIAL`).
-	 *
-	 * Constructor behavior:
-	 * - Initializes `m_iStateID` by querying the control with `PBM_GETSTATE`.
-	 *
-	 * @see ThemeData
-	 * @see BufferData
-	 */
-	struct ProgressBarData
-	{
-		dmlib_subclass::ThemeData m_themeData{ VSCLASS_PROGRESS };
-		dmlib_subclass::BufferData m_bufferData;
-
-		int m_iStateID = PBFS_PARTIAL;
-
-		explicit ProgressBarData(HWND hWnd) noexcept
-			: m_iStateID(static_cast<int>(::SendMessage(hWnd, PBM_GETSTATE, 0, 0)))
-		{}
-	};
 
 	/**
 	 * @brief Calculates the filled and empty portions of a progress bar based on its current position.
@@ -4713,7 +4344,7 @@ namespace DarkMode
 	 * @see ProgressBarData
 	 * @see DarkMode::getProgressBarRects()
 	 */
-	static void paintProgressBar(HWND hWnd, HDC hdc, const ProgressBarData& progressBarData)
+	static void paintProgressBar(HWND hWnd, HDC hdc, const dmlib_subclass::ProgressBarData& progressBarData)
 	{
 		const auto& hTheme = progressBarData.m_themeData.getHTheme();
 
@@ -4754,7 +4385,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pProgressBarData = reinterpret_cast<ProgressBarData*>(dwRefData);
+		auto* pProgressBarData = reinterpret_cast<dmlib_subclass::ProgressBarData*>(dwRefData);
 		auto& themeData = pProgressBarData->m_themeData;
 		const auto& hMemDC = pProgressBarData->m_bufferData.getHMemDC();
 
@@ -4798,7 +4429,7 @@ namespace DarkMode
 					return 0;
 				}
 
-				dmlib_paint::PaintWithBuffer<ProgressBarData>(*pProgressBarData, hdc, ps,
+				dmlib_paint::PaintWithBuffer<dmlib_subclass::ProgressBarData>(*pProgressBarData, hdc, ps,
 					[&]() { DarkMode::paintProgressBar(hWnd, hMemDC, *pProgressBarData); },
 					hWnd);
 
@@ -4873,7 +4504,7 @@ namespace DarkMode
 	 */
 	void setProgressBarCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar, hWnd);
+		dmlib_subclass::SetSubclass<dmlib_subclass::ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar, hWnd);
 	}
 
 	/**
@@ -4888,7 +4519,7 @@ namespace DarkMode
 	 */
 	void removeProgressBarCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::ProgressBarData>(hWnd, ProgressBarSubclass, dmlib_subclass::SubclassID::progressBar);
 	}
 
 	/**
@@ -4921,31 +4552,6 @@ namespace DarkMode
 	}
 
 	/**
-	 * @struct StaticTextData
-	 * @brief Stores enabled status information for a static text control.
-	 *
-	 * Used to determine whether a static control (e.g., label or caption) should be drawn
-	 * using enabled or disabled colors.
-	 *
-	 * Members:
-	 * - `m_isEnabled` : Indicates whether the control is currently enabled (`true`) or disabled (`false`).
-	 *
-	 * Constructor behavior:
-	 * - Default constructor initializes `m_isEnabled` to `true`.
-	 * - Explicit constructor queries the control's enabled state via `IsWindowEnabled(hWnd)`.
-	 */
-	struct StaticTextData
-	{
-		bool m_isEnabled = true;
-
-		StaticTextData() = default;
-
-		explicit StaticTextData(HWND hWnd) noexcept
-			: m_isEnabled(::IsWindowEnabled(hWnd) == TRUE)
-		{}
-	};
-
-	/**
 	 * @brief Window subclass procedure for better disabled state appearence for static control with text.
 	 *
 	 * @param hWnd          Window handle being subclassed.
@@ -4968,7 +4574,7 @@ namespace DarkMode
 		DWORD_PTR dwRefData
 	)
 	{
-		auto* pStaticTextData = reinterpret_cast<StaticTextData*>(dwRefData);
+		auto* pStaticTextData = reinterpret_cast<dmlib_subclass::StaticTextData*>(dwRefData);
 
 		switch (uMsg)
 		{
@@ -5028,7 +4634,7 @@ namespace DarkMode
 	 */
 	void setStaticTextCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::SetSubclass<StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText, hWnd);
+		dmlib_subclass::SetSubclass<dmlib_subclass::StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText, hWnd);
 	}
 
 	/**
@@ -5043,7 +4649,7 @@ namespace DarkMode
 	 */
 	void removeStaticTextCtrlSubclass(HWND hWnd)
 	{
-		dmlib_subclass::RemoveSubclass<StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText);
+		dmlib_subclass::RemoveSubclass<dmlib_subclass::StaticTextData>(hWnd, StaticTextSubclass, dmlib_subclass::SubclassID::staticText);
 	}
 
 	/**
@@ -5613,7 +5219,7 @@ namespace DarkMode
 				DWORD_PTR dwRefDataStaticText = 0;
 				if (::GetWindowSubclass(hChild, StaticTextSubclass, static_cast<UINT_PTR>(dmlib_subclass::SubclassID::staticText), &dwRefDataStaticText) == TRUE)
 				{
-					const bool isTextEnabled = (reinterpret_cast<StaticTextData*>(dwRefDataStaticText))->m_isEnabled;
+					const bool isTextEnabled = (reinterpret_cast<dmlib_subclass::StaticTextData*>(dwRefDataStaticText))->m_isEnabled;
 					return DarkMode::onCtlColorDlgStaticText(hdc, isTextEnabled);
 				}
 				return DarkMode::onCtlColorDlg(hdc);
@@ -5782,7 +5388,7 @@ namespace DarkMode
 	/**
 	 * @brief Applies custom drawing to a toolbar items (buttons) during `CDDS_ITEMPOSTPAINT.
 	 *
-	 * Paints arrow glyph with custom color over system black "⏷" for button with style `BTNS_DROPDOWN`.
+	 * Paints arrow glyph with custom color over system black "down triangle" for button with style `BTNS_DROPDOWN`.
 	 * Triggered by `CDRF_NOTIFYPOSTPAINT` from @ref DarkMode::prepaintToolbarItem.
 	 *
 	 * Logic:

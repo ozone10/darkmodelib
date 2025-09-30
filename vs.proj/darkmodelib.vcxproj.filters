@@ -57,6 +57,9 @@
     <ClInclude Include="..\src\DmlibGlyph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\DmlibSubclassControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\DmlibWinApi.cpp">
