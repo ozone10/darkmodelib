@@ -8,7 +8,7 @@
  */
 
 
-#pragma once
+#include "StdAfx.h"
 
 #include "DmlibPaintHelper.h"
 
@@ -102,11 +102,7 @@ void dmlib_paint::paintRoundFrameRect(
  *
  * @see dmlib_paint::paintRoundFrameRect()
  */
-void dmlib_paint::paintFrameRect(
-	HDC hdc,
-	const RECT& rect,
-	HPEN hpen
-)
+void dmlib_paint::paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen)
 {
 	dmlib_paint::paintRoundFrameRect(hdc, rect, hpen, 0, 0);
 }

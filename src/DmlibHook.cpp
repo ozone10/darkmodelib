@@ -10,23 +10,7 @@
 
 #include "StdAfx.h"
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef VC_EXTRALEAN
-#define VC_EXTRALEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-extern bool g_darkModeSupported;
-extern bool g_darkModeEnabled;
-
 #include "DmlibHook.h"
-
-#include "IatHook.h"
-#include "ModuleHelper.h"
 
 #include <uxtheme.h>
 #include <vssym32.h>
@@ -37,6 +21,13 @@ extern bool g_darkModeEnabled;
 #include <mutex>
 #include <unordered_set>
 #endif
+
+#include "ModuleHelper.h"
+
+#include "IatHook.h"
+
+extern bool g_darkModeSupported;
+extern bool g_darkModeEnabled;
 
 using fnFindThunkInModule = auto (*)(void* moduleBase, const char* dllName, const char* funcName) -> PIMAGE_THUNK_DATA;
 
@@ -262,7 +253,7 @@ static COLORREF g_clrTGridlines = RGB(100, 100, 100);
  * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
  *
  * @param[in]   nIndex  One of the supported system color indices.
- * @param[in]   color   Custom `COLORREF` value to apply.
+ * @param[in]   clr     Custom `COLORREF` value to apply.
  */
 void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
 {

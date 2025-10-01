@@ -15,26 +15,16 @@
 
 #include "StdAfx.h"
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef VC_EXTRALEAN
-#define VC_EXTRALEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
 #include "DmlibWinApi.h"
-
-#include "DmlibHook.h"
-#include "ModuleHelper.h"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800
 #pragma warning(disable : 4191)
 #elif defined(__GNUC__)
 #include <cwchar>
 #endif
+
+#include "DmlibHook.h"
+#include "ModuleHelper.h"
 
 enum IMMERSIVE_HC_CACHE_MODE
 {
@@ -444,16 +434,16 @@ void dmlib_win32api::InitDarkMode()
  * Optionally applies a scroll bar fix for dark mode inconsistencies.
  *
  * @param[in]   useDark             Enable dark mode when `true`, disable when `false`.
- * @param[in]   fixDarkScrollBar    Apply scroll bar fix if `true`.
+ * @param[in]   applyScrollBarFix   Apply scroll bar fix if `true`.
  */
-void dmlib_win32api::SetDarkMode(bool useDark, [[maybe_unused]] bool fixDarkScrollbar)
+void dmlib_win32api::SetDarkMode(bool useDark, [[maybe_unused]] bool applyScrollBarFix)
 {
 	if (g_darkModeSupported)
 	{
 		AllowDarkModeForApp(useDark);
 		FlushMenuThemes();
 #if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-		if (dmlib_hook::fixDarkScrollbar)
+		if (applyScrollBarFix)
 		{
 			dmlib_hook::fixDarkScrollBar();
 		}

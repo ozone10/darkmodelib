@@ -395,18 +395,6 @@ namespace dmlib_subclass
 		return (dmlib_subclass::getWndClassName(hWnd) == classNameToCmp);
 	}
 
-	/**
-	 * @brief Determines if themed styling should be preferred over subclassing.
-	 *
-	 * Requires support for experimental theming and Windows 10 or later.
-	 *
-	 * @return `true` if themed appearance is preferred and supported.
-	 */
-	[[nodiscard]] inline bool isThemePrefered()
-	{
-		return
-			(DarkMode::getLibInfo(static_cast<int>(DarkMode::LibInfo::preferTheme)) == TRUE)
-			&& DarkMode::isAtLeastWindows10()
-			&& DarkMode::isExperimentalSupported();
-	}
+	/// Determines if themed styling should be preferred over subclassing.
+	[[nodiscard]] bool isThemePrefered();
 } // namespace dmlib_subclass

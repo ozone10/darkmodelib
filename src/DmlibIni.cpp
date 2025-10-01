@@ -10,23 +10,13 @@
 
 #include "StdAfx.h"
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef VC_EXTRALEAN
-#define VC_EXTRALEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
 #include "DmlibIni.h"
-
-#include "DmlibColor.h"
 
 #include <algorithm>
 #include <array>
 #include <cwctype>
+
+#include "DmlibColor.h"
 
 /**
  * @brief Constructs a full path to an `.ini` file located next to the executable.

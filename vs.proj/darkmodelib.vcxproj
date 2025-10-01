@@ -99,6 +99,8 @@
     <ClCompile Include="..\src\DmlibHook.cpp" />
     <ClCompile Include="..\src\DmlibIni.cpp" />
     <ClCompile Include="..\src\DmlibPaintHelper.cpp" />
+    <ClCompile Include="..\src\DmlibSubclass.cpp" />
+    <ClCompile Include="..\src\DmlibSubclassControl.cpp" />
     <ClCompile Include="..\src\DmlibWinApi.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -38,6 +38,8 @@ namespace dmlib_paint
 	 *   Selects the object into the DC and marks it as shared or owned.
 	 * - `GdiObject(HDC hdc, HGDIOBJ obj)`
 	 *   Convenience constructor for non-shared objects.
+	 * - `GdiObject(HDC hdc, HWND hWnd)`
+	 *   Convenience constructor for shared HFONT object acquired from WM_GETFONT.
 	 *
 	 * Destructor:
 	 * - Automatically restores the previous object and deletes the selected one if owned.
@@ -65,6 +67,10 @@ namespace dmlib_paint
 
 		explicit GdiObject(HDC hdc, HGDIOBJ obj) noexcept
 			: GdiObject(hdc, obj, false)
+		{}
+
+		explicit GdiObject(HDC hdc, HWND hWnd) noexcept
+			: GdiObject(hdc, reinterpret_cast<HFONT>(::SendMessageW(hWnd, WM_GETFONT, 0, 0)), true)
 		{}
 
 		~GdiObject()
@@ -115,7 +121,7 @@ namespace dmlib_paint
 	 * @param[in]   hdc         Target device context.
 	 * @param[in]   ps          Paint structure from `BeginPaint`.
 	 * @param[in]   paintFunc   Custom paint routine.
-	 * @param[in]   hWnd        Handle to the control window.
+	 * @param[in]   rcClient    Client rectangle of the control.
 	 *
 	 * @see BufferData
 	 */

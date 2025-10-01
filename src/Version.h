@@ -9,11 +9,11 @@
 
 
 #define DM_VERSION_MAJOR    0
-#define DM_VERSION_MINOR    30
+#define DM_VERSION_MINOR    31
 #define DM_VERSION_REVISION 0
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define DM_VERSION "Darkmodelib v0.30.0"
+#define DM_VERSION "Darkmodelib v0.31.0"
 #define DM_COPYRIGHT "Copyright (c) 2024-2025 ozone10"
