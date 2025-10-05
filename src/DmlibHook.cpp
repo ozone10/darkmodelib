@@ -25,6 +25,7 @@
 #include <unordered_set>
 #endif
 
+#include "DmlibWinApi.h"
 #include "ModuleHelper.h"
 
 #include "IatHook.h"
@@ -457,33 +458,36 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
  */
 bool dmlib_hook::hookThemeColor()
 {
-	if (g_hDarkTheme == nullptr)
+	COLORREF clrMain = kMainPaneBgClr;
+	COLORREF clrFooter = kFooterBgClr;
+
+	if (dmlib_win32api::IsWindows11() && g_hDarkTheme == nullptr)
 	{
 		g_hDarkTheme = ::OpenThemeData(nullptr, L"DarkMode_Explorer::TaskDialog");
-		if (g_hDarkTheme == nullptr)
+		if (g_hDarkTheme != nullptr)
 		{
-			return false;
-		}
-
-		COLORREF clrTmp = 0;
-		if (g_hBrushBg == nullptr)
-		{
-			if (FAILED(::GetThemeColor(g_hDarkTheme, TDLG_PRIMARYPANEL, 0, TMT_FILLCOLOR, &clrTmp)))
+			if (FAILED(::GetThemeColor(g_hDarkTheme, TDLG_PRIMARYPANEL, 0, TMT_FILLCOLOR, &clrMain)))
 			{
-				clrTmp = kMainPaneBgClr;
+				clrMain = kMainPaneBgClr;
 			}
-			g_hBrushBg = ::CreateSolidBrush(clrTmp);
-		}
 
-		if (g_hBrushBgFooter == nullptr)
-		{
-			if (FAILED(::GetThemeColor(g_hDarkTheme, TDLG_SECONDARYPANEL, 0, TMT_FILLCOLOR, &clrTmp)))
+			if (FAILED(::GetThemeColor(g_hDarkTheme, TDLG_SECONDARYPANEL, 0, TMT_FILLCOLOR, &clrFooter)))
 			{
-				clrTmp = kFooterBgClr;
+				clrFooter = kFooterBgClr;
 			}
-			g_hBrushBgFooter = ::CreateSolidBrush(clrTmp);
 		}
 	}
+
+	if (g_hBrushBg == nullptr)
+	{
+		g_hBrushBg = ::CreateSolidBrush(clrMain);
+	}
+
+	if (g_hBrushBgFooter == nullptr)
+	{
+		g_hBrushBgFooter = ::CreateSolidBrush(clrFooter);
+	}
+
 	return
 		HookFunction<fnGetThemeColor>(g_hookDataGetThemeColor,
 			MyGetThemeColor,
@@ -512,10 +516,16 @@ void dmlib_hook::unhookThemeColor()
 	{
 		::CloseThemeData(g_hDarkTheme);
 		g_hDarkTheme = nullptr;
+	}
 
+	if (g_hBrushBg != nullptr)
+	{
 		::DeleteObject(g_hBrushBg);
 		g_hBrushBg = nullptr;
+	}
 
+	if (g_hBrushBgFooter != nullptr)
+	{
 		::DeleteObject(g_hBrushBgFooter);
 		g_hBrushBgFooter = nullptr;
 	}
