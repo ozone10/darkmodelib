@@ -19,9 +19,12 @@
 
 #if !defined(_DARKMODELIB_NOT_USED)
 
+#include <windows.h>
+
 #include <dwmapi.h>
 #include <richedit.h>
 #include <uxtheme.h>
+#include <vsstyle.h>
 #include <vssym32.h>
 
 #include <array>
@@ -149,7 +152,7 @@ namespace DarkMode
 	 * - `light`: Follow system mode; apply light theme when system is in light mode.
 	 * - `classic`: Follow system mode; apply classic style when system is in light mode.
 	 */
-	enum class WinMode : std::uint8_t
+	enum class WinMode : unsigned char
 	{
 		disabled,  ///< Manual - system mode is ignored.
 		light,     ///< Use light theme if system is in light mode.
@@ -3284,7 +3287,7 @@ namespace DarkMode
 		mii.dwTypeData = buffer.data();
 		mii.cch = MAX_PATH - 1;
 
-		::GetMenuItemInfo(UDMI.um.hmenu, static_cast<UINT>(UDMI.umi.iPosition), TRUE, &mii);
+		::GetMenuItemInfoW(UDMI.um.hmenu, static_cast<UINT>(UDMI.umi.iPosition), TRUE, &mii);
 
 		// get the item state for drawing
 

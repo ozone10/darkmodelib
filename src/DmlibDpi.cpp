@@ -14,6 +14,9 @@
 #include "StdAfx.h"
 
 #include "DmlibDpi.h"
+
+#include <windows.h>
+
 #include "ModuleHelper.h"
 
 using fnGetDpiForSystem = auto (WINAPI*)(VOID) -> UINT;

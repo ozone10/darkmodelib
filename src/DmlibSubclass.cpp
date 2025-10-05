@@ -12,7 +12,9 @@
 
 #include "DmlibSubclass.h"
 
+#if defined(_DARKMODELIB_PREFER_THEME)
 #include "DmlibWinApi.h"
+#endif
 
 /**
  * @brief Determines if themed styling should be preferred over subclassing.

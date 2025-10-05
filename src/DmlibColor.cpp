@@ -12,6 +12,10 @@
 
 #include "DmlibColor.h"
 
+#include <windows.h>
+
+#include "DarkModeSubclass.h"
+
 DarkMode::Colors dmlib_color::getLightColors()
 {
 	return DarkMode::Colors{

@@ -12,7 +12,10 @@
 
 #include "DmlibHook.h"
 
+#include <windows.h>
+
 #include <uxtheme.h>
+#include <vsstyle.h>
 #include <vssym32.h>
 
 #include <utility>

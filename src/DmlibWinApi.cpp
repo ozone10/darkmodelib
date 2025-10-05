@@ -17,13 +17,13 @@
 
 #include "DmlibWinApi.h"
 
-#if defined(_MSC_VER) && _MSC_VER >= 1800
-#pragma warning(disable : 4191)
-#elif defined(__GNUC__)
-#include <cwchar>
-#endif
+#include <windows.h>
 
+#include <cwchar>
+
+#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
 #include "DmlibHook.h"
+#endif
 #include "ModuleHelper.h"
 
 enum IMMERSIVE_HC_CACHE_MODE

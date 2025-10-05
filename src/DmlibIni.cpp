@@ -12,9 +12,14 @@
 
 #include "DmlibIni.h"
 
+#include <windows.h>
+
 #include <algorithm>
 #include <array>
+#include <cwchar>
 #include <cwctype>
+#include <exception>
+#include <string>
 
 #include "DmlibColor.h"
 

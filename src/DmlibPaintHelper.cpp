@@ -12,6 +12,8 @@
 
 #include "DmlibPaintHelper.h"
 
+#include <windows.h>
+
 /**
  * @brief Paints a rounded rectangle using the specified pen and brush.
  *

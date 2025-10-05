@@ -12,12 +12,24 @@
 
 #include "DmlibSubclassControl.h"
 
+#include <windows.h>
+
+#include <uxtheme.h>
+#include <vsstyle.h>
+#include <vssym32.h>
 #include <windowsx.h>
 
+#include <algorithm>
 #include <array>
+#include <climits>
+#include <string>
 
+#include "DarkModeSubclass.h"
+#include "DmlibDpi.h"
 #include "DmlibGlyph.h"
 #include "DmlibHook.h"
+#include "DmlibPaintHelper.h"
+#include "DmlibSubclass.h"
 
 #if defined(__GNUC__)
 static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum up to 8
@@ -182,9 +194,9 @@ static void renderButton(
  * - Internally updates the `buttonData.m_iStateID` to preserve the last rendered state.
  * - Not used for `BS_PUSHLIKE` buttons.
  *
- * @param[in]   hWnd        Handle to the checkbox or radio button control.
- * @param[in]   hdc         Device context used for drawing.
- * @param[in]   buttonData  Theming and state info, including current theme and last state.
+ * @param[in]       hWnd        Handle to the checkbox or radio button control.
+ * @param[in]       hdc         Device context used for drawing.
+ * @param[in,out]   buttonData  Theming and state info, including current theme and last state.
  *
  * @see renderButton()
  */
@@ -691,9 +703,9 @@ LRESULT CALLBACK dmlib_subclass::GroupboxSubclass(
  * - Rounded corners (optional, based on Windows 11 and parent class)
  * - Direction-aware layout and glyph placement
  *
- * @param[in]   hWnd        Handle to the up-down control.
- * @param[in]   hdc         Device context to draw into.
- * @param[in]   upDownData  Reference to layout and state information (segments, orientation, corner radius).
+ * @param[in]       hWnd        Handle to the up-down control.
+ * @param[in]       hdc         Device context to draw into.
+ * @param[in,out]   upDownData  Reference to layout and state information (segments, orientation, corner radius).
  *
  * @see UpDownData
  */
@@ -1534,9 +1546,9 @@ LRESULT CALLBACK dmlib_subclass::CustomBorderSubclass(
  * - Borders are drawn with pens with custom colors depending on state (rounded corners on Windows 11+).
  * - Uses `ExcludeClipRect` to avoid overpainting the text/edit area.
  *
- * @param[in]   hWnd            Handle to the combo box control.
- * @param[in]   hdc             Device context to draw into.
- * @param[in]   comboBoxData    Reference to the combo box' theme and style data.
+ * @param[in]       hWnd            Handle to the combo box control.
+ * @param[in]       hdc             Device context to draw into.
+ * @param[in,out]   comboBoxData    Reference to the combo box' theme and style data.
  *
  * @see ComboBoxData
  */
@@ -2072,9 +2084,9 @@ LRESULT CALLBACK dmlib_subclass::ListViewSubclass(
  *   - Draws the item text with alignment and pressed offset adjustments.
  * - Uses `DrawThemeTextEx` for themed text drawing, or `DrawText` otherwise.
  *
- * @param[in]   hWnd        Handle to the header control.
- * @param[in]   hdc         Device context to draw into.
- * @param[in]   headerData  Reference to the header's theme, state, and style data.
+ * @param[in]       hWnd        Handle to the header control.
+ * @param[in]       hdc         Device context to draw into.
+ * @param[in,out]   headerData  Reference to the header's theme, state, and style data.
  *
  * @see HeaderData
  */
@@ -2398,9 +2410,9 @@ LRESULT CALLBACK dmlib_subclass::HeaderSubclass(
  * custom brushes, pens, and fonts. Supports owner-drawn parts and adapts
  * to the control's style flags and part configuration.
  *
- * @param[in]   hWnd            Handle to the status bar control.
- * @param[in]   hdc             Device context to paint into.
- * @param[in]   statusBarData   Reference to the control's theme, buffer, and font data.
+ * @param[in]       hWnd            Handle to the status bar control.
+ * @param[in]       hdc             Device context to paint into.
+ * @param[in,out]   statusBarData   Reference to the control's theme, buffer, and font data.
  *
  * @see StatusBarData
  */

@@ -12,10 +12,11 @@
 
 #include <windows.h>
 
-#include <dwmapi.h>
+#include <uxtheme.h>
 
 #include <memory>
 #include <string>
+#include <type_traits>
 
 namespace dmlib_subclass
 {

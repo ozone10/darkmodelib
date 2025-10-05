@@ -10,13 +10,16 @@
 
 #pragma once
 
-#include "DmlibSubclass.h"
+#include <windows.h>
 
-#include "DarkModeSubclass.h"
+#include <vsstyle.h>
+
+#include <climits>
+
 #include "DmlibDpi.h"
 #include "DmlibPaintHelper.h"
-
-#include <vssym32.h>
+#include "DmlibSubclass.h"
+#include "DmlibWinApi.h"
 
 namespace DarkMode
 {
@@ -134,7 +137,7 @@ namespace dmlib_subclass
 
 		explicit UpDownData(HWND hWnd)
 			: m_cornerRoundness(
-				(DarkMode::isAtLeastWindows11()
+				(dmlib_win32api::IsWindows11()
 					&& dmlib_subclass::cmpWndClassName(::GetParent(hWnd), WC_TABCONTROL))
 				? (dmlib_paint::kWin11CornerRoundness + 1)
 				: 0)
