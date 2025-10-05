@@ -94,6 +94,7 @@
     <ClInclude Include="..\src\DmlibPaintHelper.h" />
     <ClInclude Include="..\src\DmlibSubclass.h" />
     <ClInclude Include="..\src\DmlibSubclassControl.h" />
+    <ClInclude Include="..\src\DmlibSubclassWindow.h" />
     <ClInclude Include="..\src\DmlibWinApi.h" />
     <ClInclude Include="..\src\IatHook.h" />
     <ClInclude Include="..\src\ModuleHelper.h" />
@@ -110,6 +111,7 @@
     <ClCompile Include="..\src\DmlibPaintHelper.cpp" />
     <ClCompile Include="..\src\DmlibSubclass.cpp" />
     <ClCompile Include="..\src\DmlibSubclassControl.cpp" />
+    <ClCompile Include="..\src\DmlibSubclassWindow.cpp" />
     <ClCompile Include="..\src\DmlibWinApi.cpp" />
   </ItemGroup>
   <ItemGroup>

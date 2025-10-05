@@ -270,16 +270,16 @@ namespace DarkMode
 	// ========================================================================
 
 	/**
-		* @brief Overrides a specific system color with a custom color.
-		*
-		* Currently supports:
-		* - `COLOR_WINDOW`: Background of ComboBoxEx list.
-		* - `COLOR_WINDOWTEXT`: Text color of ComboBoxEx list.
-		* - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
-		*
-		* @param nIndex One of the supported system color indices.
-		* @param color Custom `COLORREF` value to apply.
-		*/
+	 * @brief Overrides a specific system color with a custom color.
+	 *
+	 * Currently supports:
+	 * - `COLOR_WINDOW`: Background of ComboBoxEx list.
+	 * - `COLOR_WINDOWTEXT`: Text color of ComboBoxEx list.
+	 * - `COLOR_BTNFACE`: Gridline color in ListView (when applicable).
+	 *
+	 * @param[in]   nIndex  One of the supported system color indices.
+	 * @param[in]   color   Custom `COLORREF` value to apply.
+	 */
 	DMLIB_API void setSysColor(int nIndex, COLORREF color);
 
 	// ========================================================================
@@ -690,11 +690,11 @@ namespace DarkMode
 	 * cf.lpTemplateName = MAKEINTRESOURCE(IDD_DARK_FONT_DIALOG);
 	 * ```
 	 *
-	 * @param hWnd      Handle to the dialog window.
-	 * @param uMsg      Message identifier.
-	 * @param wParam    First message parameter (unused).
-	 * @param lParam    Second message parameter (unused).
-	 * @return A value defined by the hook procedure.
+	 * @param[in]   hWnd        Handle to the dialog window.
+	 * @param[in]   uMsg        Message identifier.
+	 * @param[in]   wParam      First message parameter (unused).
+	 * @param[in]   lParam      Second message parameter (unused).
+	 * @return UINT_PTR A value defined by the hook procedure.
 	 */
 	DMLIB_API UINT_PTR CALLBACK HookDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
