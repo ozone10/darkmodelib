@@ -2887,3 +2887,117 @@ LRESULT CALLBACK dmlib_subclass::StaticTextSubclass(
 	}
 	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
+
+/**
+ * @brief Window subclass procedure for custom color for IP address control.
+ *
+ * @param[in]   hWnd        Window handle being subclassed.
+ * @param[in]   uMsg        Message identifier.
+ * @param[in]   wParam      Message-specific data.
+ * @param[in]   lParam      Message-specific data.
+ * @param[in]   uIdSubclass Subclass identifier.
+ * @param[in]   dwRefData   Reserved data (unused).
+ * @return LRESULT Result of message processing.
+ *
+ * @see DarkMode::setIPAddressCtrlSubclass()
+ * @see DarkMode::removeIPAddressCtrlSubclass()
+ */
+LRESULT CALLBACK dmlib_subclass::IPAddressSubclass(
+	HWND hWnd,
+	UINT uMsg,
+	WPARAM wParam,
+	LPARAM lParam,
+	UINT_PTR uIdSubclass,
+	[[maybe_unused]] DWORD_PTR dwRefData
+)
+{
+	switch (uMsg)
+	{
+		case WM_NCDESTROY:
+		{
+			::RemoveWindowSubclass(hWnd, IPAddressSubclass, uIdSubclass);
+			break;
+		}
+
+		case WM_ERASEBKGND:
+		{
+			if (!DarkMode::isEnabled())
+			{
+				break;
+			}
+
+			RECT rcClient{};
+			::GetClientRect(hWnd, &rcClient);
+			::FillRect(
+				reinterpret_cast<HDC>(wParam),
+				&rcClient,
+				(::IsWindowEnabled(hWnd) == TRUE)
+					? DarkMode::getCtrlBackgroundBrush()
+					: DarkMode::getDlgBackgroundBrush());
+			return TRUE;
+		}
+
+		case WM_CTLCOLOREDIT:
+		{
+			if (!DarkMode::isEnabled())
+			{
+				break;
+			}
+			return DarkMode::onCtlColorCtrl(reinterpret_cast<HDC>(wParam));
+		}
+
+		case WM_PAINT:
+		{
+			if (!DarkMode::isEnabled())
+			{
+				break;
+			}
+
+			PAINTSTRUCT ps{};
+			HDC hdc = ::BeginPaint(hWnd, &ps);
+
+			const bool isEnabled = ::IsWindowEnabled(hWnd) == TRUE;
+
+			RECT rcClient{};
+			::GetClientRect(hWnd, &rcClient);
+
+			if (isEnabled)
+			{
+				::FillRect(hdc, &rcClient, DarkMode::getCtrlBackgroundBrush());
+				::SetTextColor(hdc, DarkMode::getDarkerTextColor());
+				::SetBkColor(hdc, DarkMode::getCtrlBackgroundColor());
+			}
+			else
+			{
+				::FillRect(hdc, &rcClient, DarkMode::getDlgBackgroundBrush());
+				::SetTextColor(hdc, DarkMode::getDisabledTextColor());
+				::SetBkColor(hdc, DarkMode::getDlgBackgroundColor());
+			}
+
+			RECT rcDot{ rcClient };
+			::InflateRect(&rcDot, -1, 0);
+			const LONG wSection = ((rcDot.right - rcDot.left) / 4);
+			rcDot.right = rcDot.left + (2 * wSection);
+			::OffsetRect(&rcDot, 0, -1);
+
+			const auto hFont = dmlib_paint::GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+			static constexpr UINT dtFlags = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
+			
+			for (int i = 0; i < 3; ++i)
+			{
+				::DrawText(hdc, L".", -1, &rcDot, dtFlags);
+				rcDot.left += wSection;
+				rcDot.right += wSection;
+			}
+
+			::EndPaint(hWnd, &ps);
+			return 0;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}

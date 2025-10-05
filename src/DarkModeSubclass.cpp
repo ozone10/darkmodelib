@@ -1827,6 +1827,58 @@ namespace DarkMode
 	}
 
 	/**
+	 * @brief Applies owner drawn subclassing to a IP address control.
+	 *
+	 * Handles custom colors for itself and its child edit controls.
+	 *
+	 * @param[in] hWnd Handle to the IP address control.
+	 *
+	 * @see dmlib_subclass::IPAddressSubclass()
+	 * @see DarkMode::removeIPAddressCtrlSubclass()
+	 */
+	void setIPAddressCtrlSubclass(HWND hWnd)
+	{
+		dmlib_subclass::SetSubclass(hWnd, dmlib_subclass::IPAddressSubclass, dmlib_subclass::SubclassID::ipAddress);
+	}
+
+	/**
+	 * @brief Removes the owner drawn subclass from a IP address control.
+	 *
+	 * @param[in] hWnd Handle to the IP address control.
+	 *
+	 * @see dmlib_subclass::IPAddressSubclass()
+	 * @see DarkMode::setIPAddressCtrlSubclass()
+	 */
+	void removeIPAddressCtrlSubclass(HWND hWnd)
+	{
+		dmlib_subclass::RemoveSubclass(hWnd, dmlib_subclass::IPAddressSubclass, dmlib_subclass::SubclassID::ipAddress);
+	}
+
+	/**
+	 * @brief Applies owner drawn subclassing to a IP address control and adjusts its border style.
+	 *
+	 * Overload wrapper that applies the subclass only if `p.m_subclass` is `true`.
+	 * Adjusts border style depending on used dark mode state.
+	 *
+	 * @param[in]   hWnd    Handle to the IP address control.
+	 * @param[in]   p       Parameters controlling whether to apply subclassing.
+	 *
+	 * @see DarkMode::setIPAddressCtrlSubclass()
+	 */
+	static void setIPAddressCtrlSubclass(HWND hWnd, DarkModeParams p)
+	{
+		if (p.m_subclass)
+		{
+			DarkMode::setIPAddressCtrlSubclass(hWnd);
+		}
+
+		if (p.m_theme)
+		{
+			DarkMode::replaceClientEdgeWithBorderSafe(hWnd);
+		}
+	}
+
+	/**
 	 * @brief Applies theming to a tree view control.
 	 *
 	 * Sets custom text and background colors, applies a themed window style,
@@ -2112,6 +2164,12 @@ namespace DarkMode
 		if (className == RICHEDIT_CLASS || className == MSFTEDIT_CLASS) // rich edit controls 2.0, 3.0, and 4.1
 		{
 			DarkMode::setRichEditCtrlTheme(hWnd, p);
+			return TRUE;
+		}
+
+		if (className == WC_IPADDRESS)
+		{
+			DarkMode::setIPAddressCtrlSubclass(hWnd, p);
 			return TRUE;
 		}
 #if 0 // for debugging

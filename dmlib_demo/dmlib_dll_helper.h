@@ -146,7 +146,6 @@ namespace DarkMode
 		verMajor,         ///< Major version number of the library.
 		verMinor,         ///< Minor version number of the library.
 		verRevision,      ///< Revision/patch number of the library.
-		iathookExternal,  ///< Indicates if external IAT hooking is used.
 		iniConfigUsed,    ///< True if `.ini` file configuration is supported.
 		allowOldOS,       ///< '1' if older Windows 10 versions are allowed, '2' if all older Windows are allowed.
 		useDlgProcCtl,    ///< True if WM_CTLCOLORxxx can be handled directly in dialog procedure.
@@ -308,6 +307,9 @@ namespace DarkMode
 
 	inline void DummySetStaticTextCtrlSubclass(HWND) {}
 	inline void DummyRemoveStaticTextCtrlSubclass(HWND) {}
+
+	inline void DummySetIPAddressCtrlSubclass(HWND) {}
+	inline void DummyRemoveIPAddressCtrlSubclass(HWND) {}
 
 	inline void DummySetChildCtrlsSubclassAndThemeEx(HWND, bool, bool) {}
 	inline void DummySetChildCtrlsSubclassAndTheme(HWND) {}
@@ -716,6 +718,9 @@ namespace DarkMode
 
 	using fnSetStaticTextCtrlSubclass = void (*)(HWND hWnd);
 	inline fnSetStaticTextCtrlSubclass setStaticTextCtrlSubclass = nullptr;
+
+	using fnSetIPAddressCtrlSubclass = void (*)(HWND hWnd);
+	inline fnSetIPAddressCtrlSubclass setIPAddressCtrlSubclass = nullptr;
 
 	using fnRemoveStaticTextCtrlSubclass = void (*)(HWND hWnd);
 	inline fnRemoveStaticTextCtrlSubclass removeStaticTextCtrlSubclass = nullptr;

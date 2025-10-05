@@ -9,16 +9,7 @@
 
 #pragma once
 
-#include "resource.h"
-
 #include <windows.h>
-
-#include <commctrl.h>
-#include <uxtheme.h>
-#include <vssym32.h>
-
-#include <array>
-#include <string>
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE hInstance, int nCmdShow, HWND& hMain);

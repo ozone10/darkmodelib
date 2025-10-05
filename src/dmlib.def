@@ -111,6 +111,8 @@ EXPORTS
 	removeProgressBarCtrlSubclass
 	setStaticTextCtrlSubclass
 	removeStaticTextCtrlSubclass
+	setIPAddressCtrlSubclass
+	removeIPAddressCtrlSubclass
 	setChildCtrlsSubclassAndThemeEx
 	setChildCtrlsSubclassAndTheme
 	setChildCtrlsTheme

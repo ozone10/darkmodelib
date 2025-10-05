@@ -38,6 +38,7 @@ namespace dmlib_subclass
 		statusBar,
 		progressBar,
 		staticText,
+		ipAddress,
 		windowEraseBg,
 		windowCtlColor,
 		windowNotify,

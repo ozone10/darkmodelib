@@ -447,6 +447,11 @@ namespace DarkMode
 	/// Removes the workaround subclass from a static control.
 	DMLIB_API void removeStaticTextCtrlSubclass(HWND hWnd);
 
+	/// Applies owner drawn subclassing to a IP address control.
+	DMLIB_API void setIPAddressCtrlSubclass(HWND hWnd);
+	/// Removes the owner drawn subclass from a IP address control.
+	DMLIB_API void removeIPAddressCtrlSubclass(HWND hWnd);
+
 	// ========================================================================
 	// Child Subclassing
 	// ========================================================================

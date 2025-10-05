@@ -8,11 +8,22 @@
  */
 
 #include "demo.h"
+
+#include <windows.h>
+
+#include <commctrl.h>
+
+#include <algorithm>
+#include <array>
+#include <string>
+
 #if !defined(DMLIB_DLL)
 #include "DarkModeSubclass.h"
 #else
 #include "dmlib_dll_helper.h"
 #endif
+
+#include "resource.h"
 
 #define DMLIB_FAST_FAIL 0
 
@@ -256,10 +267,11 @@ enum class IdCtrl : WORD
 	trackbar = 142,
 	tabcontrol,
 	listbox,
+	ipAddress,
 	listview,
 	listviewGrid,
 	treeview,
-	scrollH = 1048,
+	scrollH = 1049,
 	scrollV,
 	statusbar
 };
@@ -446,7 +458,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int heightTrackbar = Scale(30);
 			static const int heightTabCtrl = Scale(76);
 			static const int heightListBox = Scale(100);
-			static const int heightListView = Scale(126);
+			static const int heightListView = Scale(98);
 			static const int heightTreeView = Scale(90);
 
 			static const int xPos1stCol = 10;
@@ -468,6 +480,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int wEditCombo = wGroup2ndCol - (2 * xPosCtrl);
 
 			static const int wCtrl3rdCol = wGroup3rdCol - (2 * xPosCtrl);
+			static const int wCtrl4thCol = wGroup4thCol - (2 * xPosCtrl);
 
 			static const int heightGBPush = yPosCtrl + ((heightPush + heightPushGap) * 3) + yPosCtrlEnd;
 			static const int heightGBCheck = yPosCtrl + ((heightCtrl + heightCtrlGap) * 6) + yPosCtrlEnd;
@@ -483,6 +496,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int heightGBTabCtrl = yPosCtrl + ((heightTabCtrl + heightEditGap) * 1) + yPosCtrlEnd;
 
+			static const int heightGBIP = yPosCtrl + ((heightCtrl + heightEditGap) * 1) + yPosCtrlEnd;
+
 			static const int yGBCheck = yRow + heightGBPush + yGap;
 			static const int yGBProgress = yGBCheck + heightGBCheck + yGap;
 
@@ -495,7 +510,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int yGBTabCtrl = yGBTrackbar + heightGBTrackbar + yGap;
 			static const int ySTListBox = yGBTabCtrl + heightGBTabCtrl + yGap;
 
-			static const int ySTTreeView = yRow + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
+			static const int yGBIP = yRow + heightGBIP + yGap;
+
+			static const int ySTTreeView = yGBIP + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
 
 			static const int xPosSplit = xPos1stColCtrl + xGap + wBtn;
 
@@ -506,6 +523,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int xPos3rdColCtrl = xPos3rdCol + xPosCtrl;
 
 			static const int xPos4thCol = xPos3rdCol + xGap + wGroup3rdCol;
+			static const int xPos4thColCtrl = xPos4thCol + xPosCtrl;
 
 			static const int yPush1 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 0);
 			static const int yPush2 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 1);
@@ -545,7 +563,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int yTabCtrl = yGBTabCtrl + yPosCtrl + ((heightTabCtrl + heightEditGap) * 0);
 			static const int yListBox = ySTListBox + yPosCtrl;
 
-			static const int yListView1 = yRow + yPosCtrl;
+			static const int yIP = yRow + yPosCtrl + ((heightCtrl + heightEditGap) * 0);
+
+			static const int yListView1 = yGBIP + yPosCtrl;
 			static const int yListView2 = yListView1 + ((heightListView + yPosCtrlEnd) * 1) + yGap + 1;
 
 			static const int yTreeView = ySTTreeView + yPosCtrl;
@@ -789,7 +809,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			// Buddy Edit control
 			HWND hEditUpdDown = createCtrl(WC_EDIT, L"0", ES_RIGHT | WS_BORDER,
-				xPos3rdColCtrl, yUpDown, wCtrl3rdCol + 15, heightEdit, IdCtrl::upDownEdit);
+				xPos3rdColCtrl, yUpDown, wCtrl3rdCol + Scale(15), heightEdit, IdCtrl::upDownEdit);
 
 			// UpDown control
 			HWND hUpDown = createCtrl(UPDOWN_CLASSW, L"UpDown (Spinner)", UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_SETBUDDYINT | UDS_ARROWKEYS,
@@ -839,9 +859,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SendMessageW(hListBox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label.c_str()));
 			}
 
+			// --- IP Address ---
+			createCtrl(WC_BUTTON, L"IP Address", BS_GROUPBOX,
+				xPos4thCol, yRow, wGroup4thCol, heightGBIP);
+
+			HWND hIP = createCtrl(WC_IPADDRESS, nullptr, 0,
+				xPos4thColCtrl, yIP, wCtrl4thCol, heightCtrl, IdCtrl::ipAddress, 0, hWnd);
+
+			SendMessageW(hIP, IPM_SETADDRESS, 0, MAKEIPADDRESS(255, 255, 255, 255));
+
 			// --- List Views ---
 			createCtrl(WC_STATIC, L"List Views:", SS_LEFT,
-				xPos4thCol, yRow, wGroup4thCol, heightCtrl);
+				xPos4thCol, yGBIP, wGroup4thCol, heightCtrl);
 
 			HWND hListView = createCtrl(WC_LISTVIEWW, nullptr, LVS_REPORT,
 				xPos4thCol, yListView1, wGroup4thCol, heightListView, IdCtrl::listview, WS_EX_CLIENTEDGE);
@@ -870,7 +899,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Add 5 items
 			LVITEMW item{};
 			item.mask = LVIF_TEXT;
-			for (int i = 0; i < 5; ++i)
+			for (int i = 0; i < 3; ++i)
 			{
 				std::wstring name = L"Item " + std::to_wstring(i + 1);
 				item.iItem = i;
