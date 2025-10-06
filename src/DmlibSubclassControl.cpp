@@ -79,7 +79,7 @@ static void renderButton(
 		hFont = reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0));
 	}
 
-	auto holdFont = static_cast<HFONT>(::SelectObject(hdc, hFont));
+	auto holdFont = dmlib_paint::GdiObject{ hdc, hFont, !isFontCreated };
 
 	// Style part
 
@@ -171,14 +171,6 @@ static void renderButton(
 		const RECT rcFocus{ rcText.left - 1, rcText.top, rcText.right + 1, rcText.bottom + 1 };
 		::DrawFocusRect(hdc, &rcFocus);
 	}
-
-	// Cleanup
-
-	::SelectObject(hdc, holdFont);
-	if (isFontCreated)
-	{
-		::DeleteObject(hFont);
-	}
 }
 
 /**
@@ -211,6 +203,9 @@ static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonDa
 	int iPartID = 0;
 	int iStateID = 0;
 
+	static constexpr int checkedOffset = 4;
+	static constexpr int mixedOffset = 8;
+
 	// Get style
 	switch (nBtnStyle)
 	{
@@ -238,8 +233,6 @@ static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonDa
 				iStateID = CBS_UNCHECKEDNORMAL;
 			}
 
-			static constexpr int checkedOffset = 4;
-			static constexpr int mixedOffset = 8;
 			if ((nState & BST_CHECKED) == BST_CHECKED)
 			{
 				iStateID += checkedOffset;
@@ -1915,6 +1908,9 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxExSubclass(
 			return DarkMode::onCtlColorListbox(wParam, lParam);
 		}
 
+		// ComboBoxEx has only one child combo box, so only control-defined notification code is checked.
+		// Hooking is done only when list box is about to show. And unhook when list box is closed.
+		// This process is used to avoid visual glitches in other GUI.
 		case WM_COMMAND:
 		{
 			if (!DarkMode::isEnabled())
@@ -1922,9 +1918,6 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxExSubclass(
 				break;
 			}
 
-			// ComboBoxEx has only one child combo box, so only control-defined notification code is checked.
-			// Hooking is done only when list box is about to show. And unhook when list box is closed.
-			// This process is used to avoid visual glitches in other GUI.
 			switch (HIWORD(wParam))
 			{
 				case CBN_DROPDOWN:
@@ -1953,6 +1946,42 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxExSubclass(
 		}
 	}
 	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+/**
+ * @brief Handles custom draw notifications for a list view's header control.
+ *
+ * Processes `NM_CUSTOMDRAW` message to provide custom color for header text.
+ *
+ * @param[in] lParam Pointer to `LPNMCUSTOMDRAW`.
+ * @return `LRESULT` containing draw flags.
+ */
+static LRESULT onCustomDrawLVHeader(LPARAM lParam)
+{
+	auto* lpnmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
+	switch (lpnmcd->dwDrawStage)
+	{
+		case CDDS_PREPAINT:
+		{
+			if (DarkMode::isExperimentalActive())
+			{
+				return CDRF_NOTIFYITEMDRAW;
+			}
+			return CDRF_DODEFAULT;
+		}
+
+		case CDDS_ITEMPREPAINT:
+		{
+			::SetTextColor(lpnmcd->hdc, DarkMode::getDarkerTextColor());
+
+			return CDRF_NEWFONT;
+		}
+
+		default:
+		{
+			return CDRF_DODEFAULT;
+		}
+	}
 }
 
 /**
@@ -2024,7 +2053,6 @@ LRESULT CALLBACK dmlib_subclass::ListViewSubclass(
 			return DarkMode::onCtlColorCtrl(reinterpret_cast<HDC>(wParam));
 		}
 
-		// For header control text
 		case WM_NOTIFY:
 		{
 			if (!DarkMode::isEnabled())
@@ -2034,30 +2062,7 @@ LRESULT CALLBACK dmlib_subclass::ListViewSubclass(
 
 			if (reinterpret_cast<LPNMHDR>(lParam)->code == NM_CUSTOMDRAW)
 			{
-				auto* lpnmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
-				switch (lpnmcd->dwDrawStage)
-				{
-					case CDDS_PREPAINT:
-					{
-						if (DarkMode::isExperimentalActive())
-						{
-							return CDRF_NOTIFYITEMDRAW;
-						}
-						return CDRF_DODEFAULT;
-					}
-
-					case CDDS_ITEMPREPAINT:
-					{
-						::SetTextColor(lpnmcd->hdc, DarkMode::getDarkerTextColor());
-
-						return CDRF_NEWFONT;
-					}
-
-					default:
-					{
-						return CDRF_DODEFAULT;
-					}
-				}
+				return onCustomDrawLVHeader(lParam);
 			}
 			break;
 		}
@@ -2698,6 +2703,40 @@ static void paintProgressBar(HWND hWnd, HDC hdc, const dmlib_subclass::ProgressB
 }
 
 /**
+ * @brief Get progress bar state when handling `PBM_SETSTATE` message.
+ *
+ * @param[in] wParam State of the progress bar.
+ * @return int Fill state enum of the progress bar.
+ *
+ * @see dmlib_subclass::ProgressBarSubclass()
+ */
+[[nodiscard]] static int getProgressBarState(WPARAM wParam)
+{
+	switch (wParam)
+	{
+		case PBST_NORMAL:
+		{
+			return PBFS_NORMAL; // green
+		}
+
+		case PBST_ERROR:
+		{
+			return  PBFS_ERROR; // red
+		}
+
+		case PBST_PAUSED:
+		{
+			return PBFS_PAUSED; // yellow
+		}
+
+		default:
+		{
+			return PBFS_PARTIAL; // cyan
+		}
+	}
+}
+
+/**
  * @brief Window subclass procedure for owner drawn progress bar control.
  *
  * @param[in]   hWnd        Window handle being subclassed.
@@ -2786,32 +2825,7 @@ LRESULT CALLBACK dmlib_subclass::ProgressBarSubclass(
 
 		case PBM_SETSTATE:
 		{
-			switch (wParam)
-			{
-				case PBST_NORMAL:
-				{
-					pProgressBarData->m_iStateID = PBFS_NORMAL; // green
-					break;
-				}
-
-				case PBST_ERROR:
-				{
-					pProgressBarData->m_iStateID = PBFS_ERROR; // red
-					break;
-				}
-
-				case PBST_PAUSED:
-				{
-					pProgressBarData->m_iStateID = PBFS_PAUSED; // yellow
-					break;
-				}
-
-				default:
-				{
-					pProgressBarData->m_iStateID = PBFS_PARTIAL; // cyan
-					break;
-				}
-			}
+			pProgressBarData->m_iStateID = getProgressBarState(wParam);
 			break;
 		}
 
@@ -2889,6 +2903,53 @@ LRESULT CALLBACK dmlib_subclass::StaticTextSubclass(
 }
 
 /**
+ * @brief Custom paints a IP address control.
+ *
+ * Draws the IP address background and dot separators.
+ *
+ * @param[in]   hWnd    Handle to the IP address control.
+ * @param[in]   hdc     Device context to paint into.
+ *
+ * @see dmlib_subclass::IPAddressSubclass()
+ */
+static void paintIPAddress(HWND hWnd, HDC hdc)
+{
+	const bool isEnabled = ::IsWindowEnabled(hWnd) == TRUE;
+
+	RECT rcClient{};
+	::GetClientRect(hWnd, &rcClient);
+
+	if (isEnabled)
+	{
+		::FillRect(hdc, &rcClient, DarkMode::getCtrlBackgroundBrush());
+		::SetTextColor(hdc, DarkMode::getDarkerTextColor());
+		::SetBkColor(hdc, DarkMode::getCtrlBackgroundColor());
+	}
+	else
+	{
+		::FillRect(hdc, &rcClient, DarkMode::getDlgBackgroundBrush());
+		::SetTextColor(hdc, DarkMode::getDisabledTextColor());
+		::SetBkColor(hdc, DarkMode::getDlgBackgroundColor());
+	}
+
+	RECT rcDot{ rcClient };
+	::InflateRect(&rcDot, -1, 0);
+	const LONG wSection = ((rcDot.right - rcDot.left) / 4);
+	rcDot.right = rcDot.left + (2 * wSection);
+	::OffsetRect(&rcDot, 0, -1);
+
+	const auto hFont = dmlib_paint::GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
+	static constexpr UINT dtFlags = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		::DrawText(hdc, L".", -1, &rcDot, dtFlags);
+		rcDot.left += wSection;
+		rcDot.right += wSection;
+	}
+}
+
+/**
  * @brief Window subclass procedure for custom color for IP address control.
  *
  * @param[in]   hWnd        Window handle being subclassed.
@@ -2899,6 +2960,7 @@ LRESULT CALLBACK dmlib_subclass::StaticTextSubclass(
  * @param[in]   dwRefData   Reserved data (unused).
  * @return LRESULT Result of message processing.
  *
+ * @see dmlib_subclass::paintIPAddress()
  * @see DarkMode::setIPAddressCtrlSubclass()
  * @see DarkMode::removeIPAddressCtrlSubclass()
  */
@@ -2956,39 +3018,7 @@ LRESULT CALLBACK dmlib_subclass::IPAddressSubclass(
 			PAINTSTRUCT ps{};
 			HDC hdc = ::BeginPaint(hWnd, &ps);
 
-			const bool isEnabled = ::IsWindowEnabled(hWnd) == TRUE;
-
-			RECT rcClient{};
-			::GetClientRect(hWnd, &rcClient);
-
-			if (isEnabled)
-			{
-				::FillRect(hdc, &rcClient, DarkMode::getCtrlBackgroundBrush());
-				::SetTextColor(hdc, DarkMode::getDarkerTextColor());
-				::SetBkColor(hdc, DarkMode::getCtrlBackgroundColor());
-			}
-			else
-			{
-				::FillRect(hdc, &rcClient, DarkMode::getDlgBackgroundBrush());
-				::SetTextColor(hdc, DarkMode::getDisabledTextColor());
-				::SetBkColor(hdc, DarkMode::getDlgBackgroundColor());
-			}
-
-			RECT rcDot{ rcClient };
-			::InflateRect(&rcDot, -1, 0);
-			const LONG wSection = ((rcDot.right - rcDot.left) / 4);
-			rcDot.right = rcDot.left + (2 * wSection);
-			::OffsetRect(&rcDot, 0, -1);
-
-			const auto hFont = dmlib_paint::GdiObject{ hdc, reinterpret_cast<HFONT>(::SendMessage(hWnd, WM_GETFONT, 0, 0)), true };
-			static constexpr UINT dtFlags = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
-			
-			for (int i = 0; i < 3; ++i)
-			{
-				::DrawText(hdc, L".", -1, &rcDot, dtFlags);
-				rcDot.left += wSection;
-				rcDot.right += wSection;
-			}
+			paintIPAddress(hWnd, hdc);
 
 			::EndPaint(hWnd, &ps);
 			return 0;

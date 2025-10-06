@@ -370,7 +370,7 @@ LRESULT CALLBACK dmlib_subclass::WindowCtlColorSubclass(
 	::SetBkMode(lptbcd->nmcd.hdc, TRANSPARENT);
 	::SetTextColor(lptbcd->nmcd.hdc, DarkMode::getTextColor());
 
-	const auto hFont = dmlib_paint::GdiObject{ lptbcd->nmcd.hdc, reinterpret_cast<HFONT>(::SendMessage(lptbcd->nmcd.hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
+	const auto hFont = dmlib_paint::GdiObject{ lptbcd->nmcd.hdc, lptbcd->nmcd.hdr.hwndFrom };
 	static constexpr UINT dtFlags = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP | DT_NOPREFIX;
 	::DrawText(lptbcd->nmcd.hdc, dmlib_glyph::kTriangleDown, -1, &rcArrow, dtFlags);
 
@@ -854,7 +854,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
 			::SetTextColor(lpnmcd->hdc, isHot ? DarkMode::getTextColor() : DarkMode::getDarkerTextColor());
 			::SetBkMode(lpnmcd->hdc, TRANSPARENT);
 
-			const auto hFont = dmlib_paint::GdiObject{ lpnmcd->hdc, reinterpret_cast<HFONT>(::SendMessage(lpnmcd->hdr.hwndFrom, WM_GETFONT, 0, 0)), true };
+			const auto hFont = dmlib_paint::GdiObject{ lpnmcd->hdc, lpnmcd->hdr.hwndFrom };
 			static constexpr UINT dtFlags = DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP | DT_NOPREFIX;
 			::DrawText(lpnmcd->hdc, dmlib_glyph::kChevron, -1, &rbBand.rcChevronLocation, dtFlags);
 		}
