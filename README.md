@@ -1,4 +1,4 @@
-# Darkmodelib
+# Darkmodelib – Win32 Library for Dark Mode Support
 
 [![Build status](https://img.shields.io/github/actions/workflow/status/ozone10/darkmodelib/build_win.yml?logo=Github)](https://github.com/ozone10/darkmodelib/actions)
 [![Latest release](https://img.shields.io/github/v/release/ozone10/darkmodelib?include_prereleases)](https://github.com/ozone10/darkmodelib/releases/latest)
@@ -8,16 +8,40 @@
 [![ko-fi.com](https://img.shields.io/badge/Ko--fi-Buy_Me_a_Tea-F16061?logo=ko-fi&logoColor=white&maxAge=2592000)](https://ko-fi.com/ozone10/)
 ---
 
-Darkmodelib is a library that provides dark mode and custom colors support
-for most common controls for applications using the Win32 API.
+Darkmodelib is a C++ library that brings modern visual features, such as dark mode, custom color schemes, and Windows 11's Mica material, to applications built with the Win32 API. It provides support for the most common controls and is designed to simplify integration into legacy applications, making it easier to modernize their look and feel without a complete rewrite.
 
 * * *
 
 <p align="center">
-  <img src="https://i.imgur.com/MtUL6jI.png">
+  <img src="https://i.imgur.com/CCJ5txa.png">
 </p>
 
 * * *
+
+<details>
+  <summary>Gallery</summary>
+
+  <p align="center">
+    <img src="https://i.imgur.com/XH9Egmz.png">
+  </p>
+
+  <p align="center">
+    <img src="https://i.imgur.com/0NMYNBh.png">
+  </p>
+
+</details>
+
+## Features
+
+- Native dark mode support for classic Win32 applications
+- Custom colors support
+- Simplify Mica material and other Windows 11's visual features integration on Windows 11
+- Automatic theme switching based on system light/dark mode settings
+- Support for common Win32 controls (buttons, edit controls, list views, tree views, ...)
+
+## Compatibility
+
+Darkmodelib works best with Windows 10 version 1809 and later, and mainly targets Windows 11, while maintaining fallback compatibility as far as Windows Vista.
 
 ## Used by
 
@@ -29,7 +53,3 @@ for most common controls for applications using the Win32 API.
 ## License
 
 Code for darkmodelib is licensed on a per-file basis under the MIT or Mozilla Public License, version 2.0.
-
-## TODO
-
-1. Write documentation
