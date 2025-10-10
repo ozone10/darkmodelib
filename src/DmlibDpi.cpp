@@ -69,10 +69,13 @@ UINT dmlib_dpi::GetDpiForSystem()
 
 UINT dmlib_dpi::GetDpiForWindow(HWND hWnd)
 {
-	const auto dpi = pfGetDpiForWindow(hWnd);
-	if (dpi > 0)
+	if (hWnd != nullptr)
 	{
-		return dpi;
+		const auto dpi = pfGetDpiForWindow(hWnd);
+		if (dpi > 0)
+		{
+			return dpi;
+		}
 	}
 	return dmlib_dpi::GetDpiForSystem();
 }

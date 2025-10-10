@@ -21,10 +21,16 @@
 
 #include <cwchar>
 
-#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
-#include "DmlibHook.h"
-#endif
 #include "ModuleHelper.h"
+
+#if defined(_DARKMODELIB_USE_SCROLLBAR_FIX) && (_DARKMODELIB_USE_SCROLLBAR_FIX > 0)
+namespace dmlib_hook
+{
+	bool loadOpenNcThemeData(const HMODULE& hUxtheme);
+	void fixDarkScrollBar();
+}
+#endif
+
 
 enum IMMERSIVE_HC_CACHE_MODE
 {

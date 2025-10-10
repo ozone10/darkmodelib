@@ -21,7 +21,7 @@ typedef struct _TASKDIALOGCONFIG TASKDIALOGCONFIG; // forward declaration, from 
 namespace dmlib_module
 {
 	template <typename P>
-	inline auto LoadFn(HMODULE handle, P& pointer, const char* name) -> bool
+	inline auto LoadFn(HMODULE handle, P& pointer, const char* name) noexcept -> bool
 	{
 		if (auto proc = ::GetProcAddress(handle, name); proc != nullptr)
 		{
@@ -32,13 +32,13 @@ namespace dmlib_module
 	}
 
 	template <typename P>
-	inline auto LoadFn(HMODULE handle, P& pointer, WORD index) -> bool
+	inline auto LoadFn(HMODULE handle, P& pointer, WORD index) noexcept -> bool
 	{
 		return  dmlib_module::LoadFn(handle, pointer, MAKEINTRESOURCEA(index));
 	};
 
 	template <typename P, typename D>
-	inline auto LoadFn(HMODULE handle, P& pointer, const char* name, D& dummy) -> bool
+	inline auto LoadFn(HMODULE handle, P& pointer, const char* name, D& dummy) noexcept -> bool
 	{
 		const bool retVal = dmlib_module::LoadFn(handle, pointer, name);
 		if (!retVal)

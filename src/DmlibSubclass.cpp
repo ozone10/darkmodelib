@@ -13,7 +13,12 @@
 #include "DmlibSubclass.h"
 
 #if defined(_DARKMODELIB_PREFER_THEME)
-#include "DmlibWinApi.h"
+namespace dmlib_win32api
+{
+	[[nodiscard]] bool IsWindows10();
+}
+
+extern bool g_darkModeSupported;
 #endif
 
 /**
