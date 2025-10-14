@@ -1658,13 +1658,7 @@ void DarkMode::removeHeaderCtrlSubclass(HWND hWnd)
  */
 void DarkMode::setStatusBarCtrlSubclass(HWND hWnd)
 {
-	LOGFONT lf{};
-	NONCLIENTMETRICS ncm{};
-	ncm.cbSize = sizeof(NONCLIENTMETRICS);
-	if (::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0) != FALSE)
-	{
-		lf = ncm.lfStatusFont;
-	}
+	const auto lf = LOGFONT{ dmlib_dpi::getSysFontForDpi(::GetParent(hWnd), dmlib_dpi::FontType::status) };
 	dmlib_subclass::SetSubclass<dmlib_subclass::StatusBarData>(hWnd, dmlib_subclass::StatusBarSubclass, dmlib_subclass::SubclassID::statusBar, ::CreateFontIndirectW(&lf));
 }
 
@@ -2724,7 +2718,7 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
 	HDC hdc = ::GetDC(nullptr);
 
 	const bool useDark = DarkMode::isExperimentalActive() && DarkMode::isThemeDark();
-	HTHEME hTheme = ::OpenThemeData(nullptr, useDark ? L"DarkMode_Explorer::Button" : VSCLASS_BUTTON);
+	HTHEME hTheme = dmlib_dpi::OpenThemeDataForDpi(nullptr, useDark ? L"DarkMode_Explorer::Button" : VSCLASS_BUTTON, ::GetParent(hWnd));
 
 	SIZE szBox{};
 	::GetThemePartSize(hTheme, hdc, BP_CHECKBOX, CBS_UNCHECKEDNORMAL, nullptr, TS_DRAW, &szBox);

@@ -15,28 +15,39 @@
 
 #include <windows.h>
 
-#ifndef WM_DPICHANGED
-#define WM_DPICHANGED 0x02E0
-#endif
+#include <uxtheme.h>
 
-#if 0 // maybe for future hidpi enhancement
-#ifndef WM_DPICHANGED_BEFOREPARENT
-#define WM_DPICHANGED_BEFOREPARENT 0x02E2
-#endif
-#endif
+#if defined(__GNUC__) || (WINVER < _WIN32_WINNT_WIN7)
+	#ifndef WM_DPICHANGED
+	#define WM_DPICHANGED 0x02E0
+	#endif
 
-#ifndef WM_DPICHANGED_AFTERPARENT
-#define WM_DPICHANGED_AFTERPARENT 0x02E3
-#endif
+	#ifndef WM_DPICHANGED_BEFOREPARENT
+	#define WM_DPICHANGED_BEFOREPARENT 0x02E2
+	#endif
 
-#if 0 // maybe for future hidpi enhancement
-#ifndef WM_GETDPISCALEDSIZE
-#define WM_GETDPISCALEDSIZE 0x02E4
-#endif
+	#ifndef WM_DPICHANGED_AFTERPARENT
+	#define WM_DPICHANGED_AFTERPARENT 0x02E3
+	#endif
+
+	#ifndef WM_GETDPISCALEDSIZE
+	#define WM_GETDPISCALEDSIZE 0x02E4
+	#endif
 #endif
 
 namespace dmlib_dpi
 {
+	enum class FontType
+	{
+		menu,
+		status,
+		message,
+		caption,
+		smcaption
+	};
+
+	inline constexpr int kDefaultFontDpi = 72;
+
 	bool InitDpiAPI();
 
 	[[nodiscard]] UINT GetDpiForSystem();
@@ -75,11 +86,29 @@ namespace dmlib_dpi
 
 	[[nodiscard]] inline int scaleFont(int pt, UINT dpi)
 	{
-		return -(dmlib_dpi::scale(pt, dpi, 72));
+		return dmlib_dpi::scale(pt, dpi, kDefaultFontDpi);
 	}
 
 	[[nodiscard]] inline int scaleFont(int pt, HWND hWnd)
 	{
-		return -(dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), 72));
+		return dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), kDefaultFontDpi);
 	}
+
+	[[nodiscard]] LOGFONT getSysFontForDpi(UINT dpi, FontType type);
+	[[nodiscard]] inline LOGFONT getSysFontForDpi(HWND hWnd, FontType type)
+	{
+		return dmlib_dpi::getSysFontForDpi(dmlib_dpi::GetDpiForWindow(hWnd), type);
+	}
+
+	DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext);
+
+	void loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON* phico);
+
+	HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi);
+
+	inline HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, HWND hWndDpi)
+	{
+		return dmlib_dpi::OpenThemeDataForDpi(hwnd, pszClassList, dmlib_dpi::GetDpiForWindow(hWndDpi));
+	}
+
 } // namespace dmlib_dpi

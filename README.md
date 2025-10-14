@@ -52,6 +52,6 @@ Darkmodelib works best with Windows 10 version 1809 and later, and mainly target
 
 ## License
 
-Copyright (c) 2025 ozone10
-Darkmodelib is licensed under the Mozilla Public License, version 2.0, with some code under MIT.
+Copyright (c) 2025 ozone10  
+Darkmodelib is licensed under the Mozilla Public License, version 2.0, with some code under MIT.  
 For more information check the header of files.

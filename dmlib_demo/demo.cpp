@@ -170,8 +170,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	return static_cast<int>(msg.wParam);
 }
 
-
-
 //
 //  FUNCTION: MyRegisterClass()
 //
