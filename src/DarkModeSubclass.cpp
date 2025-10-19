@@ -29,7 +29,6 @@
 #if !defined(_DARKMODELIB_NO_INI_CONFIG)
 #include <array>
 #endif
-#include <cmath>
 #include <string>
 
 #include "DmlibColor.h"
@@ -825,7 +824,7 @@ bool DarkMode::isEnabled()
  */
 bool DarkMode::isExperimentalActive()
 {
-	return g_darkModeEnabled;
+	return dmlib_win32api::IsDarkModeActive();
 }
 
 /**
@@ -835,7 +834,7 @@ bool DarkMode::isExperimentalActive()
  */
 bool DarkMode::isExperimentalSupported()
 {
-	return g_darkModeSupported;
+	return dmlib_win32api::IsDarkModeSupported();
 }
 
 /**
@@ -875,6 +874,13 @@ bool DarkMode::isAtLeastWindows11()
 DWORD DarkMode::getWindowsBuildNumber()
 {
 	return dmlib_win32api::GetWindowsBuildNumber();
+}
+
+/// Check if OS is at leaast Windows 11 version 25H2 build 26200.
+static bool isAtLeastWin11Ver25H2()
+{
+	static constexpr DWORD win11Build25H2 = 26200;
+	return dmlib_win32api::GetWindowsBuildNumber() >= win11Build25H2;
 }
 
 /**
@@ -924,16 +930,15 @@ bool DarkMode::isDarkModeReg()
 {
 	DWORD data{};
 	DWORD dwBufSize = sizeof(data);
-	LPCWSTR lpSubKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-	LPCWSTR lpValue = L"AppsUseLightTheme";
+	static constexpr LPCWSTR lpSubKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+	static constexpr LPCWSTR lpValue = L"AppsUseLightTheme";
 
-	if (::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize) != ERROR_SUCCESS)
+	if (::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize) == ERROR_SUCCESS)
 	{
-		return false;
+		// dark mode is 0, light mode is 1
+		return data == 0UL;
 	}
-
-	// dark mode is 0, light mode is 1
-	return data == 0UL;
+	return false;
 }
 
 /**
@@ -2646,6 +2651,20 @@ void DarkMode::setDarkTooltips(HWND hWnd, int tooltipType)
 }
 
 /**
+ * @brief Applies "DarkMode_DarkTheme" visual style if supported and experimental mode is active.
+ *
+ * If OS is at least Windows 11 version 25H2 applies "DarkMode_DarkTheme" visual style,
+ * else applies "DarkMode_Explorer" visual style.
+ *
+ * @param[in] hWnd Handle to the control or window to theme.
+ */
+void DarkMode::setDarkThemeTheme(HWND hWnd)
+{
+	static const wchar_t* themeName = isAtLeastWin11Ver25H2() ? L"DarkMode_DarkTheme" : L"DarkMode_Explorer";
+	::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? themeName : nullptr, nullptr);
+}
+
+/**
  * @brief Sets the color of line above a toolbar control for non-classic mode.
  *
  * Sends `TB_SETCOLORSCHEME` to customize the line drawn above the toolbar.
@@ -2985,51 +3004,10 @@ void DarkMode::disableVisualStyle(HWND hWnd, bool doDisable)
  *
  * @param[in] clr COLORREF in 0xBBGGRR format.
  * @return Lightness value as a double.
- *
- * @note Based on: https://stackoverflow.com/a/56678483
  */
 double DarkMode::calculatePerceivedLightness(COLORREF clr)
 {
-	auto linearValue = [](double colorChannel) -> double
-	{
-		colorChannel /= 255.0;
-
-		static constexpr double treshhold = 0.04045;
-		static constexpr double lowScalingFactor = 12.92;
-		static constexpr double gammaOffset = 0.055;
-		static constexpr double gammaScalingFactor = 1.055;
-		static constexpr double gammaExp = 2.4;
-
-		if (colorChannel <= treshhold)
-		{
-			return colorChannel / lowScalingFactor;
-		}
-		return std::pow(((colorChannel + gammaOffset) / gammaScalingFactor), gammaExp);
-	};
-
-	const double r = linearValue(static_cast<double>(GetRValue(clr)));
-	const double g = linearValue(static_cast<double>(GetGValue(clr)));
-	const double b = linearValue(static_cast<double>(GetBValue(clr)));
-
-	static constexpr double rWeight = 0.2126;
-	static constexpr double gWeight = 0.7152;
-	static constexpr double bWeight = 0.0722;
-
-	const double luminance = (rWeight * r) + (gWeight * g) + (bWeight * b);
-
-	static constexpr double cieEpsilon = 216.0 / 24389.0;
-	static constexpr double cieKappa = 24389.0 / 27.0;
-	static constexpr double oneThird = 1.0 / 3.0;
-	static constexpr double scalingFactor = 116.0;
-	static constexpr double offset = 16.0;
-
-	// calculate lightness
-
-	if (luminance <= cieEpsilon)
-	{
-		return (luminance * cieKappa);
-	}
-	return ((std::pow(luminance, oneThird) * scalingFactor) - offset);
+	return dmlib_color::calculatePerceivedLightness(clr);
 }
 
 /**

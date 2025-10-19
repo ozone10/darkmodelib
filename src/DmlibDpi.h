@@ -46,7 +46,8 @@ namespace dmlib_dpi
 		smcaption
 	};
 
-	inline constexpr int kDefaultFontDpi = 72;
+	inline constexpr UINT kDefaultFontDpi = 72;
+	inline constexpr UINT kDefaultFontScaleFactor = 100;
 
 	bool InitDpiAPI();
 
@@ -84,12 +85,12 @@ namespace dmlib_dpi
 		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dmlib_dpi::GetDpiForWindow(hWnd));
 	}
 
-	[[nodiscard]] inline int scaleFont(int pt, UINT dpi)
+	[[nodiscard]] inline int scaleFontForDpi(int pt, UINT dpi)
 	{
 		return dmlib_dpi::scale(pt, dpi, kDefaultFontDpi);
 	}
 
-	[[nodiscard]] inline int scaleFont(int pt, HWND hWnd)
+	[[nodiscard]] inline int scaleFontForDpi(int pt, HWND hWnd)
 	{
 		return dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), kDefaultFontDpi);
 	}
@@ -104,11 +105,24 @@ namespace dmlib_dpi
 
 	void loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON* phico);
 
-	HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi);
+	[[nodiscard]] HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi);
 
-	inline HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, HWND hWndDpi)
+	[[nodiscard]] inline HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, HWND hWndDpi)
 	{
 		return dmlib_dpi::OpenThemeDataForDpi(hwnd, pszClassList, dmlib_dpi::GetDpiForWindow(hWndDpi));
+	}
+
+	/// Get text scale factor from the Windows registry.
+	[[nodiscard]] DWORD getTextScaleFactor();
+
+	[[nodiscard]] inline int scaleFontForFactor(int pt, UINT textScaleFactor)
+	{
+		return dmlib_dpi::scale(pt, textScaleFactor, kDefaultFontScaleFactor);
+	}
+
+	[[nodiscard]] inline int scaleFontForFactor(int pt)
+	{
+		return dmlib_dpi::scale(pt, dmlib_dpi::getTextScaleFactor(), kDefaultFontScaleFactor);
 	}
 
 } // namespace dmlib_dpi

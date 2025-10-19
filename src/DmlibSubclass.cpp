@@ -16,9 +16,8 @@
 namespace dmlib_win32api
 {
 	[[nodiscard]] bool IsWindows10();
+	[[nodiscard]] bool IsDarkModeSupported();
 }
-
-extern bool g_darkModeSupported;
 #endif
 
 /**
@@ -31,7 +30,7 @@ extern bool g_darkModeSupported;
 bool dmlib_subclass::isThemePrefered()
 {
 #if defined(_DARKMODELIB_PREFER_THEME)
-	return dmlib_win32api::IsWindows10() && g_darkModeSupported;
+	return dmlib_win32api::IsWindows10() && dmlib_win32api::IsDarkModeSupported();
 #else
 	return false;
 #endif

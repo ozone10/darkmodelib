@@ -17,9 +17,6 @@
 
 #include <windows.h>
 
-extern bool g_darkModeSupported;
-extern bool g_darkModeEnabled;
-
 namespace dmlib_win32api
 {
 	/// Enables or disables dark mode support for a specific window.
@@ -49,4 +46,9 @@ namespace dmlib_win32api
 	[[nodiscard]] bool IsWindows11();
 	/// Retrieves the current Windows build number.
 	[[nodiscard]] DWORD GetWindowsBuildNumber();
+
+	/// Checks if dark mode API is supported.
+	[[nodiscard]] bool IsDarkModeSupported();
+	/// Checks if dark mode is active.
+	[[nodiscard]] bool IsDarkModeActive();
 } // namespace dmlib_win32api

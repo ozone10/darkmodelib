@@ -341,6 +341,8 @@ namespace DarkMode
 	inline void DummySetDarkExplorerTheme(HWND) {}
 	inline void DummySetDarkScrollBar(HWND) {}
 	inline void DummySetDarkTooltips(HWND, int) {}
+	inline void DummySetDarkThemeTheme(HWND) {}
+
 	inline void DummySetDarkLineAbovePanelToolbar(HWND) {}
 
 	inline void DummySetDarkListView(HWND) {}

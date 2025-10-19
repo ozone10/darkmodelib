@@ -157,14 +157,14 @@ LOGFONT dmlib_dpi::getSysFontForDpi(UINT dpi, FontType type)
 
 		if (pfSystemParametersInfoForDpi == DummySystemParametersInfoForDpi)
 		{
-			lf.lfHeight = scaleFont(lf.lfHeight, dpi);
+			lf.lfHeight = scaleFontForDpi(lf.lfHeight, dpi);
 		}
 	}
 	else // should not happen, fallback
 	{
 		auto hf = static_cast<HFONT>(::GetStockObject(DEFAULT_GUI_FONT));
 		::GetObjectW(hf, sizeof(LOGFONT), &lf);
-		lf.lfHeight = scaleFont(lf.lfHeight, dpi);
+		lf.lfHeight = scaleFontForDpi(lf.lfHeight, dpi);
 	}
 
 	return lf;
@@ -186,4 +186,26 @@ void dmlib_dpi::loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy
 HTHEME dmlib_dpi::OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi)
 {
 	return pfOpenThemeDataForDpi(hwnd, pszClassList, dpi);
+}
+
+/**
+ * @brief Get text scale factor from the Windows registry.
+ *
+ * Queries `HKEY_CURRENT_USER\\Software\\Microsoft\\Accessibility\\TextScaleFactor`.
+ *
+ * @return DWORD value 100 if there is no key or TextScaleFactor value.
+ */
+DWORD dmlib_dpi::getTextScaleFactor()
+{
+	static constexpr DWORD defaultVal = 100;
+	DWORD data = defaultVal;
+	DWORD dwBufSize = sizeof(data);
+	static constexpr LPCWSTR lpSubKey = L"Software\\Microsoft\\Accessibility";
+	static constexpr LPCWSTR lpValue = L"TextScaleFactor";
+
+	if (::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize) == ERROR_SUCCESS)
+	{
+		return data;
+	}
+	return defaultVal;
 }

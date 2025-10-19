@@ -33,9 +33,8 @@
 namespace dmlib_win32api
 {
 	[[nodiscard]] bool IsWindows11();
+	[[nodiscard]] bool IsDarkModeActive();
 }
-
-extern bool g_darkModeEnabled;
 
 using fnFindThunkInModule = auto (*)(void* moduleBase, const char* dllName, const char* funcName) -> PIMAGE_THUNK_DATA;
 
@@ -294,7 +293,7 @@ void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
 
 static DWORD WINAPI MyGetSysColor(int nIndex)
 {
-	if (!g_darkModeEnabled)
+	if (!dmlib_win32api::IsDarkModeActive())
 	{
 		return g_hookDataGetSysColor.m_trueFn(nIndex);
 	}
@@ -369,7 +368,7 @@ static HRESULT WINAPI MyGetThemeColor(
 )
 {
 	const HRESULT retVal = g_hookDataGetThemeColor.m_trueFn(hTheme, iPartId, iStateId, iPropId, pColor);
-	if (!g_darkModeEnabled)
+	if (!dmlib_win32api::IsDarkModeActive())
 	{
 		return retVal;
 	}
@@ -427,7 +426,7 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	const DTBGOPTS* pOptions
 )
 {
-	if (!g_darkModeEnabled)
+	if (!dmlib_win32api::IsDarkModeActive())
 	{
 		return g_hookDataDrawThemeBackgroundEx.m_trueFn(hTheme, hdc, iPartId, iStateId, pRect, pOptions);
 	}

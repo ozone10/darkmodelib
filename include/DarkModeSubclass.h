@@ -26,6 +26,7 @@
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "Comctl32.lib")
 #pragma comment(lib, "Gdi32.lib")
+#pragma comment(lib, "Shlwapi.lib")
 #endif
 
 #if defined(DMLIB_DLL)
@@ -514,6 +515,8 @@ namespace DarkMode
 	DMLIB_API void setDarkScrollBar(HWND hWnd);
 	/// Applies "DarkMode_Explorer" visual style to tooltip controls based on context.
 	DMLIB_API void setDarkTooltips(HWND hWnd, int tooltipType);
+	/// Applies "DarkMode_DarkTheme" visual style if supported and experimental mode is active.
+	DMLIB_API void setDarkThemeTheme(HWND hWnd);
 
 	/// Sets the color of line above a toolbar control for non-classic mode.
 	DMLIB_API void setDarkLineAbovePanelToolbar(HWND hWnd);

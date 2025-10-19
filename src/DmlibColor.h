@@ -530,4 +530,7 @@ namespace dmlib_color
 		return clrTmp;
 	}
 
+	/// Calculates perceptual lightness of a COLORREF color.
+	[[nodiscard]] double calculatePerceivedLightness(COLORREF clr);
+	[[nodiscard]] COLORREF getAccentColor(bool adjust);
 } // namespace dmlib_color
