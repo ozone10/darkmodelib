@@ -7,6 +7,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// This file is part of darkmodelib library.
+
 // Based on the Notepad++ dark mode code licensed under GPLv3.
 // Originally by adzm / Adam D. Walling, with modifications by the Notepad++ team.
 // Heavily modified by ozone10 (Notepad++ contributor).

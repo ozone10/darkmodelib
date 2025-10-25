@@ -7,6 +7,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// This file is part of darkmodelib library.
+
 
 #define DM_VERSION_MAJOR    0
 #define DM_VERSION_MINOR    38

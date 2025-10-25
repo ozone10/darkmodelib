@@ -3,6 +3,8 @@
 // Copyright (c) 2025 ozone10
 // Licensed under the MIT license.
 
+// This file is part of darkmodelib library.
+
 // This file is a modified version of IatHook.h from the win32-darkmode project
 // https://github.com/ysc3839/win32-darkmode
 

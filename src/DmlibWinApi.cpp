@@ -12,6 +12,8 @@
  *  See LICENSE-win32-darkmode for more information.
  */
 
+// This file is part of darkmodelib library.
+
 
 #include "StdAfx.h"
 
