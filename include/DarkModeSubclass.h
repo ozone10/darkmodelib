@@ -455,6 +455,11 @@ namespace DarkMode
 	/// Removes the owner drawn subclass from a IP address control.
 	DMLIB_API void removeIPAddressCtrlSubclass(HWND hWnd);
 
+	/// Applies custom color subclassing to a hot key control.
+	DMLIB_API void setHotKeyCtrlSubclass(HWND hWnd);
+	/// Removes the custom color subclass from a hot key control.
+	DMLIB_API void removeHotKeyCtrlSubclass(HWND hWnd);
+
 	// ========================================================================
 	// Child Subclassing
 	// ========================================================================

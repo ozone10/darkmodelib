@@ -3020,3 +3020,69 @@ LRESULT CALLBACK dmlib_subclass::IPAddressSubclass(
 	}
 	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
+
+/**
+ * @brief Window subclass procedure for custom color for hot key control.
+ *
+ * @param[in]   hWnd        Window handle being subclassed.
+ * @param[in]   uMsg        Message identifier.
+ * @param[in]   wParam      Message-specific data.
+ * @param[in]   lParam      Message-specific data.
+ * @param[in]   uIdSubclass Subclass identifier.
+ * @param[in]   dwRefData   Reserved data (unused).
+ * @return LRESULT Result of message processing.
+ *
+ * @see DarkMode::setHotKeyCtrlSubclass()
+ * @see DarkMode::removeHotKeyCtrlSubclass()
+ */
+LRESULT CALLBACK dmlib_subclass::HotKeySubclass(
+	HWND hWnd,
+	UINT uMsg,
+	WPARAM wParam,
+	LPARAM lParam,
+	UINT_PTR uIdSubclass,
+	[[maybe_unused]] DWORD_PTR dwRefData
+)
+{
+	switch (uMsg)
+	{
+		case WM_NCDESTROY:
+		{
+			::RemoveWindowSubclass(hWnd, HotKeySubclass, uIdSubclass);
+			dmlib_hook::unhookSysColor();
+			break;
+		}
+
+		case WM_ERASEBKGND:
+		{
+			if (!DarkMode::isEnabled())
+			{
+				break;
+			}
+
+			RECT rcClient{};
+			::GetClientRect(hWnd, &rcClient);
+			::FillRect(reinterpret_cast<HDC>(wParam), &rcClient, DarkMode::getDlgBackgroundBrush());
+			return TRUE;
+		}
+
+		case WM_PAINT:
+		{
+			if (!DarkMode::isEnabled())
+			{
+				break;
+			}
+
+			dmlib_hook::hookSysColor();
+			const LRESULT resVal = ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+			dmlib_hook::unhookSysColor();
+			return resVal;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}

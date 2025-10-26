@@ -313,6 +313,9 @@ namespace DarkMode
 	inline void DummySetIPAddressCtrlSubclass(HWND) {}
 	inline void DummyRemoveIPAddressCtrlSubclass(HWND) {}
 
+	inline void DummySetHotKeyCtrlSubclass(HWND) {}
+	inline void DummyRemoveHotKeyCtrlSubclass(HWND) {}
+
 	inline void DummySetChildCtrlsSubclassAndThemeEx(HWND, bool, bool) {}
 	inline void DummySetChildCtrlsSubclassAndTheme(HWND) {}
 	inline void DummySetChildCtrlsTheme(HWND) {}

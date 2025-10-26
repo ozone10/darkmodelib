@@ -41,6 +41,7 @@ namespace dmlib_subclass
 		progressBar,
 		staticText,
 		ipAddress,
+		hotKey,
 		windowEraseBg,
 		windowCtlColor,
 		windowNotify,

@@ -1871,6 +1871,58 @@ static void setIPAddressCtrlSubclass(HWND hWnd, DarkModeParams p)
 }
 
 /**
+ * @brief Applies custom color subclassing to a hot key control.
+ *
+ * Handles custom colors for hot key control via hooks.
+ *
+ * @param[in] hWnd Handle to the hot key control.
+ *
+ * @see dmlib_subclass::HotKeySubclass()
+ * @see DarkMode::removeHotKeyCtrlSubclass()
+ */
+void DarkMode::setHotKeyCtrlSubclass(HWND hWnd)
+{
+	dmlib_subclass::SetSubclass(hWnd, dmlib_subclass::HotKeySubclass, dmlib_subclass::SubclassID::hotKey);
+}
+
+/**
+ * @brief Removes the custom color subclass from a hot key control.
+ *
+ * @param[in] hWnd Handle to the hot key control.
+ *
+ * @see dmlib_subclass::HotKeySubclass()
+ * @see DarkMode::setHotKeyCtrlSubclass()
+ */
+void DarkMode::removeHotKeyCtrlSubclass(HWND hWnd)
+{
+	dmlib_subclass::RemoveSubclass(hWnd, dmlib_subclass::HotKeySubclass, dmlib_subclass::SubclassID::hotKey);
+}
+
+/**
+ * @brief Applies custom color subclassing to a hot key control and adjusts its border style.
+ *
+ * Overload wrapper that applies the subclass only if `p.m_subclass` is `true`.
+ * Adjusts border style depending on used dark mode state.
+ *
+ * @param[in]   hWnd    Handle to the hot key control.
+ * @param[in]   p       Parameters controlling whether to apply subclassing.
+ *
+ * @see DarkMode::setHotKeyCtrlSubclass()
+ */
+static void setHotKeyCtrlSubclass(HWND hWnd, DarkModeParams p)
+{
+	if (p.m_subclass)
+	{
+		DarkMode::setHotKeyCtrlSubclass(hWnd);
+	}
+
+	if (p.m_theme)
+	{
+		DarkMode::replaceClientEdgeWithBorderSafe(hWnd);
+	}
+}
+
+/**
  * @brief Applies theming to a tree view control.
  *
  * Sets custom text and background colors, applies a themed window style,
@@ -2022,7 +2074,7 @@ static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
  *      `WC_LISTVIEW`, `WC_TREEVIEW`, `REBARCLASSNAME`, `TOOLBARCLASSNAME`,
  *      `UPDOWN_CLASS`, `WC_TABCONTROL`, `STATUSCLASSNAME`, `WC_SCROLLBAR`,
  *      `WC_COMBOBOXEX`, `PROGRESS_CLASS`, `WC_LINK`, `TRACKBAR_CLASS`,
- *      `RICHEDIT_CLASS`, `MSFTEDIT_CLASS`, and `WC_IPADDRESS`
+ *      `RICHEDIT_CLASS`, `MSFTEDIT_CLASS`, `WC_IPADDRESS`, and `HOTKEY_CLASS`
  * - The `#32770` dialog class is commented out for debugging purposes.
  *
  * @see DarkMode::setChildCtrlsSubclassAndTheme()
@@ -2046,6 +2098,7 @@ static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
  * @see DarkMode::setTrackbarCtrlTheme()
  * @see DarkMode::setRichEditCtrlTheme()
  * @see DarkMode::setIPAddressCtrlSubclass()
+ * @see DarkMode::setHotKeyCtrlSubclass()
  */
 static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 {
@@ -2165,8 +2218,25 @@ static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 		setIPAddressCtrlSubclass(hWnd, p);
 		return TRUE;
 	}
+
+	if (className == HOTKEY_CLASS)
+	{
+		setHotKeyCtrlSubclass(hWnd, p);
+		return TRUE;
+	}
+
 #if 0 // for debugging
 	if (className == L"#32770") // dialog
+	{
+		return TRUE;
+	}
+
+	if (className == DATETIMEPICK_CLASS) // date and time picker
+	{
+		return TRUE;
+	}
+
+	if (className == MONTHCAL_CLASS) // month calendar
 	{
 		return TRUE;
 	}

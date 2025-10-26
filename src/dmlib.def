@@ -113,6 +113,8 @@ EXPORTS
 	removeStaticTextCtrlSubclass
 	setIPAddressCtrlSubclass
 	removeIPAddressCtrlSubclass
+	setHotKeyCtrlSubclass
+	removeHotKeyCtrlSubclass
 	setChildCtrlsSubclassAndThemeEx
 	setChildCtrlsSubclassAndTheme
 	setChildCtrlsTheme

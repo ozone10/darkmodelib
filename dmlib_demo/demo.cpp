@@ -213,7 +213,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, HWND& hMain)
 	g_hInst = hInstance; // Store instance handle in our global variable
 
 	hMain = CreateWindowExW(0, g_szWindowClass.c_str(), g_szTitle.c_str(), WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, Scale(800), Scale(550), nullptr, nullptr, hInstance, nullptr);
+		CW_USEDEFAULT, 0, Scale(970), Scale(550), nullptr, nullptr, hInstance, nullptr);
 
 	if (hMain == nullptr)
 	{
@@ -271,6 +271,7 @@ enum class IdCtrl : WORD
 	listview,
 	listviewGrid,
 	treeview,
+	hotkey,
 	scrollH = 1049,
 	scrollV,
 	statusbar
@@ -468,6 +469,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int wGroup2ndCol = Scale(160);
 			static const int wGroup3rdCol = Scale(160);
 			static const int wGroup4thCol = Scale(160);
+			static const int wGroup5thCol = Scale(160);
 
 			static const int wBtn = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 2;
 			static const int wCheck = wBtn * 2;
@@ -481,6 +483,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int wCtrl3rdCol = wGroup3rdCol - (2 * xPosCtrl);
 			static const int wCtrl4thCol = wGroup4thCol - (2 * xPosCtrl);
+			static const int wCtrl5thCol = wGroup5thCol - (2 * xPosCtrl);
 
 			static const int heightGBPush = yPosCtrl + ((heightPush + heightPushGap) * 3) + yPosCtrlEnd;
 			static const int heightGBCheck = yPosCtrl + ((heightCtrl + heightCtrlGap) * 6) + yPosCtrlEnd;
@@ -498,6 +501,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int heightGBIP = yPosCtrl + ((heightCtrl + heightEditGap) * 1) + yPosCtrlEnd;
 
+			static const int heightGBHotKey = yPosCtrl + ((heightCtrl + heightEditGap) * 1) + yPosCtrlEnd;
+
 			static const int yGBCheck = yRow + heightGBPush + yGap;
 			static const int yGBProgress = yGBCheck + heightGBCheck + yGap;
 
@@ -514,6 +519,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int ySTTreeView = yGBIP + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
 
+			static const int yGBHotKey = yRow + heightGBHotKey + yGap;
+
 			static const int xPosSplit = xPos1stColCtrl + xGap + wBtn;
 
 			static const int xPos2ndCol = xPos1stCol + xGap + wGroup1stCol;
@@ -524,6 +531,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int xPos4thCol = xPos3rdCol + xGap + wGroup3rdCol;
 			static const int xPos4thColCtrl = xPos4thCol + xPosCtrl;
+
+			static const int xPos5thCol = xPos4thCol + xGap + wGroup4thCol;
+			static const int xPos5thColCtrl = xPos5thCol + xPosCtrl;
 
 			static const int yPush1 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 0);
 			static const int yPush2 = yRow + yPosCtrl + ((heightPush + heightPushGap) * 1);
@@ -569,6 +579,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int yListView2 = yListView1 + ((heightListView + yPosCtrlEnd) * 1) + yGap + 1;
 
 			static const int yTreeView = ySTTreeView + yPosCtrl;
+
+			static const int yHotKey = yRow + yPosCtrl + ((heightCtrl + heightEditGap) * 0);
 
 			static const int xToolbar = Scale(100);
 			static const int wToolbar = xToolbar;
@@ -950,6 +962,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					TreeView_InsertItem(hTree, &childInsert);
 				}
 			}
+
+			// --- Hot Key ---
+			createCtrl(WC_BUTTON, L"Hot Key", BS_GROUPBOX,
+				xPos5thCol, yRow, wGroup5thCol, heightGBHotKey);
+
+			createCtrl(HOTKEY_CLASS, nullptr, 0,
+				xPos5thColCtrl, yHotKey, wCtrl5thCol, heightCtrl, IdCtrl::hotkey, 0, hWnd);
 
 			// --- Scroll Bars ---
 			// Horizontal scroll bar
