@@ -1072,10 +1072,28 @@ static void paintTab(HWND hWnd, HDC hdc, const RECT& rect)
 
 	const int iSelTab = TabCtrl_GetCurSel(hWnd);
 	const int nTabs = TabCtrl_GetItemCount(hWnd);
+	const bool isOwnerDraw = (::GetWindowLongPtr(hWnd, GWL_STYLE) & TCS_OWNERDRAWFIXED) != 0;
 	for (int i = 0; i < nTabs; ++i)
 	{
 		RECT rcItem{};
 		TabCtrl_GetItemRect(hWnd, i, &rcItem);
+
+		if (isOwnerDraw)
+		{
+			DRAWITEMSTRUCT dis{
+				ODT_TAB
+				, 0
+				, static_cast<UINT>(i)
+				, ODA_DRAWENTIRE
+				, i
+				, hWnd
+				, hdc
+				, rcItem
+				, (ULONG_PTR)nullptr
+			};
+			::SendMessage(::GetParent(hWnd), WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&dis));
+			continue;
+		}
 
 		RECT rcIntersect{};
 		if (::IntersectRect(&rcIntersect, &rect, &rcItem) == FALSE)
