@@ -28,6 +28,7 @@ using fnGetDpiForSystem = auto (WINAPI*)(VOID) -> UINT;
 using fnGetDpiForWindow = auto (WINAPI*)(HWND hwnd) -> UINT;
 using fnGetSystemMetricsForDpi = auto (WINAPI*)(int nIndex, UINT dpi) -> int;
 using fnSystemParametersInfoForDpi = auto (WINAPI*)(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) -> BOOL;
+using fnIsValidDpiAwarenessContext = auto (WINAPI*)(DPI_AWARENESS_CONTEXT value) -> BOOL;
 using fnSetThreadDpiAwarenessContext = auto (WINAPI*)(DPI_AWARENESS_CONTEXT dpiContext) -> DPI_AWARENESS_CONTEXT;
 
 using fnOpenThemeDataForDpi = auto (WINAPI*)(HWND hwnd, LPCWSTR pszClassList, UINT dpi) -> HTHEME;
@@ -36,10 +37,11 @@ static fnGetDpiForSystem pfGetDpiForSystem = nullptr;
 static fnGetDpiForWindow pfGetDpiForWindow = nullptr;
 static fnGetSystemMetricsForDpi pfGetSystemMetricsForDpi = nullptr;
 static fnSystemParametersInfoForDpi pfSystemParametersInfoForDpi = nullptr;
+static fnIsValidDpiAwarenessContext pfIsValidDpiAwarenessContext = nullptr;
 static fnSetThreadDpiAwarenessContext pfSetThreadDpiAwarenessContext = nullptr;
 static fnOpenThemeDataForDpi pfOpenThemeDataForDpi = nullptr;
 
-static UINT WINAPI DummyGetDpiForSystem()
+static UINT WINAPI DummyGetDpiForSystem() noexcept
 {
 	UINT dpi = USER_DEFAULT_SCREEN_DPI;
 	if (HDC hdc = ::GetDC(nullptr); hdc != nullptr)
@@ -50,27 +52,32 @@ static UINT WINAPI DummyGetDpiForSystem()
 	return dpi;
 }
 
-static UINT WINAPI DummyGetDpiForWindow([[maybe_unused]] HWND hwnd)
+static UINT WINAPI DummyGetDpiForWindow([[maybe_unused]] HWND hwnd) noexcept
 {
 	return DummyGetDpiForSystem();
 }
 
-static int WINAPI DummyGetSystemMetricsForDpi(int nIndex, UINT dpi)
+static int WINAPI DummyGetSystemMetricsForDpi(int nIndex, UINT dpi) noexcept
 {
 	return dmlib_dpi::scale(::GetSystemMetrics(nIndex), dpi);
 }
 
-static BOOL WINAPI DummySystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, [[maybe_unused]] UINT dpi)
+static BOOL WINAPI DummySystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, [[maybe_unused]] UINT dpi) noexcept
 {
 	return ::SystemParametersInfoW(uiAction, uiParam, pvParam, fWinIni);
 }
 
-static DPI_AWARENESS_CONTEXT WINAPI DummySetThreadDpiAwarenessContext([[maybe_unused]] DPI_AWARENESS_CONTEXT dpiContext)
+[[nodiscard]] static BOOL WINAPI DummyIsValidDpiAwarenessContext([[maybe_unused]] DPI_AWARENESS_CONTEXT value) noexcept
+{
+	return FALSE;
+}
+
+static DPI_AWARENESS_CONTEXT WINAPI DummySetThreadDpiAwarenessContext([[maybe_unused]] DPI_AWARENESS_CONTEXT dpiContext) noexcept
 {
 	return nullptr;
 }
 
-static HTHEME WINAPI DummyOpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, [[maybe_unused]] UINT dpi)
+static HTHEME WINAPI DummyOpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, [[maybe_unused]] UINT dpi) noexcept
 {
 	return ::OpenThemeData(hwnd, pszClassList);
 }
@@ -86,6 +93,7 @@ bool dmlib_dpi::InitDpiAPI()
 				&& dmlib_module::LoadFn(hUser32, pfGetDpiForWindow, "GetDpiForWindow", DummyGetDpiForWindow)
 				&& dmlib_module::LoadFn(hUser32, pfGetSystemMetricsForDpi, "GetSystemMetricsForDpi", DummyGetSystemMetricsForDpi)
 				&& dmlib_module::LoadFn(hUser32, pfSystemParametersInfoForDpi, "SystemParametersInfoForDpi", DummySystemParametersInfoForDpi)
+				&& dmlib_module::LoadFn(hUser32, pfIsValidDpiAwarenessContext, "IsValidDpiAwarenessContext", DummyIsValidDpiAwarenessContext)
 				&& dmlib_module::LoadFn(hUser32, pfSetThreadDpiAwarenessContext, "SetThreadDpiAwarenessContext", DummySetThreadDpiAwarenessContext)
 				&& dmlib_module::LoadFn(moduleUxtheme.get(), pfOpenThemeDataForDpi, "OpenThemeDataForDpi", DummyOpenThemeDataForDpi);
 		}
@@ -93,12 +101,12 @@ bool dmlib_dpi::InitDpiAPI()
 	return false;
 }
 
-UINT dmlib_dpi::GetDpiForSystem()
+UINT dmlib_dpi::GetDpiForSystem() noexcept
 {
 	return pfGetDpiForSystem();
 }
 
-UINT dmlib_dpi::GetDpiForWindow(HWND hWnd)
+UINT dmlib_dpi::GetDpiForWindow(HWND hWnd) noexcept
 {
 	if (hWnd != nullptr)
 	{
@@ -111,12 +119,12 @@ UINT dmlib_dpi::GetDpiForWindow(HWND hWnd)
 	return dmlib_dpi::GetDpiForSystem();
 }
 
-int dmlib_dpi::GetSystemMetricsForDpi(int nIndex, UINT dpi)
+int dmlib_dpi::GetSystemMetricsForDpi(int nIndex, UINT dpi) noexcept
 {
 	return pfGetSystemMetricsForDpi(nIndex, dpi);
 }
 
-LOGFONT dmlib_dpi::getSysFontForDpi(UINT dpi, FontType type)
+LOGFONT dmlib_dpi::getSysFontForDpi(UINT dpi, FontType type) noexcept
 {
 	LOGFONT lf{};
 	NONCLIENTMETRICS ncm{};
@@ -172,20 +180,25 @@ LOGFONT dmlib_dpi::getSysFontForDpi(UINT dpi, FontType type)
 	return lf;
 }
 
-DPI_AWARENESS_CONTEXT dmlib_dpi::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext)
+BOOL dmlib_dpi::IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) noexcept
+{
+	return pfIsValidDpiAwarenessContext(value);
+}
+
+DPI_AWARENESS_CONTEXT dmlib_dpi::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext) noexcept
 {
 	return pfSetThreadDpiAwarenessContext(dpiContext);
 }
 
-void dmlib_dpi::loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON* phico)
+void dmlib_dpi::loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON& hicon) noexcept
 {
-	if (::LoadIconWithScaleDown(hinst, pszName, cx, cy, phico) != S_OK)
+	if (::LoadIconWithScaleDown(hinst, pszName, cx, cy, &hicon) != S_OK)
 	{
-		*phico = static_cast<HICON>(::LoadImageW(hinst, pszName, IMAGE_ICON, cx, cy, LR_DEFAULTCOLOR));
+		hicon = static_cast<HICON>(::LoadImageW(hinst, pszName, IMAGE_ICON, cx, cy, LR_DEFAULTCOLOR));
 	}
 }
 
-HTHEME dmlib_dpi::OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi)
+HTHEME dmlib_dpi::OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi) noexcept
 {
 	return pfOpenThemeDataForDpi(hwnd, pszClassList, dpi);
 }
@@ -197,7 +210,7 @@ HTHEME dmlib_dpi::OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi)
  *
  * @return DWORD value 100 if there is no key or TextScaleFactor value.
  */
-DWORD dmlib_dpi::getTextScaleFactor()
+DWORD dmlib_dpi::getTextScaleFactor() noexcept
 {
 	static constexpr DWORD defaultVal = 100;
 	DWORD data = defaultVal;

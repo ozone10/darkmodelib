@@ -53,76 +53,78 @@ namespace dmlib_dpi
 
 	bool InitDpiAPI();
 
-	[[nodiscard]] UINT GetDpiForSystem();
-	[[nodiscard]] UINT GetDpiForWindow(HWND hWnd);
-	[[nodiscard]] inline UINT GetDpiForParent(HWND hWnd)
+	[[nodiscard]] UINT GetDpiForSystem() noexcept;
+	[[nodiscard]] UINT GetDpiForWindow(HWND hWnd) noexcept;
+	[[nodiscard]] inline UINT GetDpiForParent(HWND hWnd) noexcept
 	{
 		return dmlib_dpi::GetDpiForWindow(::GetParent(hWnd));
 	}
 
-	[[nodiscard]] int GetSystemMetricsForDpi(int nIndex, UINT dpi);
+	[[nodiscard]] int GetSystemMetricsForDpi(int nIndex, UINT dpi) noexcept;
 
-	[[nodiscard]] inline int scale(int x, UINT toDpi, UINT fromDpi)
+	[[nodiscard]] inline int scale(int x, UINT toDpi, UINT fromDpi) noexcept
 	{
 		return ::MulDiv(x, static_cast<int>(toDpi), static_cast<int>(fromDpi));
 	}
 
-	[[nodiscard]] inline int scale(int x, UINT dpi)
+	[[nodiscard]] inline int scale(int x, UINT dpi) noexcept
 	{
 		return dmlib_dpi::scale(x, dpi, USER_DEFAULT_SCREEN_DPI);
 	}
 
-	[[nodiscard]] inline int unscale(int x, UINT dpi)
+	[[nodiscard]] inline int unscale(int x, UINT dpi) noexcept
 	{
 		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dpi);
 	}
 
-	[[nodiscard]] inline int scale(int x, HWND hWnd)
+	[[nodiscard]] inline int scale(int x, HWND hWnd) noexcept
 	{
 		return dmlib_dpi::scale(x, dmlib_dpi::GetDpiForWindow(hWnd), USER_DEFAULT_SCREEN_DPI);
 	}
 
-	[[nodiscard]] inline int unscale(int x, HWND hWnd)
+	[[nodiscard]] inline int unscale(int x, HWND hWnd) noexcept
 	{
 		return dmlib_dpi::scale(x, USER_DEFAULT_SCREEN_DPI, dmlib_dpi::GetDpiForWindow(hWnd));
 	}
 
-	[[nodiscard]] inline int scaleFontForDpi(int pt, UINT dpi)
+	[[nodiscard]] inline int scaleFontForDpi(int pt, UINT dpi) noexcept
 	{
 		return dmlib_dpi::scale(pt, dpi, kDefaultFontDpi);
 	}
 
-	[[nodiscard]] inline int scaleFontForDpi(int pt, HWND hWnd)
+	[[nodiscard]] inline int scaleFontForDpi(int pt, HWND hWnd) noexcept
 	{
 		return dmlib_dpi::scale(pt, dmlib_dpi::GetDpiForWindow(hWnd), kDefaultFontDpi);
 	}
 
-	[[nodiscard]] LOGFONT getSysFontForDpi(UINT dpi, FontType type);
-	[[nodiscard]] inline LOGFONT getSysFontForDpi(HWND hWnd, FontType type)
+	[[nodiscard]] LOGFONT getSysFontForDpi(UINT dpi, FontType type) noexcept;
+	[[nodiscard]] inline LOGFONT getSysFontForDpi(HWND hWnd, FontType type) noexcept
 	{
 		return dmlib_dpi::getSysFontForDpi(dmlib_dpi::GetDpiForWindow(hWnd), type);
 	}
 
-	DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext);
+	[[nodiscard]] BOOL IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) noexcept;
 
-	void loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON* phico);
+	DPI_AWARENESS_CONTEXT SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT dpiContext) noexcept;
 
-	[[nodiscard]] HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi);
+	void loadIcon(HINSTANCE hinst, const wchar_t* pszName, int cx, int cy, HICON& hicon) noexcept;
 
-	[[nodiscard]] inline HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, HWND hWndDpi)
+	[[nodiscard]] HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, UINT dpi) noexcept;
+
+	[[nodiscard]] inline HTHEME OpenThemeDataForDpi(HWND hwnd, LPCWSTR pszClassList, HWND hWndDpi) noexcept
 	{
 		return dmlib_dpi::OpenThemeDataForDpi(hwnd, pszClassList, dmlib_dpi::GetDpiForWindow(hWndDpi));
 	}
 
 	/// Get text scale factor from the Windows registry.
-	[[nodiscard]] DWORD getTextScaleFactor();
+	[[nodiscard]] DWORD getTextScaleFactor() noexcept;
 
-	[[nodiscard]] inline int scaleFontForFactor(int pt, UINT textScaleFactor)
+	[[nodiscard]] inline int scaleFontForFactor(int pt, UINT textScaleFactor) noexcept
 	{
 		return dmlib_dpi::scale(pt, textScaleFactor, kDefaultFontScaleFactor);
 	}
 
-	[[nodiscard]] inline int scaleFontForFactor(int pt)
+	[[nodiscard]] inline int scaleFontForFactor(int pt) noexcept
 	{
 		return dmlib_dpi::scale(pt, dmlib_dpi::getTextScaleFactor(), kDefaultFontScaleFactor);
 	}

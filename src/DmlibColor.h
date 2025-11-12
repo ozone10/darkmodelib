@@ -525,14 +525,14 @@ namespace dmlib_color
 		BrushesAndPensView m_hbrPnView;
 	};
 
-	inline COLORREF setNewColor(COLORREF* clrOld, COLORREF clrNew)
+	inline COLORREF setNewColor(COLORREF& clrOld, COLORREF clrNew) noexcept
 	{
-		const auto clrTmp = *clrOld;
-		*clrOld = clrNew;
+		const auto clrTmp = COLORREF{ clrOld };
+		clrOld = clrNew;
 		return clrTmp;
 	}
 
 	/// Calculates perceptual lightness of a COLORREF color.
-	[[nodiscard]] double calculatePerceivedLightness(COLORREF clr);
-	[[nodiscard]] COLORREF getAccentColor(bool adjust);
+	[[nodiscard]] double calculatePerceivedLightness(COLORREF clr) noexcept;
+	[[nodiscard]] COLORREF getAccentColor(bool adjust) noexcept;
 } // namespace dmlib_color

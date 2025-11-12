@@ -20,10 +20,16 @@
 #include <cstdint>
 #include <cstring>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
-#endif // __clang__
+#if defined(_MSC_VER)
+	# pragma warning(push)
+	# pragma warning(disable: 26429) // Symbol is never tested for nullness.
+	# pragma warning(disable: 26472) // Don't use a static_cast for arithmetic conversions.
+	# pragma warning(disable: 26481) // Don't use pointer arithmetic.
+	# pragma warning(disable: 26485) // No array to pointer decay.
+#elif defined(__clang__)
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
 
 namespace iat_hook
 {
@@ -125,6 +131,8 @@ namespace iat_hook
 	}
 } // namespace iat_hook
 
-#ifdef __clang__
+#if defined(_MSC_VER)
+# pragma warning(pop)
+#elif defined(__clang__)
 #pragma clang diagnostic pop
 #endif

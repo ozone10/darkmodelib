@@ -25,7 +25,7 @@
 
 namespace dmlib_win32api
 {
-	[[nodiscard]] bool IsDarkModeActive();
+	[[nodiscard]] bool IsDarkModeActive() noexcept;
 }
 
 DarkMode::Colors dmlib_color::getLightColors()
@@ -56,9 +56,9 @@ DarkMode::Colors dmlib_color::getLightColors()
  *
  * @note Based on: https://stackoverflow.com/a/56678483
  */
-double dmlib_color::calculatePerceivedLightness(COLORREF clr)
+double dmlib_color::calculatePerceivedLightness(COLORREF clr) noexcept
 {
-	auto linearValue = [](double colorChannel) -> double
+	auto linearValue = [](double colorChannel) noexcept -> double
 	{
 		colorChannel /= 255.0;
 
@@ -100,7 +100,7 @@ double dmlib_color::calculatePerceivedLightness(COLORREF clr)
 	return ((std::pow(luminance, oneThird) * scalingFactor) - offset);
 }
 
-static COLORREF adjustClrLightness(COLORREF clr, bool useDark)
+static COLORREF adjustClrLightness(COLORREF clr, bool useDark) noexcept
 {
 	WORD h = 0;
 	WORD s = 0;
@@ -125,7 +125,7 @@ static COLORREF adjustClrLightness(COLORREF clr, bool useDark)
 	}
 }
 
-COLORREF dmlib_color::getAccentColor(bool adjust)
+COLORREF dmlib_color::getAccentColor(bool adjust) noexcept
 {
 	BOOL opaque = TRUE;
 	COLORREF clrAccent = 0;

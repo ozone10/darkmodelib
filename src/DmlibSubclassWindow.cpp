@@ -242,7 +242,7 @@ LRESULT CALLBACK dmlib_subclass::WindowCtlColorSubclass(
  * @see postpaintToolbarItem()
  * @see darkToolbarNotifyCustomDraw()
  */
-[[nodiscard]] static LRESULT prepaintToolbarItem(LPNMTBCUSTOMDRAW& lptbcd)
+[[nodiscard]] static LRESULT prepaintToolbarItem(LPNMTBCUSTOMDRAW& lptbcd) noexcept
 {
 	// Set colors
 
@@ -351,7 +351,7 @@ LRESULT CALLBACK dmlib_subclass::WindowCtlColorSubclass(
  * @see prepaintToolbarItem()
  * @see darkToolbarNotifyCustomDraw()
  */
-[[nodiscard]] static LRESULT postpaintToolbarItem(const LPNMTBCUSTOMDRAW& lptbcd)
+[[nodiscard]] static LRESULT postpaintToolbarItem(const LPNMTBCUSTOMDRAW& lptbcd) noexcept
 {
 	TBBUTTONINFOW tbi{};
 	tbi.cbSize = sizeof(TBBUTTONINFOW);
@@ -402,7 +402,7 @@ LRESULT CALLBACK dmlib_subclass::WindowCtlColorSubclass(
 	UINT uMsg,
 	WPARAM wParam,
 	LPARAM lParam
-)
+) noexcept
 {
 	auto* lptbcd = reinterpret_cast<LPNMTBCUSTOMDRAW>(lParam);
 
@@ -449,7 +449,7 @@ LRESULT CALLBACK dmlib_subclass::WindowCtlColorSubclass(
  *
  * @see darkListViewNotifyCustomDraw()
  */
-static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool hasGridLines)
+static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool hasGridLines) noexcept
 {
 	const auto& hList = lplvcd->nmcd.hdr.hwndFrom;
 	const bool isSelected = ListView_GetItemState(hList, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED) == LVIS_SELECTED;
@@ -484,7 +484,7 @@ static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool h
 			const LONG paddingLeft = DarkMode::isThemeDark() ? 1 : 0;
 			const LONG paddingRight = DarkMode::isThemeDark() ? 2 : 1;
 
-			LVITEMINDEX lvii{ static_cast<int>(lplvcd->nmcd.dwItemSpec), 0 };
+			auto lvii = LVITEMINDEX{ static_cast<int>(lplvcd->nmcd.dwItemSpec), 0 };
 			RECT rcSubitem{
 				lplvcd->nmcd.rc.left
 				, lplvcd->nmcd.rc.top
@@ -541,7 +541,7 @@ static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool h
 	UINT uMsg,
 	WPARAM wParam,
 	LPARAM lParam
-)
+) noexcept
 {
 	auto* lplvcd = reinterpret_cast<LPNMLVCUSTOMDRAW>(lParam);
 	const auto& hList = lplvcd->nmcd.hdr.hwndFrom;
@@ -592,7 +592,7 @@ static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool h
  * @see postpaintTreeViewItem()
  * @see darkTreeViewNotifyCustomDraw()
  */
-[[nodiscard]] static LRESULT prepaintTreeViewItem(LPNMTVCUSTOMDRAW& lptvcd)
+[[nodiscard]] static LRESULT prepaintTreeViewItem(LPNMTVCUSTOMDRAW& lptvcd) noexcept
 {
 	LRESULT retVal = CDRF_DODEFAULT;
 
@@ -631,7 +631,7 @@ static void prepaintListViewItem(LPNMLVCUSTOMDRAW& lplvcd, bool isReport, bool h
  * @see prepaintTreeViewItem()
  * @see darkTreeViewNotifyCustomDraw()
  */
-static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
+static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd) noexcept
 {
 	RECT rcFrame{ lptvcd->nmcd.rc };
 	::InflateRect(&rcFrame, 1, 0);
@@ -669,7 +669,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
 	UINT uMsg,
 	WPARAM wParam,
 	LPARAM lParam
-)
+) noexcept
 {
 	auto* lptvcd = reinterpret_cast<LPNMTVCUSTOMDRAW>(lParam);
 
@@ -716,7 +716,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
  *
  * @see darkTrackbarNotifyCustomDraw()
  */
-[[nodiscard]] static LRESULT prepaintTrackbarItem(const LPNMCUSTOMDRAW& lpnmcd)
+[[nodiscard]] static LRESULT prepaintTrackbarItem(const LPNMCUSTOMDRAW& lpnmcd) noexcept
 {
 	LRESULT retVal = CDRF_DODEFAULT;
 
@@ -783,7 +783,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
 	UINT uMsg,
 	WPARAM wParam,
 	LPARAM lParam
-)
+) noexcept
 {
 	auto* lpnmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
 
@@ -822,7 +822,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
  *
  * @see darkRebarNotifyCustomDraw()
  */
-[[nodiscard]] static LRESULT prepaintRebar(const LPNMCUSTOMDRAW& lpnmcd)
+[[nodiscard]] static LRESULT prepaintRebar(const LPNMCUSTOMDRAW& lpnmcd) noexcept
 {
 	::FillRect(lpnmcd->hdc, &lpnmcd->rc, DarkMode::getDlgBackgroundBrush());
 
@@ -904,7 +904,7 @@ static void postpaintTreeViewItem(const LPNMTVCUSTOMDRAW& lptvcd)
 	UINT uMsg,
 	WPARAM wParam,
 	LPARAM lParam
-)
+) noexcept
 {
 	auto* lpnmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
 	if (lpnmcd->dwDrawStage == CDDS_PREPAINT)
@@ -1030,7 +1030,7 @@ LRESULT CALLBACK dmlib_subclass::WindowNotifySubclass(
  *
  * @see dmlib_subclass::WindowMenuBarSubclass()
  */
-static void paintMenuBar(HWND hWnd, HDC hdc)
+static void paintMenuBar(HWND hWnd, HDC hdc) noexcept
 {
 	// get the menubar rect
 	MENUBARINFO mbi{};
@@ -1180,7 +1180,7 @@ static void paintMenuBarItems(UAHDRAWMENUITEM& UDMI, const HTHEME& hTheme)
  *
  * @see dmlib_subclass::WindowMenuBarSubclass()
  */
-static void drawUAHMenuNCBottomLine(HWND hWnd)
+static void drawUAHMenuNCBottomLine(HWND hWnd) noexcept
 {
 	MENUBARINFO mbi{};
 	mbi.cbSize = sizeof(MENUBARINFO);
@@ -1366,7 +1366,7 @@ LRESULT CALLBACK dmlib_subclass::WindowSettingChangeSubclass(
 class TaskDlgData
 {
 public:
-	TaskDlgData()
+	TaskDlgData() noexcept
 	{
 		if (m_themeData.ensureTheme(nullptr))
 		{

@@ -36,7 +36,7 @@ void dmlib_paint::paintRoundRect(
 	HBRUSH hBrush,
 	int width,
 	int height
-)
+) noexcept
 {
 	auto holdBrush = ::SelectObject(hdc, hBrush);
 	auto holdPen = ::SelectObject(hdc, hpen);

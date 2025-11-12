@@ -34,8 +34,8 @@
 
 namespace dmlib_win32api
 {
-	[[nodiscard]] bool IsWindows11();
-	[[nodiscard]] bool IsDarkModeActive();
+	[[nodiscard]] bool IsWindows11() noexcept;
+	[[nodiscard]] bool IsDarkModeActive() noexcept;
 }
 
 using fnFindThunkInModule = auto (*)(void* moduleBase, const char* dllName, const char* funcName) -> PIMAGE_THUNK_DATA;
@@ -71,7 +71,7 @@ struct HookData
 
 	std::uint16_t m_ord = 0;
 
-	void init(const char* dllName, const char* funcName, fnFindThunkInModule findFn) noexcept
+	void init(const char* dllName, const char* funcName, const fnFindThunkInModule& findFn) noexcept
 	{
 		if (m_dllName == nullptr)
 		{
@@ -140,7 +140,7 @@ static auto HookFunction(HookData<T>& hookData, T newFn, const char* dllName, In
 }
 
 template <typename T>
-static void UnhookFunction(HookData<T>& hookData)
+static void UnhookFunction(HookData<T>& hookData) noexcept
 {
 	const dmlib_module::ModuleHandle moduleComctl(L"comctl32.dll");
 	if (!moduleComctl.isLoaded())
@@ -168,7 +168,7 @@ static void UnhookFunction(HookData<T>& hookData)
 using fnOpenNcThemeData = auto (WINAPI*)(HWND hWnd, LPCWSTR pszClassList) -> HTHEME; // ordinal 49
 static fnOpenNcThemeData pfOpenNcThemeData = nullptr;
 
-bool dmlib_hook::loadOpenNcThemeData(const HMODULE& hUxtheme)
+bool dmlib_hook::loadOpenNcThemeData(const HMODULE& hUxtheme) noexcept
 {
 	return LoadFn(hUxtheme, pfOpenNcThemeData, 49);
 }
@@ -264,7 +264,7 @@ static COLORREF g_clrTGridlines = RGB(100, 100, 100);
  * @param[in]   nIndex  One of the supported system color indices.
  * @param[in]   clr     Custom `COLORREF` value to apply.
  */
-void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
+void dmlib_hook::setMySysColor(int nIndex, COLORREF clr) noexcept
 {
 	switch (nIndex)
 	{
@@ -293,7 +293,7 @@ void dmlib_hook::setMySysColor(int nIndex, COLORREF clr)
 	}
 }
 
-static DWORD WINAPI MyGetSysColor(int nIndex)
+static DWORD WINAPI MyGetSysColor(int nIndex) noexcept
 {
 	if (!dmlib_win32api::IsDarkModeActive())
 	{
@@ -367,10 +367,10 @@ static HRESULT WINAPI MyGetThemeColor(
 	int iStateId,
 	int iPropId,
 	COLORREF* pColor
-)
+) noexcept
 {
 	const HRESULT retVal = g_hookDataGetThemeColor.m_trueFn(hTheme, iPartId, iStateId, iPropId, pColor);
-	if (!dmlib_win32api::IsDarkModeActive())
+	if (!dmlib_win32api::IsDarkModeActive() || pColor == nullptr)
 	{
 		return retVal;
 	}
@@ -426,9 +426,9 @@ static HRESULT WINAPI MyDrawThemeBackgroundEx(
 	int iStateId,
 	LPCRECT pRect,
 	const DTBGOPTS* pOptions
-)
+) noexcept
 {
-	if (!dmlib_win32api::IsDarkModeActive())
+	if (!dmlib_win32api::IsDarkModeActive() || pOptions == nullptr)
 	{
 		return g_hookDataDrawThemeBackgroundEx.m_trueFn(hTheme, hdc, iPartId, iStateId, pRect, pOptions);
 	}

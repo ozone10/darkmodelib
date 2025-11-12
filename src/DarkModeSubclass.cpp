@@ -200,7 +200,7 @@ namespace // anonymous
 	} g_dmCfg;
 } // anonymous namespace
 
-static dmlib_color::Theme& getTheme()
+static dmlib_color::Theme& getTheme() noexcept
 {
 	static dmlib_color::Theme tMain{};
 	return tMain;
@@ -233,24 +233,24 @@ int DarkMode::getColorTone()
 	return static_cast<int>(getTheme().getColorTone());
 }
 
-static dmlib_color::ThemeView& getThemeView()
+static dmlib_color::ThemeView& getThemeView() noexcept
 {
 	static dmlib_color::ThemeView tView{};
 	return tView;
 }
 
-COLORREF DarkMode::setBackgroundColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&getTheme().m_colors.background, clrNew); }
-COLORREF DarkMode::setCtrlBackgroundColor(COLORREF clrNew)  { return dmlib_color::setNewColor(&getTheme().m_colors.ctrlBackground, clrNew); }
-COLORREF DarkMode::setHotBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(&getTheme().m_colors.hotBackground, clrNew); }
-COLORREF DarkMode::setDlgBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(&getTheme().m_colors.dlgBackground, clrNew); }
-COLORREF DarkMode::setErrorBackgroundColor(COLORREF clrNew) { return dmlib_color::setNewColor(&getTheme().m_colors.errorBackground, clrNew); }
-COLORREF DarkMode::setTextColor(COLORREF clrNew)            { return dmlib_color::setNewColor(&getTheme().m_colors.text, clrNew); }
-COLORREF DarkMode::setDarkerTextColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&getTheme().m_colors.darkerText, clrNew); }
-COLORREF DarkMode::setDisabledTextColor(COLORREF clrNew)    { return dmlib_color::setNewColor(&getTheme().m_colors.disabledText, clrNew); }
-COLORREF DarkMode::setLinkTextColor(COLORREF clrNew)        { return dmlib_color::setNewColor(&getTheme().m_colors.linkText, clrNew); }
-COLORREF DarkMode::setEdgeColor(COLORREF clrNew)            { return dmlib_color::setNewColor(&getTheme().m_colors.edge, clrNew); }
-COLORREF DarkMode::setHotEdgeColor(COLORREF clrNew)         { return dmlib_color::setNewColor(&getTheme().m_colors.hotEdge, clrNew); }
-COLORREF DarkMode::setDisabledEdgeColor(COLORREF clrNew)    { return dmlib_color::setNewColor(&getTheme().m_colors.disabledEdge, clrNew); }
+COLORREF DarkMode::setBackgroundColor(COLORREF clrNew)      { return dmlib_color::setNewColor(getTheme().m_colors.background, clrNew); }
+COLORREF DarkMode::setCtrlBackgroundColor(COLORREF clrNew)  { return dmlib_color::setNewColor(getTheme().m_colors.ctrlBackground, clrNew); }
+COLORREF DarkMode::setHotBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(getTheme().m_colors.hotBackground, clrNew); }
+COLORREF DarkMode::setDlgBackgroundColor(COLORREF clrNew)   { return dmlib_color::setNewColor(getTheme().m_colors.dlgBackground, clrNew); }
+COLORREF DarkMode::setErrorBackgroundColor(COLORREF clrNew) { return dmlib_color::setNewColor(getTheme().m_colors.errorBackground, clrNew); }
+COLORREF DarkMode::setTextColor(COLORREF clrNew)            { return dmlib_color::setNewColor(getTheme().m_colors.text, clrNew); }
+COLORREF DarkMode::setDarkerTextColor(COLORREF clrNew)      { return dmlib_color::setNewColor(getTheme().m_colors.darkerText, clrNew); }
+COLORREF DarkMode::setDisabledTextColor(COLORREF clrNew)    { return dmlib_color::setNewColor(getTheme().m_colors.disabledText, clrNew); }
+COLORREF DarkMode::setLinkTextColor(COLORREF clrNew)        { return dmlib_color::setNewColor(getTheme().m_colors.linkText, clrNew); }
+COLORREF DarkMode::setEdgeColor(COLORREF clrNew)            { return dmlib_color::setNewColor(getTheme().m_colors.edge, clrNew); }
+COLORREF DarkMode::setHotEdgeColor(COLORREF clrNew)         { return dmlib_color::setNewColor(getTheme().m_colors.hotEdge, clrNew); }
+COLORREF DarkMode::setDisabledEdgeColor(COLORREF clrNew)    { return dmlib_color::setNewColor(getTheme().m_colors.disabledEdge, clrNew); }
 
 void DarkMode::setThemeColors(Colors colors)
 {
@@ -290,14 +290,14 @@ HPEN DarkMode::getEdgePen()                     { return getTheme().getPens().m_
 HPEN DarkMode::getHotEdgePen()                  { return getTheme().getPens().m_hotEdge; }
 HPEN DarkMode::getDisabledEdgePen()             { return getTheme().getPens().m_disabledEdge; }
 
-COLORREF DarkMode::setViewBackgroundColor(COLORREF clrNew)      { return dmlib_color::setNewColor(&getThemeView().m_clrView.background, clrNew); }
-COLORREF DarkMode::setViewTextColor(COLORREF clrNew)            { return dmlib_color::setNewColor(&getThemeView().m_clrView.text, clrNew); }
-COLORREF DarkMode::setViewGridlinesColor(COLORREF clrNew)       { return dmlib_color::setNewColor(&getThemeView().m_clrView.gridlines, clrNew); }
+COLORREF DarkMode::setViewBackgroundColor(COLORREF clrNew)      { return dmlib_color::setNewColor(getThemeView().m_clrView.background, clrNew); }
+COLORREF DarkMode::setViewTextColor(COLORREF clrNew)            { return dmlib_color::setNewColor(getThemeView().m_clrView.text, clrNew); }
+COLORREF DarkMode::setViewGridlinesColor(COLORREF clrNew)       { return dmlib_color::setNewColor(getThemeView().m_clrView.gridlines, clrNew); }
 
-COLORREF DarkMode::setHeaderBackgroundColor(COLORREF clrNew)    { return dmlib_color::setNewColor(&getThemeView().m_clrView.headerBackground, clrNew); }
-COLORREF DarkMode::setHeaderHotBackgroundColor(COLORREF clrNew) { return dmlib_color::setNewColor(&getThemeView().m_clrView.headerHotBackground, clrNew); }
-COLORREF DarkMode::setHeaderTextColor(COLORREF clrNew)          { return dmlib_color::setNewColor(&getThemeView().m_clrView.headerText, clrNew); }
-COLORREF DarkMode::setHeaderEdgeColor(COLORREF clrNew)          { return dmlib_color::setNewColor(&getThemeView().m_clrView.headerEdge, clrNew); }
+COLORREF DarkMode::setHeaderBackgroundColor(COLORREF clrNew)    { return dmlib_color::setNewColor(getThemeView().m_clrView.headerBackground, clrNew); }
+COLORREF DarkMode::setHeaderHotBackgroundColor(COLORREF clrNew) { return dmlib_color::setNewColor(getThemeView().m_clrView.headerHotBackground, clrNew); }
+COLORREF DarkMode::setHeaderTextColor(COLORREF clrNew)          { return dmlib_color::setNewColor(getThemeView().m_clrView.headerText, clrNew); }
+COLORREF DarkMode::setHeaderEdgeColor(COLORREF clrNew)          { return dmlib_color::setNewColor(getThemeView().m_clrView.headerEdge, clrNew); }
 
 void DarkMode::setViewColors(ColorsView colors)
 {
@@ -879,7 +879,7 @@ DWORD DarkMode::getWindowsBuildNumber()
 }
 
 /// Check if OS is at leaast Windows 11 version 25H2 build 26200.
-static bool isAtLeastWin11Ver25H2()
+static bool isAtLeastWin11Ver25H2() noexcept
 {
 	static constexpr DWORD win11Build25H2 = 26200;
 	return dmlib_win32api::GetWindowsBuildNumber() >= win11Build25H2;
@@ -976,7 +976,7 @@ void DarkMode::enableDarkScrollBarForWindowAndChildren([[maybe_unused]] HWND hWn
 /**
  * @brief Checks if current mode is dark type.
  */
-bool DarkMode::isDarkDmTypeUsed()
+bool DarkMode::isDarkDmTypeUsed() noexcept
 {
 	return g_dmCfg.m_dmType == DarkMode::DarkModeType::dark;
 }
@@ -1060,7 +1060,7 @@ void DarkMode::removeGroupboxCtrlSubclass(HWND hWnd)
  * @see DarkMode::setCheckboxOrRadioBtnCtrlSubclass()
  * @see DarkMode::setGroupboxCtrlSubclass()
  */
-static void setBtnCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
+static void setBtnCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	const auto nBtnStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
 	switch (nBtnStyle & BS_TYPEMASK)
@@ -1164,7 +1164,7 @@ void DarkMode::removeUpDownCtrlSubclass(HWND hWnd)
  * @see DarkModeParams
  * @see DarkMode::setUpDownCtrlSubclass()
  */
-static void setUpDownCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
+static void setUpDownCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1284,7 +1284,7 @@ void DarkMode::removeTabCtrlSubclass(HWND hWnd)
  * @see DarkMode::setDarkTooltips()
  * @see DarkMode::setTabCtrlSubclass()
  */
-static void setTabCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
+static void setTabCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -1343,7 +1343,7 @@ void DarkMode::removeCustomBorderForListBoxOrEditCtrlSubclass(HWND hWnd)
  * @see DarkModeParams
  * @see DarkMode::setCustomBorderForListBoxOrEditCtrlSubclass()
  */
-static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p, bool isListBox)
+static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p, bool isListBox) noexcept
 {
 	const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
 	const bool hasScrollBar = ((nStyle & WS_HSCROLL) == WS_HSCROLL) || ((nStyle & WS_VSCROLL) == WS_VSCROLL);
@@ -1527,7 +1527,7 @@ void DarkMode::removeComboBoxExCtrlSubclass(HWND hWnd)
  *
  * @see DarkMode::setComboBoxExCtrlSubclass()
  */
-static void setComboBoxExCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setComboBoxExCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1583,7 +1583,7 @@ void DarkMode::removeListViewCtrlSubclass(HWND hWnd)
  * @see DarkMode::setListViewCtrlSubclass()
  * @see DarkMode::setHeaderCtrlSubclass()
  */
-static void setListViewCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
+static void setListViewCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	HWND hHeader = ListView_GetHeader(hWnd);
 
@@ -1694,7 +1694,7 @@ void DarkMode::removeStatusBarCtrlSubclass(HWND hWnd)
  *
  * @see DarkMode::setStatusBarCtrlSubclass()
  */
-static void setStatusBarCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setStatusBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1751,7 +1751,7 @@ void DarkMode::removeProgressBarCtrlSubclass(HWND hWnd)
  * @see DarkMode::setProgressBarClassicTheme()
  * @see DarkMode::setProgressBarCtrlSubclass()
  */
-static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
 	if (p.m_theme && (nStyle & PBS_MARQUEE) == PBS_MARQUEE)
@@ -1810,7 +1810,7 @@ void DarkMode::removeStaticTextCtrlSubclass(HWND hWnd)
  *
  * @see DarkMode::setStaticTextCtrlSubclass()
  */
-static void setStaticTextCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setStaticTextCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1857,7 +1857,7 @@ void DarkMode::removeIPAddressCtrlSubclass(HWND hWnd)
  *
  * @see DarkMode::setIPAddressCtrlSubclass()
  */
-static void setIPAddressCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setIPAddressCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1909,7 +1909,7 @@ void DarkMode::removeHotKeyCtrlSubclass(HWND hWnd)
  *
  * @see DarkMode::setHotKeyCtrlSubclass()
  */
-static void setHotKeyCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setHotKeyCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1934,7 +1934,7 @@ static void setHotKeyCtrlSubclass(HWND hWnd, DarkModeParams p)
  * @see DarkMode::setTreeViewWindowTheme()
  * @see DarkMode::setDarkTooltips()
  */
-static void setTreeViewCtrlTheme(HWND hWnd, DarkModeParams p)
+static void setTreeViewCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -1956,7 +1956,7 @@ static void setTreeViewCtrlTheme(HWND hWnd, DarkModeParams p)
  *
  * @see DarkMode::setWindowEraseBgSubclass()
  */
-static void setRebarCtrlSubclass(HWND hWnd, DarkModeParams p)
+static void setRebarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_subclass)
 	{
@@ -1976,7 +1976,7 @@ static void setRebarCtrlSubclass(HWND hWnd, DarkModeParams p)
  * @see DarkMode::setDarkLineAbovePanelToolbar()
  * @see DarkMode::setDarkTooltips()
  */
-static void setToolbarCtrlTheme(HWND hWnd, DarkModeParams p)
+static void setToolbarCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -1993,7 +1993,7 @@ static void setToolbarCtrlTheme(HWND hWnd, DarkModeParams p)
  *
  * @see DarkMode::setDarkScrollBar()
  */
-static void setScrollBarCtrlTheme(HWND hWnd, DarkModeParams p)
+static void setScrollBarCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -2012,7 +2012,7 @@ static void setScrollBarCtrlTheme(HWND hWnd, DarkModeParams p)
  *
  * @see DarkMode::enableSysLinkCtrlCtlColor()
  */
-static void enableSysLinkCtrlCtlColor(HWND hWnd, DarkModeParams p)
+static void enableSysLinkCtrlCtlColor(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -2032,7 +2032,7 @@ static void enableSysLinkCtrlCtlColor(HWND hWnd, DarkModeParams p)
  * @see DarkMode::setWindowStyle()
  * @see DarkMode::setDarkTooltips()
  */
-static void setTrackbarCtrlTheme(HWND hWnd, DarkModeParams p)
+static void setTrackbarCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -2049,7 +2049,7 @@ static void setTrackbarCtrlTheme(HWND hWnd, DarkModeParams p)
  *
  * @see DarkMode::setDarkRichEdit()
  */
-static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p)
+static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme)
 	{
@@ -2551,7 +2551,7 @@ void DarkMode::setDarkTitleBarEx(HWND hWnd, bool useWin11Features)
 	else
 	{
 		dmlib_win32api::AllowDarkModeForWindow(hWnd, DarkMode::isExperimentalActive());
-		dmlib_win32api:::RefreshTitleBarThemeColor(hWnd);
+		dmlib_win32api::RefreshTitleBarThemeColor(hWnd);
 	}
 #endif
 		// on Windows 10 title bar needs refresh when changing colors
@@ -3097,7 +3097,7 @@ int DarkMode::getTreeViewStyle()
  *
  * @param tvStyle TreeView style to set.
  */
-static void setTreeViewStyle(DarkMode::TreeViewStyle tvStyle)
+static void setTreeViewStyle(DarkMode::TreeViewStyle tvStyle) noexcept
 {
 	g_dmCfg.m_tvStyle = tvStyle;
 }
@@ -3304,20 +3304,20 @@ void DarkMode::redrawWindowFrame(HWND hWnd)
  * @param[in]   gwlIdx  Either `GWL_STYLE` or `GWL_EXSTYLE`.
  * @return `TRUE` if modified, `FALSE` if unchanged, `-1` if invalid index.
  */
-static int setWindowLongPtrStyle(HWND hWnd, bool setFlag, LONG_PTR dwFlag, int gwlIdx)
+static int setWindowLongPtrStyle(HWND hWnd, bool setFlag, LONG_PTR dwFlag, int gwlIdx) noexcept
 {
 	if ((gwlIdx != GWL_STYLE) && (gwlIdx != GWL_EXSTYLE))
 	{
 		return -1;
 	}
 
-	auto nStyle = ::GetWindowLongPtr(hWnd, gwlIdx);
+	auto nStyle = ::GetWindowLongPtrW(hWnd, gwlIdx);
 	const bool hasFlag = (nStyle & dwFlag) == dwFlag;
 
 	if (setFlag != hasFlag)
 	{
 		nStyle ^= dwFlag;
-		::SetWindowLongPtr(hWnd, gwlIdx, nStyle);
+		::SetWindowLongPtrW(hWnd, gwlIdx, nStyle);
 		return TRUE;
 	}
 	return FALSE;

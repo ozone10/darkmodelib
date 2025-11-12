@@ -138,7 +138,7 @@ static bool g_darkModeSupported = false;
 static bool g_darkModeActive = false;
 static DWORD g_buildNumber = 0;
 
-[[nodiscard]] static bool ShouldAppsUseDarkMode()
+[[nodiscard]] static bool ShouldAppsUseDarkMode() noexcept
 {
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 	if (g_buildNumber < g_win10Build1903)
@@ -164,7 +164,7 @@ static DWORD g_buildNumber = 0;
  * @param[in]   allow   Whether to allow (`true`) or disallow (`false`) dark mode.
  * @return `true` if successfully applied.
  */
-bool dmlib_win32api::AllowDarkModeForWindow(HWND hWnd, bool allow)
+bool dmlib_win32api::AllowDarkModeForWindow(HWND hWnd, bool allow) noexcept
 {
 	if (g_darkModeSupported && (pfAllowDarkModeForWindow != nullptr))
 	{
@@ -178,7 +178,7 @@ bool dmlib_win32api::AllowDarkModeForWindow(HWND hWnd, bool allow)
  *
  * @return `true` if high contrast is enabled via system accessibility settings.
  */
-bool dmlib_win32api::IsHighContrast()
+bool dmlib_win32api::IsHighContrast() noexcept
 {
 	HIGHCONTRASTW highContrast{};
 	highContrast.cbSize = sizeof(HIGHCONTRASTW);
@@ -232,7 +232,7 @@ void dmlib_win32api::RefreshTitleBarThemeColor(HWND hWnd)
  * @param[in] lParam LPARAM from a system message.
  * @return `true` if the message signals a theme mode change.
  */
-bool dmlib_win32api::IsColorSchemeChangeMessage(LPARAM lParam)
+bool dmlib_win32api::IsColorSchemeChangeMessage(LPARAM lParam) noexcept
 {
 	bool isMsg = false;
 	if ((lParam != 0) // NULL
@@ -266,7 +266,7 @@ bool dmlib_win32api::IsColorSchemeChangeMessage(LPARAM lParam)
  * @param[in]   uMsg    System message to check.
  * @return `true` if the message signals a theme mode change.
  */
-bool dmlib_win32api::IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam)
+bool dmlib_win32api::IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam) noexcept
 {
 	if (uMsg == WM_SETTINGCHANGE)
 	{
@@ -275,7 +275,7 @@ bool dmlib_win32api::IsColorSchemeChangeMessage(UINT uMsg, LPARAM lParam)
 	return false;
 }
 
-static void AllowDarkModeForApp(bool allow)
+static void AllowDarkModeForApp(bool allow) noexcept
 {
 	if (pfSetPreferredAppMode != nullptr)
 	{
@@ -289,7 +289,7 @@ static void AllowDarkModeForApp(bool allow)
 #endif
 }
 
-static void FlushMenuThemes()
+static void FlushMenuThemes() noexcept
 {
 	if (pfFlushMenuThemes != nullptr)
 	{
@@ -309,7 +309,7 @@ static constexpr DWORD g_win11Build = 22000;
  *
  * @return `true` if running on Windows 10 or newer.
  */
-bool dmlib_win32api::IsWindows10()
+bool dmlib_win32api::IsWindows10() noexcept
 {
 	return (g_buildNumber >= g_win10Build);
 }
@@ -319,12 +319,12 @@ bool dmlib_win32api::IsWindows10()
  *
  * @return `true` if running on Windows 11 or newer.
  */
-bool dmlib_win32api::IsWindows11()
+bool dmlib_win32api::IsWindows11() noexcept
 {
 	return (g_buildNumber >= g_win11Build);
 }
 
-[[nodiscard]] static bool CheckBuildNumber(DWORD buildNumber)
+[[nodiscard]] static bool CheckBuildNumber(DWORD buildNumber) noexcept
 {
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 	static constexpr size_t nWin10Builds = 8;
@@ -356,7 +356,7 @@ bool dmlib_win32api::IsWindows11()
  *
  * @return Windows build number reported by the system.
  */
-DWORD dmlib_win32api::GetWindowsBuildNumber()
+DWORD dmlib_win32api::GetWindowsBuildNumber() noexcept
 {
 	return g_buildNumber;
 }
@@ -366,7 +366,7 @@ DWORD dmlib_win32api::GetWindowsBuildNumber()
  *
  * @return `true` if dark mode API is supported.
  */
-bool dmlib_win32api::IsDarkModeSupported()
+bool dmlib_win32api::IsDarkModeSupported() noexcept
 {
 	return g_darkModeSupported;
 }
@@ -376,7 +376,7 @@ bool dmlib_win32api::IsDarkModeSupported()
  *
  * @return `true` if dark mode is active.
  */
-bool dmlib_win32api::IsDarkModeActive()
+bool dmlib_win32api::IsDarkModeActive() noexcept
 {
 	return g_darkModeActive;
 }

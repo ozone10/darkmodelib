@@ -119,7 +119,7 @@ namespace dmlib_subclass
 	 * @param[in]   subID           Identifier for the subclass instance.
 	 * @return TRUE on success, FALSE on failure, -1 if already subclassed.
 	 */
-	inline int SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID)
+	inline int SetSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID) noexcept
 	{
 		const auto subclassID = static_cast<UINT_PTR>(subID);
 		if (::GetWindowSubclass(hWnd, subclassProc, subclassID, nullptr) == FALSE)
@@ -142,7 +142,7 @@ namespace dmlib_subclass
 	 * @return TRUE on success, FALSE on failure, -1 if not present.
 	 */
 	template <typename T = void>
-	inline auto RemoveSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID) -> int
+	inline auto RemoveSubclass(HWND hWnd, SUBCLASSPROC subclassProc, SubclassID subID) noexcept -> int
 	{
 		T* pData = nullptr;
 		const auto subclassID = static_cast<UINT_PTR>(subID);
@@ -401,5 +401,5 @@ namespace dmlib_subclass
 	}
 
 	/// Determines if themed styling should be preferred over subclassing.
-	[[nodiscard]] bool isThemePrefered();
+	[[nodiscard]] bool isThemePrefered() noexcept;
 } // namespace dmlib_subclass

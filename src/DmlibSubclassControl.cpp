@@ -405,8 +405,7 @@ LRESULT CALLBACK dmlib_subclass::ButtonSubclass(
 			themeData.closeTheme();
 			if (pButtonData->m_isSizeSet)
 			{
-				SIZE szBtn{};
-				if (Button_GetIdealSize(hWnd, &szBtn) == TRUE)
+				if (SIZE szBtn{}; Button_GetIdealSize(hWnd, &szBtn) == TRUE)
 				{
 					const UINT dpi = dmlib_dpi::GetDpiForParent(hWnd);
 					const int cx = std::min<LONG>(szBtn.cx, dmlib_dpi::scale(pButtonData->m_szBtn.cx, dpi));
@@ -697,7 +696,7 @@ LRESULT CALLBACK dmlib_subclass::GroupboxSubclass(
  *
  * @see UpDownData
  */
-static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownData)
+static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownData) noexcept
 {
 	auto& themeData = upDownData.m_themeData;
 	const bool hasTheme = themeData.ensureTheme(hWnd);
@@ -721,7 +720,7 @@ static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownDa
 	if (hasTheme && DarkMode::isAtLeastWindows11() && dmlib_subclass::isThemePrefered())
 	{
 		// all 4 variants of up-down control buttons have enums with same values
-		auto getStateId = [&](bool isHot) -> int
+		auto getStateId = [&](bool isHot) noexcept -> int
 		{
 			if (isDisabled)
 			{
@@ -759,7 +758,7 @@ static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownDa
 	{
 		// Button part
 
-		auto paintUpDownBtn = [&](const RECT& rect, bool isHot) -> void
+		auto paintUpDownBtn = [&](const RECT& rect, bool isHot) noexcept -> void
 		{
 			HBRUSH hBrush = nullptr;
 			HPEN hPen = nullptr;
@@ -788,7 +787,7 @@ static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownDa
 
 		// Glyph part
 
-		auto getGlyphColor = [&](bool isHot) -> COLORREF
+		auto getGlyphColor = [&](bool isHot) noexcept -> COLORREF
 		{
 			if (isDisabled)
 			{
@@ -815,7 +814,7 @@ static void paintUpDown(HWND hWnd, HDC hdc, dmlib_subclass::UpDownData& upDownDa
 			static constexpr auto offsetSize = static_cast<LONG>(scaleFactor) % 2;
 			const auto baseSize = static_cast<float>(dmlib_dpi::scale(((size.cy - offsetSize) / scaleFactor) + offsetSize, ::GetParent(hWnd)));
 
-			auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) -> void
+			auto paintArrow = [&](const RECT& rect, bool isHot, bool isPrev) noexcept -> void
 			{
 				auto sizeArrow = POINTFLOAT{ baseSize, baseSize };
 				auto offsetPosX = 0.0F;
@@ -1212,6 +1211,13 @@ LRESULT CALLBACK dmlib_subclass::TabPaintSubclass(
 	auto* pTabData = reinterpret_cast<TabData*>(dwRefData);
 	const auto& hMemDC = pTabData->m_bufferData.getHMemDC();
 
+	if (const auto nStyle = ::GetWindowLongPtrW(hWnd, GWL_STYLE);
+		((nStyle & (TCS_VERTICAL | TCS_OWNERDRAWFIXED)) != 0)
+		&& (uMsg != WM_NCDESTROY))
+	{
+		return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
 	switch (uMsg)
 	{
 		case WM_NCDESTROY:
@@ -1238,11 +1244,6 @@ LRESULT CALLBACK dmlib_subclass::TabPaintSubclass(
 		case WM_PAINT:
 		{
 			if (!DarkMode::isEnabled())
-			{
-				break;
-			}
-
-			if ((::GetWindowLongPtr(hWnd, GWL_STYLE) & TCS_VERTICAL) == TCS_VERTICAL)
 			{
 				break;
 			}
@@ -1346,7 +1347,7 @@ LRESULT CALLBACK dmlib_subclass::TabUpDownSubclass(
  * @param[in]   hWnd                Handle to the target list box or edit control.
  * @param[in]   borderMetricsData   Precomputed system metrics and hot state.
  */
-static void ncPaintCustomBorder(HWND hWnd, const dmlib_subclass::BorderMetricsData& borderMetricsData)
+static void ncPaintCustomBorder(HWND hWnd, const dmlib_subclass::BorderMetricsData& borderMetricsData) noexcept
 {
 	HDC hdc = ::GetWindowDC(hWnd);
 	RECT rcClient{};
@@ -1948,7 +1949,7 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxExSubclass(
  * @param[in] lParam Pointer to `LPNMCUSTOMDRAW`.
  * @return `LRESULT` containing draw flags.
  */
-static LRESULT onCustomDrawLVHeader(LPARAM lParam)
+[[nodiscard]] static LRESULT onCustomDrawLVHeader(LPARAM lParam) noexcept
 {
 	auto* lpnmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
 	switch (lpnmcd->dwDrawStage)
@@ -2639,7 +2640,7 @@ LRESULT CALLBACK dmlib_subclass::StatusBarSubclass(
  *
  * @note This function assumes horizontal progress bars.
  */
-static void getProgressBarRects(HWND hWnd, RECT* rcEmpty, RECT* rcFilled)
+static void getProgressBarRects(HWND hWnd, RECT* rcEmpty, RECT* rcFilled) noexcept
 {
 	const auto pos = static_cast<int>(::SendMessage(hWnd, PBM_GETPOS, 0, 0));
 
@@ -2674,7 +2675,7 @@ static void getProgressBarRects(HWND hWnd, RECT* rcEmpty, RECT* rcFilled)
  * @see ProgressBarData
  * @see DarkMode::getProgressBarRects()
  */
-static void paintProgressBar(HWND hWnd, HDC hdc, const dmlib_subclass::ProgressBarData& progressBarData)
+static void paintProgressBar(HWND hWnd, HDC hdc, const dmlib_subclass::ProgressBarData& progressBarData) noexcept
 {
 	const auto& hTheme = progressBarData.m_themeData.getHTheme();
 
@@ -2700,7 +2701,7 @@ static void paintProgressBar(HWND hWnd, HDC hdc, const dmlib_subclass::ProgressB
  *
  * @see dmlib_subclass::ProgressBarSubclass()
  */
-[[nodiscard]] static int getProgressBarState(WPARAM wParam)
+[[nodiscard]] static int getProgressBarState(WPARAM wParam) noexcept
 {
 	switch (wParam)
 	{
@@ -2901,7 +2902,7 @@ LRESULT CALLBACK dmlib_subclass::StaticTextSubclass(
  *
  * @see dmlib_subclass::IPAddressSubclass()
  */
-static void paintIPAddress(HWND hWnd, HDC hdc)
+static void paintIPAddress(HWND hWnd, HDC hdc) noexcept
 {
 	const bool isEnabled = ::IsWindowEnabled(hWnd) == TRUE;
 

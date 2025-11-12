@@ -65,7 +65,7 @@ std::wstring dmlib_ini::getIniPath(const std::wstring& iniFilename)
  * @param[in] filePath Path to the file to check.
  * @return `true` if the file exists and is not a directory, otherwise `false`.
  */
-bool dmlib_ini::fileExists(const std::wstring& filePath)
+bool dmlib_ini::fileExists(const std::wstring& filePath) noexcept
 {
 	const DWORD dwAttrib = ::GetFileAttributesW(filePath.c_str());
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES && ((dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY));

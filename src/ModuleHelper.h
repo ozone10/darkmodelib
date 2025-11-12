@@ -49,7 +49,7 @@ namespace dmlib_module
 	public:
 		ModuleHandle() = delete;
 
-		explicit ModuleHandle(const wchar_t* moduleName)
+		explicit ModuleHandle(const wchar_t* moduleName) noexcept
 			: m_hModule(::LoadLibraryExW(moduleName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32))
 		{}
 

@@ -197,7 +197,7 @@ namespace dmlib_paint
 	}
 
 	/// Paints a rounded rectangle using the specified pen and brush.
-	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height);
+	void paintRoundRect(HDC hdc, const RECT& rect, HPEN hpen, HBRUSH hBrush, int width, int height) noexcept;
 
 	/**
 	 * @brief Paints a rectangle using the specified pen and brush.
@@ -218,7 +218,7 @@ namespace dmlib_paint
 		const RECT& rect,
 		HPEN hpen,
 		HBRUSH hBrush
-	)
+	) noexcept
 	{
 		dmlib_paint::paintRoundRect(hdc, rect, hpen, hBrush, 0, 0);
 	}
@@ -243,7 +243,7 @@ namespace dmlib_paint
 		HPEN hpen,
 		int width,
 		int height
-	)
+	) noexcept
 	{
 		dmlib_paint::paintRoundRect(hdc, rect, hpen, static_cast<HBRUSH>(::GetStockObject(NULL_BRUSH)), width, height);
 	}
@@ -261,7 +261,7 @@ namespace dmlib_paint
 	 *
 	 * @see dmlib_paint::paintRoundRect()
 	 */
-	inline void paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen)
+	inline void paintFrameRect(HDC hdc, const RECT& rect, HPEN hpen) noexcept
 	{
 		dmlib_paint::paintRoundRect(hdc, rect, hpen, static_cast<HBRUSH>(::GetStockObject(NULL_BRUSH)), 0, 0);
 	}
