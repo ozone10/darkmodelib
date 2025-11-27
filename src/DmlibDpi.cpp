@@ -164,11 +164,6 @@ LOGFONT dmlib_dpi::getSysFontForDpi(UINT dpi, FontType type) noexcept
 				break;
 			}
 		}
-
-		if (pfSystemParametersInfoForDpi == DummySystemParametersInfoForDpi)
-		{
-			lf.lfHeight = scaleFontForDpi(lf.lfHeight, dpi);
-		}
 	}
 	else // should not happen, fallback
 	{

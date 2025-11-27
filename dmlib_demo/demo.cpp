@@ -14,6 +14,7 @@
 #include <windows.h>
 
 #include <commctrl.h>
+#include <richedit.h>
 
 #include <algorithm>
 #include <array>
@@ -272,6 +273,7 @@ enum class IdCtrl : WORD
 	listviewGrid,
 	treeview,
 	hotkey,
+	richEdit,
 	scrollH = 1049,
 	scrollV,
 	statusbar
@@ -391,6 +393,8 @@ static HRESULT CALLBACK TaskDlgCallback(
 	return S_OK;
 }
 
+static HMODULE hModRich = nullptr;
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -461,6 +465,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int heightListBox = Scale(100);
 			static const int heightListView = Scale(98);
 			static const int heightTreeView = Scale(90);
+			static const int heightRichEdit = Scale(98);
 
 			static const int xPos1stCol = 10;
 			static const int xPos1stColCtrl = xPos1stCol + xPosCtrl;
@@ -502,6 +507,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int heightGBIP = yPosCtrl + ((heightCtrl + heightEditGap) * 1) + yPosCtrlEnd;
 
 			static const int heightGBHotKey = yPosCtrl + ((heightCtrl + heightEditGap) * 1) + yPosCtrlEnd;
+			static const int heightGBRichEdit = yPosCtrl + ((heightRichEdit + heightEditGap) * 1) + yPosCtrlEnd;
 
 			static const int yGBCheck = yRow + heightGBPush + yGap;
 			static const int yGBProgress = yGBCheck + heightGBCheck + yGap;
@@ -515,11 +521,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int yGBTabCtrl = yGBTrackbar + heightGBTrackbar + yGap;
 			static const int ySTListBox = yGBTabCtrl + heightGBTabCtrl + yGap;
 
-			static const int yGBIP = yRow + heightGBIP + yGap;
+			static const int ySTListView = yRow + heightGBIP + yGap;
 
-			static const int ySTTreeView = yGBIP + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
+			static const int ySTTreeView = ySTListView + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
 
-			static const int yGBHotKey = yRow + heightGBHotKey + yGap;
+			static const int yGBRichEdit = yRow + heightGBHotKey + yGap;
 
 			static const int xPosSplit = xPos1stColCtrl + xGap + wBtn;
 
@@ -575,12 +581,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int yIP = yRow + yPosCtrl + ((heightCtrl + heightEditGap) * 0);
 
-			static const int yListView1 = yGBIP + yPosCtrl;
+			static const int yListView1 = ySTListView + yPosCtrl;
 			static const int yListView2 = yListView1 + ((heightListView + yPosCtrlEnd) * 1) + yGap + 1;
 
 			static const int yTreeView = ySTTreeView + yPosCtrl;
 
 			static const int yHotKey = yRow + yPosCtrl + ((heightCtrl + heightEditGap) * 0);
+			static const int yRichEdit = yGBRichEdit + yPosCtrl + ((heightRichEdit + heightEditGap) * 0);
 
 			static const int xToolbar = Scale(100);
 			static const int wToolbar = xToolbar;
@@ -882,7 +889,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			// --- List Views ---
 			createCtrl(WC_STATIC, L"List Views:", SS_LEFT,
-				xPos4thCol, yGBIP, wGroup4thCol, heightCtrl);
+				xPos4thCol, ySTListView, wGroup4thCol, heightCtrl);
 
 			HWND hListView = createCtrl(WC_LISTVIEWW, nullptr, LVS_REPORT,
 				xPos4thCol, yListView1, wGroup4thCol, heightListView, IdCtrl::listview, WS_EX_CLIENTEDGE);
@@ -969,6 +976,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			createCtrl(HOTKEY_CLASS, nullptr, 0,
 				xPos5thColCtrl, yHotKey, wCtrl5thCol, heightCtrl, IdCtrl::hotkey, 0, hWnd);
+
+			// --- Rich Edit ---
+			createCtrl(WC_BUTTON, L"Rich Edit", BS_GROUPBOX,
+				xPos5thCol, yGBRichEdit, wGroup5thCol, heightGBRichEdit);
+
+			hModRich = ::LoadLibraryExW(L"Msftedit.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+			if (hModRich != nullptr)
+			{
+				static const std::wstring richEditText = L"{\\rtf1\\ansi\n"
+					L"\\line\n"
+					L"Darkmodelib\\line\n"
+					L"\\line\n"
+					L"by\\line\n"
+					L"\\line\n"
+					L"ozone10\\line\n";
+
+				createCtrl(MSFTEDIT_CLASS, richEditText.c_str(), ES_CENTER | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | WS_BORDER,
+					xPos5thColCtrl, yRichEdit, wCtrl5thCol, heightRichEdit, IdCtrl::richEdit, WS_EX_CLIENTEDGE);
+			}
 
 			// --- Scroll Bars ---
 			// Horizontal scroll bar
@@ -1265,6 +1291,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					ImageList_Destroy(hImgList);
 					hImgList = nullptr;
 				}
+			}
+
+			if (hModRich != nullptr)
+			{
+				::FreeLibrary(hModRich);
+				hModRich = nullptr;
 			}
 
 			return DefWindowProcW(hWnd, message, wParam, lParam);

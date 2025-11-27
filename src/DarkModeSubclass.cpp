@@ -2876,7 +2876,7 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
  * - Applies themed scroll bars using `DarkMode_Explorer::ScrollBar`
  *
  * When not in dark mode, restores default visual styles and coloring.
- * Also conditionally swaps `WS_BORDER` and `WS_EX_STATICEDGE`.
+ * Also conditionally swaps `WS_BORDER` and `WS_EX_CLIENTEDGE`.
  *
  * @param[in] hWnd Handle to the RichEdit control.
  *
@@ -2885,35 +2885,39 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
  */
 void DarkMode::setDarkRichEdit(HWND hWnd)
 {
-	const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+	const auto nStyle = ::GetWindowLongPtrW(hWnd, GWL_STYLE);
 	const bool hasBorder = (nStyle & WS_BORDER) == WS_BORDER;
 
-	const auto nExStyle = ::GetWindowLongPtr(hWnd, GWL_EXSTYLE);
-	const bool hasStaticEdge = (nExStyle & WS_EX_STATICEDGE) == WS_EX_STATICEDGE;
+	const bool isReadOnly = (nStyle & ES_READONLY) == ES_READONLY;
+
+	const auto nExStyle = ::GetWindowLongPtrW(hWnd, GWL_EXSTYLE);
+	const bool hasClientEdge = (nExStyle & WS_EX_CLIENTEDGE) == WS_EX_CLIENTEDGE;
+
+	CHARFORMATW cf{};
+	cf.cbSize = sizeof(CHARFORMATW);
+	cf.dwMask = CFM_COLOR;
 
 	if (DarkMode::isEnabled())
 	{
-		const COLORREF clrBg = (hasStaticEdge || hasBorder ? DarkMode::getCtrlBackgroundColor() : DarkMode::getDlgBackgroundColor());
+		const COLORREF clrBg = (!isReadOnly ? DarkMode::getCtrlBackgroundColor() : DarkMode::getDlgBackgroundColor());
 		::SendMessage(hWnd, EM_SETBKGNDCOLOR, 0, static_cast<LPARAM>(clrBg));
 
-		CHARFORMATW cf{};
-		cf.cbSize = sizeof(CHARFORMATW);
-		cf.dwMask = CFM_COLOR;
 		cf.crTextColor = DarkMode::getTextColor();
 		::SendMessage(hWnd, EM_SETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&cf));
 
-		::SetWindowTheme(hWnd, nullptr, L"DarkMode_Explorer::ScrollBar");
+		::SetWindowTheme(hWnd, nullptr, DarkMode::isExperimentalActive() ? L"DarkMode_Explorer::ScrollBar" : nullptr);
 	}
 	else
 	{
+		cf.dwEffects = CFE_AUTOCOLOR;
 		::SendMessage(hWnd, EM_SETBKGNDCOLOR, TRUE, 0);
-		::SendMessage(hWnd, EM_SETCHARFORMAT, 0, 0);
+		::SendMessage(hWnd, EM_SETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&cf));
 
 		::SetWindowTheme(hWnd, nullptr, nullptr);
 	}
 
-	DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled() && hasStaticEdge, WS_BORDER);
-	DarkMode::setWindowExStyle(hWnd, !DarkMode::isEnabled() && hasBorder, WS_EX_STATICEDGE);
+	DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled() || !hasClientEdge, WS_BORDER);
+	DarkMode::setWindowExStyle(hWnd, !DarkMode::isEnabled() || !hasBorder, WS_EX_CLIENTEDGE);
 }
 
 /**
