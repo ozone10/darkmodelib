@@ -33,14 +33,6 @@ using fnSetThreadDpiAwarenessContext = auto (WINAPI*)(DPI_AWARENESS_CONTEXT dpiC
 
 using fnOpenThemeDataForDpi = auto (WINAPI*)(HWND hwnd, LPCWSTR pszClassList, UINT dpi) -> HTHEME;
 
-static fnGetDpiForSystem pfGetDpiForSystem = nullptr;
-static fnGetDpiForWindow pfGetDpiForWindow = nullptr;
-static fnGetSystemMetricsForDpi pfGetSystemMetricsForDpi = nullptr;
-static fnSystemParametersInfoForDpi pfSystemParametersInfoForDpi = nullptr;
-static fnIsValidDpiAwarenessContext pfIsValidDpiAwarenessContext = nullptr;
-static fnSetThreadDpiAwarenessContext pfSetThreadDpiAwarenessContext = nullptr;
-static fnOpenThemeDataForDpi pfOpenThemeDataForDpi = nullptr;
-
 extern "C"
 {
 	static UINT WINAPI DummyGetDpiForSystem() noexcept
@@ -85,20 +77,31 @@ extern "C"
 	}
 }
 
+static fnGetDpiForSystem pfGetDpiForSystem = DummyGetDpiForSystem;
+static fnGetDpiForWindow pfGetDpiForWindow = DummyGetDpiForWindow;
+static fnGetSystemMetricsForDpi pfGetSystemMetricsForDpi = DummyGetSystemMetricsForDpi;
+static fnSystemParametersInfoForDpi pfSystemParametersInfoForDpi = DummySystemParametersInfoForDpi;
+static fnIsValidDpiAwarenessContext pfIsValidDpiAwarenessContext = DummyIsValidDpiAwarenessContext;
+static fnSetThreadDpiAwarenessContext pfSetThreadDpiAwarenessContext = DummySetThreadDpiAwarenessContext;
+static fnOpenThemeDataForDpi pfOpenThemeDataForDpi = DummyOpenThemeDataForDpi;
+
 bool dmlib_dpi::InitDpiAPI() noexcept
 {
 	if (HMODULE hUser32 = ::GetModuleHandleW(L"user32.dll"); hUser32 != nullptr)
 	{
 		if (const auto moduleUxtheme = dmlib_module::ModuleHandle{ L"uxtheme.dll" }; moduleUxtheme.isLoaded())
 		{
-			return
-				dmlib_module::LoadFn(hUser32, pfGetDpiForSystem, "GetDpiForSystem", DummyGetDpiForSystem)
-				&& dmlib_module::LoadFn(hUser32, pfGetDpiForWindow, "GetDpiForWindow", DummyGetDpiForWindow)
-				&& dmlib_module::LoadFn(hUser32, pfGetSystemMetricsForDpi, "GetSystemMetricsForDpi", DummyGetSystemMetricsForDpi)
-				&& dmlib_module::LoadFn(hUser32, pfSystemParametersInfoForDpi, "SystemParametersInfoForDpi", DummySystemParametersInfoForDpi)
-				&& dmlib_module::LoadFn(hUser32, pfIsValidDpiAwarenessContext, "IsValidDpiAwarenessContext", DummyIsValidDpiAwarenessContext)
-				&& dmlib_module::LoadFn(hUser32, pfSetThreadDpiAwarenessContext, "SetThreadDpiAwarenessContext", DummySetThreadDpiAwarenessContext)
-				&& dmlib_module::LoadFn(moduleUxtheme.get(), pfOpenThemeDataForDpi, "OpenThemeDataForDpi", DummyOpenThemeDataForDpi);
+			bool allLoaded = true;
+
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfGetDpiForSystem, "GetDpiForSystem", DummyGetDpiForSystem);
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfGetDpiForWindow, "GetDpiForWindow", DummyGetDpiForWindow);
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfGetSystemMetricsForDpi, "GetSystemMetricsForDpi", DummyGetSystemMetricsForDpi);
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfSystemParametersInfoForDpi, "SystemParametersInfoForDpi", DummySystemParametersInfoForDpi);
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfIsValidDpiAwarenessContext, "IsValidDpiAwarenessContext", DummyIsValidDpiAwarenessContext);
+			allLoaded &= dmlib_module::LoadFn(hUser32, pfSetThreadDpiAwarenessContext, "SetThreadDpiAwarenessContext", DummySetThreadDpiAwarenessContext);
+			allLoaded &= dmlib_module::LoadFn(moduleUxtheme.get(), pfOpenThemeDataForDpi, "OpenThemeDataForDpi", DummyOpenThemeDataForDpi);
+
+			return allLoaded;
 		}
 	}
 	return false;
