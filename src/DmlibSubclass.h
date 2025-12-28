@@ -257,10 +257,9 @@ namespace dmlib_subclass
 
 		bool ensureBuffer(HDC hdc, const RECT& rcClient) noexcept
 		{
-			if (const int width = rcClient.right - rcClient.left,
-				height = rcClient.bottom - rcClient.top;
-				m_szBuffer.cx != width
-				|| m_szBuffer.cy != height)
+			const int width = rcClient.right - rcClient.left;
+			const int height = rcClient.bottom - rcClient.top;
+			if (m_szBuffer.cx != width || m_szBuffer.cy != height)
 			{
 				releaseBuffer();
 				m_hMemDC = ::CreateCompatibleDC(hdc);
