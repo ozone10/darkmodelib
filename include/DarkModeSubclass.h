@@ -742,6 +742,11 @@ namespace DarkMode
 	 */
 	DMLIB_API HRESULT darkTaskDialogIndirect(const TASKDIALOGCONFIG* pTaskConfig, int* pnButton, int* pnRadioButton, BOOL* pfVerificationFlagChecked);
 
+	/**
+	 * @brief Displays a message box as task dialog with themed styling.
+	 */
+	DMLIB_API HRESULT darkMessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType);
+
 #ifdef __cplusplus
 	} // extern "C"
 #endif

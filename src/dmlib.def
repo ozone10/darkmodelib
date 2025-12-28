@@ -172,3 +172,4 @@ EXPORTS
 	setDarkTaskDlg
 	DarkTaskDlgCallback
 	darkTaskDialogIndirect
+	darkMessageBoxW

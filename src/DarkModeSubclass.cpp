@@ -28,9 +28,7 @@
 #include <uxtheme.h>
 #include <vsstyle.h>
 
-#if !defined(_DARKMODELIB_NO_INI_CONFIG)
 #include <array>
-#endif
 #include <string>
 
 #include "DmlibColor.h"
@@ -3736,6 +3734,258 @@ HRESULT DarkMode::darkTaskDialogIndirect(
 	const HRESULT retVal = ::TaskDialogIndirect(pTaskConfig, pnButton, pnRadioButton, pfVerificationFlagChecked);
 	dmlib_hook::unhookThemeColor();
 	return retVal;
+}
+
+/**
+ * @brief Simple task dialog callback procedure for darkMessageBoxW.
+ *
+ * @param[in]   hWnd        Handle to the task dialog.
+ * @param[in]   uMsg        Message identifier.
+ * @param[in]   wParam      First message parameter (unused).
+ * @param[in]   lParam      Second message parameter (unused).
+ * @param[in]   lpRefData   Message box flags.
+ * @return HRESULT A value defined by the hook procedure.
+ *
+ * @see DarkMode::darkMessageBoxW()
+ */
+static HRESULT CALLBACK DarkTaskDlgMsgBoxCallback(
+	HWND hWnd,
+	UINT uMsg,
+	[[maybe_unused]] WPARAM wParam,
+	[[maybe_unused]] LPARAM lParam,
+	[[maybe_unused]] LONG_PTR lpRefData
+)
+{
+	const auto uType = static_cast<UINT>(lpRefData);
+
+	if (uMsg == TDN_DIALOG_CONSTRUCTED)
+	{
+		DarkMode::setDarkTaskDlg(hWnd);
+		if ((uType & (MB_SYSTEMMODAL | MB_TOPMOST)) != 0)
+			::SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+		if ((uType & MB_SETFOREGROUND) == MB_SETFOREGROUND)
+			::SetForegroundWindow(hWnd);
+	}
+	return S_OK;
+}
+
+/**
+ * @brief Displays a message box as task dialog with themed styling.
+ *
+ * Shows a custom task dialog instead of classic message box if @ref DarkMode::isEnabled is true.
+ * Otherwise, it falls back to the standard Windows message box function.
+ * The message box can present various buttons and icons based on the
+ * specified parameters.
+ *
+ * @note Flags MB_HELP, MB_TASKMODAL, MB_DEFAULT_DESKTOP_ONLY, MB_SERVICE_NOTIFICATION are not supported.
+ *       Other flags can have limited support. Check parameter uType for more information.
+ *
+ * @param[in]   hWnd        Handle to the owner window of the message box.
+ *                          It can be NULL if the message box has no owner.
+ * @param[in]   lpText      Pointer to the string to be displayed in the message box.
+ * @param[in]   lpCaption   Pointer to a string to be displayed in the title bar of the message box.
+ * @param[in]   uType       Specifies the contents and behavior of the message box.
+ *                          This parameter can be a allowed combination of the following flags:
+ *                          - MB_OK
+ *                          - MB_OKCANCEL
+ *                          - MB_ABORTRETRYIGNORE - buttons use only English loacalization
+ *                          - MB_YESNOCANCEL
+ *                          - MB_YESNO
+ *                          - MB_RETRYCANCEL
+ *                          - MB_CANCELTRYCONTINUE - buttons use only English loacalization
+ * 
+ *                          - MB_DEFBUTTON1
+ *                          - MB_DEFBUTTON2
+ *                          - MB_DEFBUTTON3
+ *                          - MB_DEFBUTTON4 - has no effect, there is no 4th button
+ * 
+ *                          - MB_ICONERROR
+ *                          - MB_ICONQUESTION
+ *                          - MB_ICONWARNING
+ *                          - MB_ICONINFORMATION
+ * 
+ *                          - MB_APPLMODAL
+ *                          - MB_SYSTEMMODAL
+ * 
+ *                          - MB_RIGHT - has no effect, use MB_RTLREADING instead
+ *                          - MB_RTLREADING
+ *                          - MB_SETFOREGROUND
+ *                          - MB_TOPMOST
+ *
+ * @return HRESULT The returned value indicates which button was pressed by the user.
+ *                 Or 0 zero if the function has failed.
+ *
+ * @see DarkTaskDlgMsgBoxCallback()
+ */
+HRESULT DarkMode::darkMessageBoxW(
+	HWND hWnd,
+	LPCWSTR lpText,
+	LPCWSTR lpCaption,
+	UINT uType
+)
+{
+	if (!DarkMode::isEnabled())
+	{
+		return ::MessageBoxW(hWnd, lpText, lpCaption, uType);
+	}
+
+	TASKDIALOGCONFIG tdc{};
+	tdc.cbSize = sizeof(TASKDIALOGCONFIG);
+	tdc.hwndParent = hWnd;
+	tdc.hInstance = nullptr;
+	tdc.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_SIZE_TO_CONTENT;
+	tdc.pszWindowTitle = lpCaption;
+	tdc.pszContent = lpText;
+	tdc.pfCallback = DarkTaskDlgMsgBoxCallback;
+	tdc.lpCallbackData = static_cast<LONG_PTR>(uType);
+
+	static const UINT btnDefMask = uType | MB_DEFMASK;
+	switch (uType & MB_TYPEMASK)
+	{
+		case MB_OK:
+		{
+			tdc.dwCommonButtons = TDCBF_OK_BUTTON;
+			break;
+		}
+
+		case MB_OKCANCEL:
+		{
+			tdc.dwCommonButtons = TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON;
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDCANCEL;
+			else
+				tdc.nDefaultButton = IDOK;
+
+			break;
+		}
+
+		case MB_ABORTRETRYIGNORE:
+		{
+			static constexpr std::array<TASKDIALOG_BUTTON, 3> buttons{ {
+				{ IDABORT,  L"&Abort" },
+				{ IDRETRY,  L"&Retry" },
+				{ IDIGNORE,  L"&Ignore" }
+			} };
+
+			tdc.cButtons = static_cast<UINT>(buttons.size());;
+			tdc.pButtons = buttons.data();
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDRETRY;
+			else if (btnDefMask == MB_DEFBUTTON3)
+				tdc.nDefaultButton = IDIGNORE;
+			else
+				tdc.nDefaultButton = IDABORT;
+
+			break;
+		}
+
+		case MB_YESNOCANCEL:
+		{
+			tdc.dwCommonButtons = TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON;
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDNO;
+			else if (btnDefMask == MB_DEFBUTTON3)
+				tdc.nDefaultButton = IDCANCEL;
+			else
+				tdc.nDefaultButton = IDYES;
+
+			break;
+		}
+
+		case MB_YESNO:
+		{
+			tdc.dwCommonButtons = TDCBF_YES_BUTTON | TDCBF_NO_BUTTON;
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDNO;
+			else
+				tdc.nDefaultButton = IDYES;
+
+			break;
+		}
+
+		case MB_RETRYCANCEL:
+		{
+			tdc.dwCommonButtons = TDCBF_RETRY_BUTTON | TDCBF_CANCEL_BUTTON;
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDCANCEL;
+			else
+				tdc.nDefaultButton = IDRETRY;
+
+			break;
+		}
+
+		case MB_CANCELTRYCONTINUE:
+		{
+			static constexpr std::array<TASKDIALOG_BUTTON, 3> buttons{ {
+				{ IDCANCEL,  L"&Abort" },
+				{ IDTRYAGAIN,  L"&Try Again" },
+				{ IDCONTINUE,  L"&Continue" }
+			} };
+
+			tdc.cButtons = static_cast<UINT>(buttons.size());;
+			tdc.pButtons = buttons.data();
+
+			if (btnDefMask == MB_DEFBUTTON2)
+				tdc.nDefaultButton = IDTRYAGAIN;
+			else if (btnDefMask == MB_DEFBUTTON3)
+				tdc.nDefaultButton = IDCONTINUE;
+			else
+				tdc.nDefaultButton = IDCANCEL;
+
+			break;
+		}
+
+		default:
+		{
+			tdc.dwCommonButtons = TDCBF_OK_BUTTON;
+			break;
+		}
+	}
+
+	switch (uType & MB_ICONMASK)
+	{
+		case MB_ICONERROR:
+		{
+			tdc.pszMainIcon = TD_ERROR_ICON;
+			break;
+		}
+
+		case MB_ICONQUESTION:
+		{
+			tdc.dwFlags |= TDF_USE_HICON_MAIN;
+			tdc.hMainIcon = static_cast<HICON>(::LoadImageW(nullptr, IDI_QUESTION, IMAGE_ICON, 0, 0, LR_SHARED));
+			break;
+		}
+
+		case MB_ICONWARNING:
+		{
+			tdc.pszMainIcon = TD_WARNING_ICON;
+			break;
+		}
+
+		case MB_ICONINFORMATION:
+		{
+			tdc.pszMainIcon = TD_INFORMATION_ICON;
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	if ((uType & MB_RTLREADING) == MB_RTLREADING)
+		tdc.dwFlags |= TDF_RTL_LAYOUT;
+
+	int btnPressed = 0;
+	if (DarkMode::darkTaskDialogIndirect(&tdc, &btnPressed, nullptr, nullptr) != S_OK)
+		return ::MessageBoxW(hWnd, lpText, lpCaption, uType);
+	return btnPressed;
 }
 
 #endif // !defined(_DARKMODELIB_NOT_USED)
