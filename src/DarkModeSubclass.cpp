@@ -379,9 +379,8 @@ void DarkMode::setDefaultColors(bool updateBrushesAndOther)
 			DarkMode::updateThemeBrushesAndPens();
 			DarkMode::updateViewBrushesAndPens();
 		}
-
-		DarkMode::calculateTreeViewStyle();
 	}
+	DarkMode::calculateTreeViewStyle();
 }
 
 /**
