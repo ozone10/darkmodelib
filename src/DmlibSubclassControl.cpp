@@ -288,6 +288,13 @@ static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonDa
 		}
 	}
 
+	if (!dmlib_paint::isAnimationEnabled())
+	{
+		renderButton(hWnd, hdc, hTheme, iPartID, iStateID);
+		buttonData.m_iStateID = iStateID;
+		return;
+	}
+
 	if (::BufferedPaintRenderAnimation(hWnd, hdc) == TRUE)
 	{
 		return;
@@ -308,8 +315,8 @@ static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonDa
 
 	HDC hdcFrom = nullptr;
 	HDC hdcTo = nullptr;
-	HANIMATIONBUFFER hbpAnimation = ::BeginBufferedAnimation(hWnd, hdc, &rcClient, BPBF_COMPATIBLEBITMAP, nullptr, &animParams, &hdcFrom, &hdcTo);
-	if (hbpAnimation != nullptr)
+	if (HANIMATIONBUFFER hbpAnimation = ::BeginBufferedAnimation(hWnd, hdc, &rcClient, BPBF_COMPATIBLEBITMAP, nullptr, &animParams, &hdcFrom, &hdcTo);
+		hbpAnimation != nullptr)
 	{
 		if (hdcFrom != nullptr)
 		{
@@ -321,13 +328,11 @@ static void paintButton(HWND hWnd, HDC hdc, dmlib_subclass::ButtonData& buttonDa
 		}
 
 		buttonData.m_iStateID = iStateID;
-
 		::EndBufferedAnimation(hbpAnimation, TRUE);
 	}
 	else
 	{
 		renderButton(hWnd, hdc, hTheme, iPartID, iStateID);
-
 		buttonData.m_iStateID = iStateID;
 	}
 }
@@ -1651,11 +1656,159 @@ LRESULT CALLBACK dmlib_subclass::CustomBorderSubclass(
 }
 
 /**
- * @brief Custom paints a combo box control.
+ * @brief Get combo box state and client rectangle.
+ *
+ * @param[in]       hWnd        Handle to the combo box control.
+ * @param[in,out]   rcClient    Rectangle for combo box.
+ *
+ * @see ComboBoxData
+ * @see paintComboBox()
+ */
+static int getComboBoxStateAndRect(HWND hWnd, RECT& rcClient)
+{
+	::GetClientRect(hWnd, &rcClient);
+
+	POINT ptCursor{};
+	::GetCursorPos(&ptCursor);
+	::ScreenToClient(hWnd, &ptCursor);
+
+	if (::IsWindowEnabled(hWnd) == FALSE)
+	{
+		return  CBXSR_DISABLED;
+	}
+	else if (::PtInRect(&rcClient, ptCursor) != FALSE)
+	{
+		return CBXSR_HOT;
+	}
+	return CBXSR_NORMAL;
+}
+
+/**
+ * @brief Draws a combo box control with `CBS_SIMPLE` or `CBS_DROPDOWN` style.
  *
  * This function handles owner-drawn drawing of a combo box, adapting its
  * appearance based on:
- * - Control style (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`)
+ * - Control style (`CBS_SIMPLE`, `CBS_DROPDOWN`)
+ * - Enabled/disabled state
+ * - Hot (hover) state
+ * - Focus state
+ * - Dark mode theme availability
+ *
+ * Paint logic:
+ * - Draws background with different brushes for normal, hot, and disabled states
+ * - Uses `COMBOBOXINFO` to retrieve subcomponent rectangles.
+ * - Draws text using theme APIs if available, otherwise GDI
+ * - For `CBS_SIMPLE` and `CBS_DROPDOWN`, text is handled by the child edit control.
+ * - The drop-down arrow is drawn either via `DrawThemeBackground` or a manual glyph.
+ * - Borders are drawn with pens with custom colors depending on state (rounded corners on Windows 11+).
+ * - Uses `ExcludeClipRect` to avoid overpainting the text/edit area.
+ *
+ * @param[in]       hWnd            Handle to the combo box control.
+ * @param[in]       hdc             Device context to draw into.
+ * @param[in,out]   comboBoxData    Reference to the combo box' theme and style data.
+ * @param[in]       iStateID        State of the combo box.
+ *
+ * @see ComboBoxData
+ * @see paintComboBox()
+ * @see renderComboBoxList()
+ */
+static void renderComboBoxEdit(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData, int iStateID) noexcept
+{
+	auto& themeData = comboBoxData.m_themeData;
+	const auto& hTheme = themeData.getHTheme();
+	const bool hasTheme = themeData.ensureTheme(hWnd);
+
+	const bool isSimple = comboBoxData.m_cbStyle == CBS_SIMPLE;
+
+	COMBOBOXINFO cbi{};
+	cbi.cbSize = sizeof(COMBOBOXINFO);
+	::GetComboBoxInfo(hWnd, &cbi);
+
+	RECT rcClient{};
+	::GetClientRect(hWnd, &rcClient);
+
+	const bool isDisabled = iStateID == CBXSR_DISABLED;
+	const bool isHot = iStateID == CBXSR_HOT;
+
+	bool hasFocus = false;
+
+	RECT rcArrow{ cbi.rcButton };
+	rcArrow.left -= 1;
+
+	// Text part
+
+	if (comboBoxData.m_cbStyle == CBS_DROPDOWN && cbi.hwndItem != nullptr)
+	{
+		hasFocus = ::GetFocus() == cbi.hwndItem;
+		const HBRUSH hBrush = getBrushFromState(isDisabled, isHot);
+		::FillRect(hdc, &rcArrow, hBrush);
+	}
+
+	const HPEN hPen = getEdgePenFromState(isDisabled, isHot || hasFocus || isSimple);
+	const auto holdPen = dmlib_paint::GdiObject{ hdc, hPen, true};
+
+	// Drop down arrow part
+	if (comboBoxData.m_cbStyle == CBS_DROPDOWN)
+	{
+		if (hasTheme
+			&& (DarkMode::isExperimentalSupported()
+				|| !DarkMode::isDarkDmTypeUsed()))
+		{
+			const RECT rcThemedArrow{ rcArrow.left, rcArrow.top - 1, rcArrow.right, rcArrow.bottom - 1 };
+			::DrawThemeBackground(hTheme, hdc, CP_DROPDOWNBUTTONRIGHT, isDisabled ? CBXSR_DISABLED : CBXSR_NORMAL, &rcThemedArrow, nullptr);
+		}
+		else
+		{
+			const auto holdFont = dmlib_paint::GdiObject{ hdc, hWnd };
+
+			::SetTextColor(hdc, getColorFromState(isDisabled, isHot));
+			static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
+			::SetBkMode(hdc, TRANSPARENT);
+			::DrawText(hdc, dmlib_glyph::kArrowDown, -1, &rcArrow, dtFlags);
+		}
+	}
+
+	// Frame part
+	::ExcludeClipRect(hdc, cbi.rcItem.left, cbi.rcItem.top, cbi.rcItem.right, cbi.rcItem.bottom);
+
+	if (isSimple && cbi.hwndList != nullptr)
+	{
+		RECT rcItem{ cbi.rcItem };
+		::MapWindowPoints(cbi.hwndItem, hWnd, reinterpret_cast<LPPOINT>(&rcItem), 2);
+		rcClient.bottom = rcItem.bottom;
+	}
+
+	RECT rcInner{ rcClient };
+	::InflateRect(&rcInner, -1, -1);
+
+	if (comboBoxData.m_cbStyle == CBS_DROPDOWN)
+	{
+		const std::array<POINT, 2> edge{ {
+			{ rcArrow.left - 1, rcArrow.top },
+			{ rcArrow.left - 1, rcArrow.bottom }
+		} };
+		::Polyline(hdc, edge.data(), static_cast<int>(edge.size()));
+
+		::ExcludeClipRect(hdc, rcArrow.left - 1, rcArrow.top, rcArrow.right, rcArrow.bottom);
+
+		rcInner.right = rcArrow.left - 1;
+	}
+
+	HPEN hInnerPen = ::CreatePen(PS_SOLID, 1, isDisabled ? DarkMode::getDlgBackgroundColor() : DarkMode::getBackgroundColor());
+	dmlib_paint::paintFrameRect(hdc, rcInner, hInnerPen);
+	::DeleteObject(hInnerPen);
+	::InflateRect(&rcInner, -1, -1);
+	::FillRect(hdc, &rcInner, isDisabled ? DarkMode::getDlgBackgroundBrush() : DarkMode::getCtrlBackgroundBrush());
+
+	static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness : 0;
+	dmlib_paint::paintRoundFrameRect(hdc, rcClient, hPen, roundness, roundness);
+}
+
+/**
+ * @brief Draws a combo box control with `CBS_DROPDOWNLIST` style.
+ *
+ * This function handles owner-drawn drawing of a combo box, adapting its
+ * appearance based on:
  * - Enabled/disabled state
  * - Hot (hover) state
  * - Focus state
@@ -1666,7 +1819,6 @@ LRESULT CALLBACK dmlib_subclass::CustomBorderSubclass(
  * - Uses `COMBOBOXINFO` to retrieve subcomponent rectangles.
  * - Draws text using theme APIs if available, otherwise GDI
  * - For `CBS_DROPDOWNLIST`, draws the selected item text directly.
- * - For `CBS_DROPDOWN` and `CBS_SIMPLE`, text is handled by the child edit control.
  * - The drop-down arrow is drawn either via `DrawThemeBackground` or a manual glyph.
  * - Borders are drawn with pens with custom colors depending on state (rounded corners on Windows 11+).
  * - Uses `ExcludeClipRect` to avoid overpainting the text/edit area.
@@ -1674,10 +1826,13 @@ LRESULT CALLBACK dmlib_subclass::CustomBorderSubclass(
  * @param[in]       hWnd            Handle to the combo box control.
  * @param[in]       hdc             Device context to draw into.
  * @param[in,out]   comboBoxData    Reference to the combo box' theme and style data.
+ * @param[in]       iStateID        State of the combo box.
  *
  * @see ComboBoxData
+ * @see paintComboBox()
+ * @see renderComboBoxEdit()
  */
-static void paintCombobox(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData) noexcept
+static void renderComboBoxList(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData, int iStateID) noexcept
 {
 	auto& themeData = comboBoxData.m_themeData;
 	const auto& hTheme = themeData.getHTheme();
@@ -1691,133 +1846,183 @@ static void paintCombobox(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comb
 	RECT rcClient{};
 	::GetClientRect(hWnd, &rcClient);
 
-	POINT ptCursor{};
-	::GetCursorPos(&ptCursor);
-	::ScreenToClient(hWnd, &ptCursor);
-
-	const bool isDisabled = ::IsWindowEnabled(hWnd) == FALSE;
-	const bool isHot = ::PtInRect(&rcClient, ptCursor) == TRUE && !isDisabled;
-
-	bool hasFocus = false;
-
 	const auto holdFont = dmlib_paint::GdiObject{ hdc, hWnd };
-	::SetBkMode(hdc, TRANSPARENT); // for non-theme DrawText
 
 	RECT rcArrow{ cbi.rcButton };
 	rcArrow.left -= 1;
 
-	HBRUSH hBrush = getBrushFromState(isDisabled, isHot);
+	const bool isDisabled = iStateID == CBXSR_DISABLED;
+	const bool isHot = iStateID == CBXSR_HOT;
+
+	const HBRUSH hBrush = getBrushFromState(isDisabled, isHot);
 
 	// Text part
 
-	// CBS_DROPDOWN and CBS_SIMPLE text is handled by parent by WM_CTLCOLOREDIT
-	if (comboBoxData.m_cbStyle == CBS_DROPDOWNLIST)
+	// erase background on item change
+	::FillRect(hdc, &rcClient, hBrush);
+
+	if (const auto index = static_cast<int>(::SendMessage(hWnd, CB_GETCURSEL, 0, 0));
+		index != CB_ERR)
 	{
-		// erase background on item change
-		::FillRect(hdc, &rcClient, hBrush);
+		const auto bufferLen = static_cast<size_t>(::SendMessage(hWnd, CB_GETLBTEXTLEN, static_cast<WPARAM>(index), 0));
+		std::wstring buffer(bufferLen + 1, L'\0');
+		::SendMessage(hWnd, CB_GETLBTEXT, static_cast<WPARAM>(index), reinterpret_cast<LPARAM>(buffer.data()));
 
-		if (const auto index = static_cast<int>(::SendMessage(hWnd, CB_GETCURSEL, 0, 0));
-			index != CB_ERR)
+		RECT rcText{ cbi.rcItem };
+		::InflateRect(&rcText, -2, 0);
+
+		static constexpr DWORD dtFlags = DT_NOPREFIX | DT_LEFT | DT_VCENTER | DT_SINGLELINE;
+		if (hasTheme)
 		{
-			const auto bufferLen = static_cast<size_t>(::SendMessage(hWnd, CB_GETLBTEXTLEN, static_cast<WPARAM>(index), 0));
-			std::wstring buffer(bufferLen + 1, L'\0');
-			::SendMessage(hWnd, CB_GETLBTEXT, static_cast<WPARAM>(index), reinterpret_cast<LPARAM>(buffer.data()));
+			DTTOPTS dtto{};
+			dtto.dwSize = sizeof(DTTOPTS);
+			dtto.dwFlags = DTT_TEXTCOLOR;
+			dtto.crText = isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getTextColor();
 
-			RECT rcText{ cbi.rcItem };
-			::InflateRect(&rcText, -2, 0);
-
-			static constexpr DWORD dtFlags = DT_NOPREFIX | DT_LEFT | DT_VCENTER | DT_SINGLELINE;
-			if (hasTheme)
-			{
-				DTTOPTS dtto{};
-				dtto.dwSize = sizeof(DTTOPTS);
-				dtto.dwFlags = DTT_TEXTCOLOR;
-				dtto.crText = isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getTextColor();
-
-				::DrawThemeTextEx(hTheme, hdc, CP_DROPDOWNITEM, isDisabled ? CBXSR_DISABLED : CBXSR_NORMAL, buffer.c_str(), -1, dtFlags, &rcText, &dtto);
-			}
-			else
-			{
-				::SetTextColor(hdc, isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getTextColor());
-				::DrawText(hdc, buffer.c_str(), -1, &rcText, dtFlags);
-			}
-		}
-
-		hasFocus = ::GetFocus() == hWnd;
-		if (!isDisabled && hasFocus && ::SendMessage(hWnd, CB_GETDROPPEDSTATE, 0, 0) == FALSE)
-		{
-			::DrawFocusRect(hdc, &cbi.rcItem);
-		}
-	}
-	else if (cbi.hwndItem != nullptr)
-	{
-		hasFocus = ::GetFocus() == cbi.hwndItem;
-
-		::FillRect(hdc, &rcArrow, hBrush);
-	}
-
-	const HPEN hPen = getEdgePenFromState(isDisabled, isHot || hasFocus || comboBoxData.m_cbStyle == CBS_SIMPLE);
-	const auto holdPen = dmlib_paint::GdiObject{ hdc, hPen, true};
-
-	// Drop down arrow part
-	if (comboBoxData.m_cbStyle != CBS_SIMPLE)
-	{
-		if (hasTheme
-			&& (DarkMode::isExperimentalSupported()
-				|| !DarkMode::isDarkDmTypeUsed()))
-		{
-			const RECT rcThemedArrow{ rcArrow.left, rcArrow.top - 1, rcArrow.right, rcArrow.bottom - 1 };
-			::DrawThemeBackground(hTheme, hdc, CP_DROPDOWNBUTTONRIGHT, isDisabled ? CBXSR_DISABLED : CBXSR_NORMAL, &rcThemedArrow, nullptr);
+			::DrawThemeTextEx(hTheme, hdc, CP_DROPDOWNITEM, iStateID, buffer.c_str(), -1, dtFlags, &rcText, &dtto);
 		}
 		else
 		{
-			::SetTextColor(hdc, getColorFromState(isDisabled, isHot));
-			static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
-			::DrawText(hdc, dmlib_glyph::kArrowDown, -1, &rcArrow, dtFlags);
+			::SetTextColor(hdc, isDisabled ? DarkMode::getDisabledTextColor() : DarkMode::getTextColor());
+			::SetBkMode(hdc, TRANSPARENT);
+			::DrawText(hdc, buffer.c_str(), -1, &rcText, dtFlags);
 		}
 	}
 
-	// Frame part
-	if (comboBoxData.m_cbStyle == CBS_DROPDOWNLIST)
+	const bool hasFocus = ::GetFocus() == hWnd;
+	if (!isDisabled && hasFocus && ::SendMessage(hWnd, CB_GETDROPPEDSTATE, 0, 0) == FALSE)
 	{
-		::ExcludeClipRect(hdc, rcClient.left + 1, rcClient.top + 1, rcClient.right - 1, rcClient.bottom - 1);
+		::DrawFocusRect(hdc, &cbi.rcItem);
+	}
+
+	const HPEN hPen = getEdgePenFromState(isDisabled, isHot || hasFocus);
+	const auto holdPen = dmlib_paint::GdiObject{ hdc, hPen, true };
+
+	// Drop down arrow part
+	if (hasTheme
+		&& (DarkMode::isExperimentalSupported()
+			|| !DarkMode::isDarkDmTypeUsed()))
+	{
+		const RECT rcThemedArrow{ rcArrow.left, rcArrow.top - 1, rcArrow.right, rcArrow.bottom - 1 };
+		::DrawThemeBackground(hTheme, hdc, CP_DROPDOWNBUTTONRIGHT, isDisabled ? CBXSR_DISABLED : CBXSR_NORMAL, &rcThemedArrow, nullptr);
 	}
 	else
 	{
-		::ExcludeClipRect(hdc, cbi.rcItem.left, cbi.rcItem.top, cbi.rcItem.right, cbi.rcItem.bottom);
-
-		if (comboBoxData.m_cbStyle == CBS_SIMPLE && cbi.hwndList != nullptr)
-		{
-			RECT rcItem{ cbi.rcItem };
-			::MapWindowPoints(cbi.hwndItem, hWnd, reinterpret_cast<LPPOINT>(&rcItem), 2);
-			rcClient.bottom = rcItem.bottom;
-		}
-
-		RECT rcInner{ rcClient };
-		::InflateRect(&rcInner, -1, -1);
-
-		if (comboBoxData.m_cbStyle == CBS_DROPDOWN)
-		{
-			const std::array<POINT, 2> edge{ {
-				{ rcArrow.left - 1, rcArrow.top },
-				{ rcArrow.left - 1, rcArrow.bottom }
-			} };
-			::Polyline(hdc, edge.data(), static_cast<int>(edge.size()));
-
-			::ExcludeClipRect(hdc, rcArrow.left - 1, rcArrow.top, rcArrow.right, rcArrow.bottom);
-
-			rcInner.right = rcArrow.left - 1;
-		}
-
-		HPEN hInnerPen = ::CreatePen(PS_SOLID, 1, isDisabled ? DarkMode::getDlgBackgroundColor() : DarkMode::getBackgroundColor());
-		dmlib_paint::paintFrameRect(hdc, rcInner, hInnerPen);
-		::DeleteObject(hInnerPen);
-		::InflateRect(&rcInner, -1, -1);
-		::FillRect(hdc, &rcInner, isDisabled ? DarkMode::getDlgBackgroundBrush() : DarkMode::getCtrlBackgroundBrush());
+		::SetTextColor(hdc, getColorFromState(isDisabled, isHot));
+		static constexpr UINT dtFlags = DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP;
+		::DrawText(hdc, dmlib_glyph::kArrowDown, -1, &rcArrow, dtFlags);
 	}
+
+	// Frame part
+	::ExcludeClipRect(hdc, rcClient.left + 1, rcClient.top + 1, rcClient.right - 1, rcClient.bottom - 1);
 
 	static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness : 0;
 	dmlib_paint::paintRoundFrameRect(hdc, rcClient, hPen, roundness, roundness);
+}
+
+/**
+ * @brief Draws a combo box control.
+ *
+ * This wrapper draws appropriate combo box based on its style.
+ *
+ * @param[in]       hWnd            Handle to the combo box control.
+ * @param[in]       hdc             Device context to draw into.
+ * @param[in,out]   comboBoxData    Reference to the combo box' theme and style data.
+ * @param[in]       iStateID        State of the combo box.
+ *
+ * @see ComboBoxData
+ * @see paintComboBox()
+ * @see renderComboBoxEdit()
+ * @see renderComboBoxList()
+ */
+static void renderComboBox(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData, int iStateID) noexcept
+{
+	if (comboBoxData.m_cbStyle == CBS_DROPDOWNLIST)
+	{
+		renderComboBoxList(hWnd, hdc, comboBoxData, iStateID);
+	}
+	else
+	{
+		renderComboBoxEdit(hWnd, hdc, comboBoxData, iStateID);
+	}
+}
+
+/**
+ * @brief Custom paints a combo box control.
+ *
+ * This function handles owner-drawn drawing of a combo box,
+ * adapting its appearance based on:
+ * - Control style (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`)
+ * - Transition effect for `CBS_DROPDOWNLIST`
+ * - Enabled/disabled state
+ * - Hot (hover) state
+ *
+ * @param[in]       hWnd            Handle to the combo box control.
+ * @param[in]       hdc             Device context to draw into.
+ * @param[in,out]   comboBoxData    Reference to the combo box' theme and style data.
+ *
+ * @see ComboBoxData
+ * @see renderComboBoxEdit()
+ * @see renderComboBoxList()
+ */
+static void paintComboBox(HWND hWnd, HDC hdc, dmlib_subclass::ComboBoxData& comboBoxData)
+{
+	RECT rcClient{};
+	const int iStateID = getComboBoxStateAndRect(hWnd, rcClient);
+
+	if (comboBoxData.m_cbStyle == CBS_SIMPLE)
+	{
+		renderComboBoxEdit(hWnd, hdc, comboBoxData, iStateID);
+		return;
+	}
+
+	if (!dmlib_paint::isAnimationEnabled())
+	{
+		renderComboBox(hWnd, hdc, comboBoxData, iStateID);
+		return;
+	}
+
+	if (::BufferedPaintRenderAnimation(hWnd, hdc) == TRUE)
+	{
+		return;
+	}
+
+	comboBoxData.m_themeData.ensureTheme(hWnd);
+	const auto& hTheme = comboBoxData.m_themeData.getHTheme();
+
+	// Animation part - transition
+
+	BP_ANIMATIONPARAMS animParams{};
+	animParams.cbSize = sizeof(BP_ANIMATIONPARAMS);
+	animParams.style = BPAS_LINEAR;
+	if (iStateID != comboBoxData.m_iStateID)
+	{
+		::GetThemeTransitionDuration(hTheme, CP_DROPDOWNBUTTONRIGHT, comboBoxData.m_iStateID, iStateID, TMT_TRANSITIONDURATIONS, &animParams.dwDuration);
+	}
+
+	HDC hdcFrom = nullptr;
+	HDC hdcTo = nullptr;
+	if (HANIMATIONBUFFER hbpAnimation = ::BeginBufferedAnimation(hWnd, hdc, &rcClient, BPBF_COMPATIBLEBITMAP, nullptr, &animParams, &hdcFrom, &hdcTo);
+		hbpAnimation != nullptr)
+	{
+		if (hdcFrom != nullptr)
+		{
+			renderComboBox(hWnd, hdcFrom, comboBoxData, comboBoxData.m_iStateID);
+		}
+
+		if (hdcTo != nullptr)
+		{
+			renderComboBox(hWnd, hdcTo, comboBoxData, iStateID);
+		}
+
+		comboBoxData.m_iStateID = iStateID;
+		::EndBufferedAnimation(hbpAnimation, TRUE);
+	}
+	else
+	{
+		renderComboBox(hWnd, hdc, comboBoxData, iStateID);
+		comboBoxData.m_iStateID = iStateID;
+	}
 }
 
 /**
@@ -1864,7 +2069,8 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxSubclass(
 				break;
 			}
 
-			if (pComboboxData->m_cbStyle != CBS_DROPDOWN
+			if (!dmlib_paint::isAnimationEnabled()
+				&& pComboboxData->m_cbStyle == CBS_DROPDOWNLIST
 				&& reinterpret_cast<HDC>(wParam) != hMemDC)
 			{
 				return FALSE;
@@ -1882,7 +2088,8 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxSubclass(
 			PAINTSTRUCT ps{};
 			HDC hdc = ::BeginPaint(hWnd, &ps);
 
-			if (pComboboxData->m_cbStyle != CBS_DROPDOWN)
+			if (!dmlib_paint::isAnimationEnabled()
+				&& pComboboxData->m_cbStyle == CBS_DROPDOWNLIST)
 			{
 				if (!dmlib_paint::isRectValid(ps.rcPaint))
 				{
@@ -1891,12 +2098,12 @@ LRESULT CALLBACK dmlib_subclass::ComboBoxSubclass(
 				}
 
 				dmlib_paint::PaintWithBuffer<ComboBoxData>(*pComboboxData, hdc, ps,
-					[&]() { paintCombobox(hWnd, hMemDC, *pComboboxData); },
+					[&]() { paintComboBox(hWnd, hMemDC, *pComboboxData); },
 					hWnd);
 			}
 			else
 			{
-				paintCombobox(hWnd, hdc, *pComboboxData);
+				paintComboBox(hWnd, hdc, *pComboboxData);
 			}
 
 			::EndPaint(hWnd, &ps);

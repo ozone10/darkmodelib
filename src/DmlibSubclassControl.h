@@ -272,6 +272,7 @@ namespace dmlib_subclass
 	 * - `m_themeData` : RAII-managed theme handle for `VSCLASS_COMBOBOX`.
 	 * - `m_bufferData` : Buffer wrapper for flicker-free custom painting.
 	 * - `m_cbStyle` : Combo box style flags (`CBS_SIMPLE`, `CBS_DROPDOWN`, `CBS_DROPDOWNLIST`).
+	 * - `m_iStateID` : Combo box state (normal, hot, disabled).
 	 *
 	 * Constructor behavior:
 	 * - Deleted default constructor to enforce explicit style initialization.
@@ -289,6 +290,7 @@ namespace dmlib_subclass
 		BufferData m_bufferData;
 
 		LONG_PTR m_cbStyle = CBS_SIMPLE;
+		int m_iStateID = CBXSR_NORMAL;
 
 		ComboBoxData() = delete;
 

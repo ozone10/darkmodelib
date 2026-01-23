@@ -1396,7 +1396,12 @@ static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkM
  */
 void DarkMode::setComboBoxCtrlSubclass(HWND hWnd)
 {
-	const auto cbStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE) & CBS_DROPDOWNLIST;
+	const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+	const auto cbStyle = nStyle & CBS_DROPDOWNLIST;
+	if (cbStyle != CBS_DROPDOWNLIST)
+	{
+		::SetWindowLongPtr(hWnd, GWL_STYLE, nStyle | WS_CLIPCHILDREN);
+	}
 	dmlib_subclass::SetSubclass<dmlib_subclass::ComboBoxData>(hWnd, dmlib_subclass::ComboBoxSubclass, dmlib_subclass::SubclassID::comboBox, cbStyle);
 }
 
