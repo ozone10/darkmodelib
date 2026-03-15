@@ -29,6 +29,7 @@
 #include <vsstyle.h>
 
 #include <array>
+#include <cstdint>
 #include <string>
 
 #include "DmlibColor.h"
@@ -142,11 +143,22 @@ int DarkMode::getLibInfo(int libInfoType)
  * - `light`: Follow system mode; apply light theme when system is in light mode.
  * - `classic`: Follow system mode; apply classic style when system is in light mode.
  */
-enum class WinMode : unsigned char
+enum class WinMode : std::uint8_t
 {
 	disabled,  ///< Manual - system mode is ignored.
 	light,     ///< Use light theme if system is in light mode.
 	classic    ///< Use classic style if system is in light mode.
+};
+
+/// Types of list and tree views checkbox styles
+enum class ViewCheckbox : std::uint8_t
+{
+	listView,   ///< List view with LVS_EX_CHECKBOXES extendend style.
+	tvSimple,   ///< Tree view with TVS_CHECKBOXES style.
+
+	/// Tree view with any combination of TVS_EX_PARTIALCHECKBOXES, TVS_EX_EXCLUSIONCHECKBOXES,
+	/// TVS_EX_DIMMEDCHECKBOXES extendend styles.
+	tvExtended
 };
 
 /**
@@ -882,8 +894,9 @@ DWORD DarkMode::getWindowsBuildNumber()
 	return dmlib_win32api::GetWindowsBuildNumber();
 }
 
-/// Check if OS is at leaast Windows 11 version 25H2 build 26200.6899.
-static bool isAtLeastWin11Ver25H2() noexcept
+/// Check if OS is Windows 11 version 24H2 build 26100 rev 6899+,
+/// Windows 11 version 25H2 build 26200 rev 6899+, or later builds.
+static bool doesWin11SupportDarkThemeStyle() noexcept
 {
 	static const DWORD win11Revision = []()
 	{
@@ -899,10 +912,12 @@ static bool isAtLeastWin11Ver25H2() noexcept
 		return 0UL;
 	}();
 
+	static constexpr DWORD win11Build24H2 = 26100;
 	static constexpr DWORD win11Build25H2 = 26200;
-	static constexpr DWORD minWin11Build25H2Revision = 6899;
-	return (dmlib_win32api::GetWindowsBuildNumber() == win11Build25H2 && win11Revision >= minWin11Build25H2Revision)
-		|| dmlib_win32api::GetWindowsBuildNumber() > win11Build25H2;
+	static constexpr DWORD minWin11Revision = 6899;
+	return dmlib_win32api::GetWindowsBuildNumber() > win11Build25H2
+		|| (dmlib_win32api::GetWindowsBuildNumber() == win11Build25H2 && win11Revision >= minWin11Revision)
+		|| (dmlib_win32api::GetWindowsBuildNumber() == win11Build24H2 && win11Revision >= minWin11Revision);
 }
 
 /**
@@ -1307,7 +1322,7 @@ static void setTabCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 	if (p.m_theme)
 	{
 		DarkMode::setDarkTooltips(hWnd, static_cast<int>(DarkMode::ToolTipsType::tabbar));
-		if (isAtLeastWin11Ver25H2() && dmlib_subclass::isThemePrefered())
+		if (doesWin11SupportDarkThemeStyle() && dmlib_subclass::isThemePrefered())
 		{
 			DarkMode::setDarkThemeTheme(hWnd);
 		}
@@ -1376,7 +1391,7 @@ static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkM
 		&& !isListBox
 		&& !hasScrollBar)
 	{
-		if (isAtLeastWin11Ver25H2())
+		if (doesWin11SupportDarkThemeStyle())
 		{
 			DarkMode::setDarkThemeTheme(hWnd);
 		}
@@ -1510,7 +1525,7 @@ static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 
 		if (p.m_theme) // for light dropdown arrow in dark mode
 		{
-			if (isAtLeastWin11Ver25H2())
+			if (doesWin11SupportDarkThemeStyle())
 			{
 				DarkMode::setDarkThemeTheme(hWnd);
 			}
@@ -1640,7 +1655,7 @@ static void setListViewCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcep
 
 		if (dmlib_subclass::isThemePrefered())
 		{
-			if (isAtLeastWin11Ver25H2())
+			if (doesWin11SupportDarkThemeStyle())
 			{
 				DarkMode::setDarkThemeTheme(hHeader);
 			}
@@ -1746,7 +1761,7 @@ static void setStatusBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	if (p.m_theme
 		&& dmlib_subclass::isThemePrefered()
-		&& isAtLeastWin11Ver25H2())
+		&& doesWin11SupportDarkThemeStyle())
 	{
 		DarkMode::setDarkThemeTheme(hWnd);
 	}
@@ -1814,7 +1829,7 @@ static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 		{
 			DarkMode::setProgressBarClassicTheme(hWnd);
 		}
-		else if (isAtLeastWin11Ver25H2())
+		else if (doesWin11SupportDarkThemeStyle())
 		{
 			::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? L"DarkMode_CopyEngine" : nullptr, nullptr);
 		}
@@ -1993,6 +2008,7 @@ static void setHotKeyCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
  * @param[in]   hWnd    Handle to the tree view control.
  * @param[in]   p       Parameters controlling whether to apply theming.
  *
+ * @see DarkMode::setDarkTreeViewCheckboxes(hWnd);
  * @see DarkMode::setTreeViewWindowTheme()
  * @see DarkMode::setDarkTooltips()
  */
@@ -2004,6 +2020,7 @@ static void setTreeViewCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 		TreeView_SetBkColor(hWnd, DarkMode::getViewBackgroundColor());
 
 		DarkMode::setTreeViewWindowThemeEx(hWnd, p.m_theme);
+		DarkMode::setDarkTreeViewCheckboxes(hWnd);
 		DarkMode::setDarkTooltips(hWnd, static_cast<int>(DarkMode::ToolTipsType::treeview));
 	}
 }
@@ -2654,10 +2671,12 @@ void DarkMode::setDarkTitleBar(HWND hWnd)
  * @return "DarkMode_DarkTheme" on Windows 11 25H2+
  * @return "DarkMode_Explorer" on Windows 10+
  * @return nullptr if not on supported OS
+ *
+ * @see doesWin11SupportDarkThemeStyle()
  */
 const wchar_t* DarkMode::getDarkModeThemeName()
 {
-	if (isAtLeastWin11Ver25H2())
+	if (doesWin11SupportDarkThemeStyle())
 	{
 		return L"DarkMode_DarkTheme";
 	}
@@ -2816,10 +2835,12 @@ void DarkMode::setDarkTooltips(HWND hWnd, int tooltipType)
 /**
  * @brief Applies "DarkMode_DarkTheme" visual style if supported and experimental mode is active.
  *
- * If OS is at least Windows 11 version 25H2 applies "DarkMode_DarkTheme" visual style,
+ * Applies "DarkMode_DarkTheme" visual style if supported,
  * else applies "DarkMode_Explorer" visual style.
  *
  * @param[in] hWnd Handle to the control or window to theme.
+ *
+ * @see DarkMode::getDarkModeThemeName()
  */
 void DarkMode::setDarkThemeTheme(HWND hWnd)
 {
@@ -2869,29 +2890,23 @@ void DarkMode::setDarkListView(HWND hWnd)
 	DarkMode::setDarkThemeExperimental(hWnd);
 }
 
+
+
 /**
- * @brief Replaces default list view checkboxes with themed dark-mode versions on Windows 11.
- *
- * If the list view uses `LVS_EX_CHECKBOXES` and is running on Windows 11 or later,
- * this function manually draws the unchecked and checked checkbox visuals using
- * themed drawing APIs, then inserts the resulting icons into the state image list.
+ * @brief Replaces list view or tree view image list checkbox state images with themed dark mode versions on Windows 11.
  *
  * Uses `"DarkMode_Explorer::Button"` as the theme class if experimental dark mode is active;
  * otherwise falls back to `VSCLASS_BUTTON`.
  *
- * @param[in] hWnd Handle to the list view control with extended checkbox style.
+ * @param[in]   hWnd          Handle to the control to change checkbox style.
+ * @param[in]   ImgList       Handle to the image list of control containing checkbox state images.
+ * @param[in]   viewCheckbox  Type of checkbox style.
  *
- * @note Does nothing on pre-Windows 11 systems or if checkboxes are not enabled.
+ * @note Does nothing on pre-Windows 11 systems.
  */
-void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
+static void setDarkCheckboxes(HWND hWnd, HIMAGELIST hImgList, ViewCheckbox viewCheckbox)
 {
 	if (!DarkMode::isAtLeastWindows11())
-	{
-		return;
-	}
-
-	if (const auto lvExStyle = ListView_GetExtendedListViewStyle(hWnd);
-		(lvExStyle & LVS_EX_CHECKBOXES) != LVS_EX_CHECKBOXES)
 	{
 		return;
 	}
@@ -2906,14 +2921,12 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
 
 	const RECT rcBox{ 0, 0, szBox.cx, szBox.cy };
 
-	auto hImgList = ListView_GetImageList(hWnd, LVSIL_STATE);
 	if (hImgList == nullptr)
 	{
 		::CloseThemeData(hTheme);
 		::ReleaseDC(nullptr, hdc);
 		return;
 	}
-	::ImageList_RemoveAll(hImgList);
 
 	HDC hBoxDC = ::CreateCompatibleDC(hdc);
 	HBITMAP hBoxBmp = ::CreateCompatibleBitmap(hdc, szBox.cx, szBox.cy);
@@ -2927,23 +2940,55 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
 	ii.hbmColor = hBoxBmp;
 	ii.hbmMask = hMaskBmp;
 
+	int idx = (viewCheckbox == ViewCheckbox::listView) ? 0 : 1; // tree view state images start from index 1
+
 	HICON hIcon = ::CreateIconIndirect(&ii);
-	if (hIcon != nullptr)
-	{
-		::ImageList_AddIcon(hImgList, hIcon);
-		::DestroyIcon(hIcon);
-		hIcon = nullptr;
-	}
 
-	::DrawThemeBackground(hTheme, hBoxDC, BP_CHECKBOX, CBS_CHECKEDNORMAL, &rcBox, nullptr);
-	ii.hbmColor = hBoxBmp;
-
-	hIcon = ::CreateIconIndirect(&ii);
-	if (hIcon != nullptr)
+	auto addIcon = [&hImgList, &idx, &hIcon]()
 	{
-		::ImageList_AddIcon(hImgList, hIcon);
-		::DestroyIcon(hIcon);
-		hIcon = nullptr;
+		if (hIcon != nullptr)
+		{
+			::ImageList_ReplaceIcon(hImgList, idx, hIcon);
+			::DestroyIcon(hIcon);
+			hIcon = nullptr;
+			++idx;
+		}
+	};
+
+	addIcon(); // unchecked state
+
+	auto addIconState = [&](int iStateId)
+	{
+		::DrawThemeBackground(hTheme, hBoxDC, BP_CHECKBOX, iStateId, &rcBox, nullptr);
+		ii.hbmColor = hBoxBmp;
+
+		hIcon = ::CreateIconIndirect(&ii);
+		addIcon();
+	};
+
+	addIconState(CBS_CHECKEDNORMAL);
+
+	if (viewCheckbox == ViewCheckbox::tvExtended)
+	{
+		const auto tvExStyle = TreeView_GetExtendedStyle(hWnd);
+
+		// Tree view check boxes: The extended check box states
+		// https://devblogs.microsoft.com/oldnewthing/20171205-00/?p=97525
+		// The image list states are added in the order: Partial, then dimmed, then exclusion.
+		if ((tvExStyle & TVS_EX_PARTIALCHECKBOXES) != 0)
+		{
+			addIconState(CBS_MIXEDNORMAL);
+		}
+
+		if ((tvExStyle & TVS_EX_DIMMEDCHECKBOXES) != 0)
+		{
+			addIconState(CBS_IMPLICITPRESSED); // make it different from CBS_CHECKEDNORMAL
+		}
+
+		if ((tvExStyle & TVS_EX_EXCLUSIONCHECKBOXES) != 0)
+		{
+			addIconState(CBS_EXCLUDEDNORMAL);
+		}
 	}
 
 	::SelectObject(hBoxDC, holdBmp);
@@ -2952,6 +2997,71 @@ void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
 	::DeleteDC(hBoxDC);
 	::CloseThemeData(hTheme);
 	::ReleaseDC(nullptr, hdc);
+}
+
+/**
+ * @brief Replaces default list view checkboxes with themed dark-mode versions on Windows 11.
+ *
+ * If the list view uses `LVS_EX_CHECKBOXES` and is running on Windows 11 or later,
+ * this function then manually draws the unchecked and checked checkbox visuals using
+ * themed drawing APIs, then inserts the resulting icons into the state image list.
+ *
+ * Uses `"DarkMode_Explorer::Button"` as the theme class if experimental dark mode is active;
+ * otherwise falls back to `VSCLASS_BUTTON`.
+ *
+ * @param[in] hWnd Handle to the list view control with extended checkbox style.
+ *
+ * @see setDarkCheckboxes()
+ *
+ * @note Does nothing on pre-Windows 11 systems or if checkboxes are not enabled.
+ */
+void DarkMode::setDarkListViewCheckboxes(HWND hWnd)
+{
+	if (const auto lvExStyle = ListView_GetExtendedListViewStyle(hWnd);
+		(lvExStyle & LVS_EX_CHECKBOXES) != LVS_EX_CHECKBOXES)
+	{
+		return;
+	}
+
+	setDarkCheckboxes(hWnd, ListView_GetImageList(hWnd, LVSIL_STATE), ViewCheckbox::listView);
+}
+
+/**
+ * @brief Replaces default tree view checkboxes with themed dark-mode versions on Windows 11.
+ *
+ * If the tree view uses `TVS_CHECKBOXES` or any combination of `TVS_EX_PARTIALCHECKBOXES`,
+ * `TVS_EX_EXCLUSIONCHECKBOXES`, `TVS_EX_DIMMEDCHECKBOXES` extended styles and is running on
+ * Windows 11 or later, this function then manually draws the checkbox state visuals using
+ * themed drawing APIs, then inserts the resulting icons into the state image list.
+ *
+ * Uses `"DarkMode_Explorer::Button"` as the theme class if experimental dark mode is active;
+ * otherwise falls back to `VSCLASS_BUTTON`.
+ *
+ * @param[in] hWnd Handle to the tree view control with normal or extended checkbox style.
+ *
+ * @see setDarkCheckboxes()
+ *
+ * @note Does nothing on pre-Windows 11 systems or if checkboxes are not enabled.
+ */
+void DarkMode::setDarkTreeViewCheckboxes(HWND hWnd)
+{
+	ViewCheckbox tvType = ViewCheckbox::tvSimple;
+	if (const auto tvStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+		(tvStyle & TVS_CHECKBOXES) == TVS_CHECKBOXES)
+	{
+		//tvType = ViewCheckbox::tvSimple;
+	}
+	else if (const auto tvExStyle = TreeView_GetExtendedStyle(hWnd);
+		(tvExStyle & (TVS_EX_PARTIALCHECKBOXES | TVS_EX_EXCLUSIONCHECKBOXES | TVS_EX_DIMMEDCHECKBOXES)) != 0)
+	{
+		tvType = ViewCheckbox::tvExtended;
+	}
+	else
+	{
+		return;
+	}
+
+	setDarkCheckboxes(hWnd, TreeView_GetImageList(hWnd, TVSIL_STATE), tvType);
 }
 
 /**
@@ -3525,7 +3635,7 @@ void DarkMode::setProgressBarClassicTheme(HWND hWnd)
 		static constexpr COLORREF greenLight = dmlib_color::HEXRGB(0x06B025);
 		static constexpr COLORREF greenDark = dmlib_color::HEXRGB(0x0F7B0F);
 		static constexpr COLORREF azureDark = dmlib_color::HEXRGB(0x60CDFF);
-		static const auto clrDark = isAtLeastWin11Ver25H2() ? azureDark : greenDark;
+		static const auto clrDark = doesWin11SupportDarkThemeStyle() ? azureDark : greenDark;
 		::SendMessage(hWnd, PBM_SETBARCOLOR, 0, static_cast<LPARAM>(DarkMode::isExperimentalActive() ? clrDark : greenLight));
 	}
 }

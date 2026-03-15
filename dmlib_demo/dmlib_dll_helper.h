@@ -357,6 +357,8 @@ namespace DarkMode
 	inline void DummySetDarkListView(HWND) {}
 	inline void DummySetDarkListViewCheckboxes(HWND) {}
 
+	inline void DummySetDarkTreeViewCheckboxes(HWND) {}
+
 	inline void DummySetDarkRichEdit(HWND) {}
 
 	inline void DummySetDarkWndSafeEx(HWND, bool) {}
@@ -816,6 +818,9 @@ namespace DarkMode
 
 	using fnSetDarkListViewCheckboxes = void (*)(HWND hWnd);
 	inline fnSetDarkListViewCheckboxes setDarkListViewCheckboxes = nullptr;
+
+	using fnSetDarkTreeViewCheckboxes = void (*)(HWND hWnd);
+	inline fnSetDarkTreeViewCheckboxes setDarkTreeViewCheckboxes = nullptr;
 
 	using fnSetDarkRichEdit = void (*)(HWND hWnd);
 	inline fnSetDarkRichEdit setDarkRichEdit = nullptr;

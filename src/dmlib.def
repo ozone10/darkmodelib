@@ -142,6 +142,7 @@ EXPORTS
 	setDarkLineAbovePanelToolbar
 	setDarkListView
 	setDarkListViewCheckboxes
+	setDarkTreeViewCheckboxes
 	setDarkRichEdit
 	setDarkWndSafeEx
 	setDarkWndSafe
