@@ -882,11 +882,27 @@ DWORD DarkMode::getWindowsBuildNumber()
 	return dmlib_win32api::GetWindowsBuildNumber();
 }
 
-/// Check if OS is at leaast Windows 11 version 25H2 build 26200.
+/// Check if OS is at leaast Windows 11 version 25H2 build 26200.6899.
 static bool isAtLeastWin11Ver25H2() noexcept
 {
+	static const DWORD win11Revision = []()
+	{
+		DWORD revisionReg = 0;
+		DWORD dwBufSize = sizeof(revisionReg);
+		static constexpr LPCWSTR lpSubKey = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+		static constexpr LPCWSTR lpValue = L"UBR";
+
+		if (::RegGetValueW(HKEY_LOCAL_MACHINE, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &revisionReg, &dwBufSize) == ERROR_SUCCESS)
+		{
+			return revisionReg;
+		}
+		return 0UL;
+	}();
+
 	static constexpr DWORD win11Build25H2 = 26200;
-	return dmlib_win32api::GetWindowsBuildNumber() >= win11Build25H2;
+	static constexpr DWORD minWin11Build25H2Revision = 6899;
+	return (dmlib_win32api::GetWindowsBuildNumber() == win11Build25H2 && win11Revision >= minWin11Build25H2Revision)
+		|| dmlib_win32api::GetWindowsBuildNumber() > win11Build25H2;
 }
 
 /**
@@ -926,7 +942,7 @@ bool DarkMode::handleSettingChange(LPARAM lParam)
 /**
  * @brief Checks if dark mode is enabled in the Windows registry.
  *
- * Queries `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme`.
+ * Queries `HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme`.
  *
  * @return `true` if dark mode is preferred (value is `0`); otherwise `false`.
  */
@@ -934,7 +950,7 @@ bool DarkMode::isDarkModeReg()
 {
 	DWORD data{};
 	DWORD dwBufSize = sizeof(data);
-	static constexpr LPCWSTR lpSubKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+	static constexpr LPCWSTR lpSubKey = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 	static constexpr LPCWSTR lpValue = L"AppsUseLightTheme";
 
 	if (::RegGetValueW(HKEY_CURRENT_USER, lpSubKey, lpValue, RRF_RT_REG_DWORD, nullptr, &data, &dwBufSize) == ERROR_SUCCESS)
@@ -1803,7 +1819,8 @@ static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 			::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? L"DarkMode_CopyEngine" : nullptr, nullptr);
 		}
 	}
-	else if (p.m_subclass)
+
+	if (p.m_subclass && ((nStyle & PBS_MARQUEE) != PBS_MARQUEE))
 	{
 		DarkMode::setProgressBarCtrlSubclass(hWnd);
 	}
