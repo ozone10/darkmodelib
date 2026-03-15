@@ -342,11 +342,13 @@ namespace DarkMode
 	[[nodiscard]] DMLIB_API HBRUSH getEdgeBrush();
 	[[nodiscard]] DMLIB_API HBRUSH getHotEdgeBrush();
 	[[nodiscard]] DMLIB_API HBRUSH getDisabledEdgeBrush();
+	[[nodiscard]] DMLIB_API HBRUSH getHighlightEdgeBrush();
 
 	[[nodiscard]] DMLIB_API HPEN getDarkerTextPen();
 	[[nodiscard]] DMLIB_API HPEN getEdgePen();
 	[[nodiscard]] DMLIB_API HPEN getHotEdgePen();
 	[[nodiscard]] DMLIB_API HPEN getDisabledEdgePen();
+	[[nodiscard]] DMLIB_API HPEN getHighlightEdgePen();
 
 	DMLIB_API COLORREF setViewBackgroundColor(COLORREF clrNew);
 	DMLIB_API COLORREF setViewTextColor(COLORREF clrNew);
@@ -510,6 +512,8 @@ namespace DarkMode
 	/// Sets dark mode title bar on supported Windows versions.
 	DMLIB_API void setDarkTitleBar(HWND hWnd);
 
+	/// Get dark mode theme name.
+	[[nodiscard]] DMLIB_API const wchar_t* getDarkModeThemeName();
 	/// Applies an experimental visual style to the specified window, if supported.
 	DMLIB_API void setDarkThemeExperimentalEx(HWND hWnd, const wchar_t* themeClassName);
 	/// Applies an experimental Explorer visual style to the specified window, if supported.

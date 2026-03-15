@@ -235,11 +235,13 @@ namespace DarkMode
 	[[nodiscard]] inline HBRUSH DummyGetEdgeBrush() { return nullptr; }
 	[[nodiscard]] inline HBRUSH DummyGetHotEdgeBrush() { return nullptr; }
 	[[nodiscard]] inline HBRUSH DummyGetDisabledEdgeBrush() { return nullptr; }
+	[[nodiscard]] inline HBRUSH DummyGetHighlightEdgeBrush() { return nullptr; }
 
 	[[nodiscard]] inline HPEN DummyGetDarkerTextPen() { return nullptr; }
 	[[nodiscard]] inline HPEN DummyGetEdgePen() { return nullptr; }
 	[[nodiscard]] inline HPEN DummyGetHotEdgePen() { return nullptr; }
 	[[nodiscard]] inline HPEN DummyGetDisabledEdgePen() { return nullptr; }
+	[[nodiscard]] inline HPEN DummyGetHighlightEdgePen() { return nullptr; }
 
 	inline COLORREF DummySetViewBackgroundColor(COLORREF) { return CLR_INVALID; }
 	inline COLORREF DummySetViewTextColor(COLORREF) { return CLR_INVALID; }
@@ -339,6 +341,8 @@ namespace DarkMode
 
 	inline void DummySetDarkTitleBarEx(HWND, bool) {}
 	inline void DummySetDarkTitleBar(HWND) {}
+
+	inline const wchar_t* DummyGetDarkModeThemeName() {return nullptr; }
 
 	inline void DummySetDarkThemeExperimentalEx(HWND, const wchar_t*) {}
 	inline void DummySetDarkThemeExperimental(HWND) {}
@@ -573,6 +577,9 @@ namespace DarkMode
 	using fnGetDisabledEdgeBrush = auto (*)() -> HBRUSH;
 	inline fnGetDisabledEdgeBrush getDisabledEdgeBrush = nullptr;
 
+	using fnGetHighlightEdgeBrush = auto (*)() -> HBRUSH;
+	inline fnGetHighlightEdgeBrush getHighlightEdgeBrush = nullptr;
+
 	using fnGetDarkerTextPen = auto (*)() -> HPEN;
 	inline fnGetDarkerTextPen getDarkerTextPen = nullptr;
 
@@ -584,6 +591,9 @@ namespace DarkMode
 
 	using fnGetDisabledEdgePen = auto (*)() -> HPEN;
 	inline fnGetDisabledEdgePen getDisabledEdgePen = nullptr;
+
+	using fnGetHighlightEdgePen = auto (*)() -> HPEN;
+	inline fnGetHighlightEdgePen getHighlightEdgePen = nullptr;
 
 	using fnSetViewBackgroundColor = auto (*)(COLORREF clrNew) -> COLORREF;
 	inline fnSetViewBackgroundColor setViewBackgroundColor = nullptr;
@@ -779,6 +789,9 @@ namespace DarkMode
 
 	using fnSetDarkTitleBar = void (*)(HWND hWnd);
 	inline fnSetDarkTitleBar setDarkTitleBar = nullptr;
+
+	using fnGetDarkModeThemeName = const wchar_t* (*)();
+	inline fnGetDarkModeThemeName getDarkModeThemeName = nullptr;
 
 	using fnSetDarkThemeExperimentalEx = void (*)(HWND hWnd, const wchar_t* themeClassName);
 	inline fnSetDarkThemeExperimentalEx setDarkThemeExperimentalEx = nullptr;

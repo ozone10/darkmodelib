@@ -180,7 +180,7 @@ namespace dmlib_subclass
 	public:
 		ThemeData() = delete;
 
-		explicit ThemeData(const wchar_t* themeClass) noexcept
+		explicit ThemeData(const std::wstring& themeClass) noexcept
 			: m_themeClass(themeClass)
 		{}
 
@@ -197,9 +197,9 @@ namespace dmlib_subclass
 
 		bool ensureTheme(HWND hWnd) noexcept
 		{
-			if (m_hTheme == nullptr && m_themeClass != nullptr)
+			if (m_hTheme == nullptr && !m_themeClass.empty())
 			{
-				m_hTheme = ::OpenThemeData(hWnd, m_themeClass);
+				m_hTheme = ::OpenThemeData(hWnd, m_themeClass.c_str());
 			}
 			return m_hTheme != nullptr;
 		}
@@ -219,7 +219,7 @@ namespace dmlib_subclass
 		}
 
 	private:
-		const wchar_t* m_themeClass = nullptr;
+		const std::wstring m_themeClass;
 		HTHEME m_hTheme = nullptr;
 	};
 

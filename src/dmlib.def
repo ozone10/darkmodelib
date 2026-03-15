@@ -59,10 +59,12 @@ EXPORTS
 	getEdgeBrush
 	getHotEdgeBrush
 	getDisabledEdgeBrush
+	getHighlightEdgeBrush
 	getDarkerTextPen
 	getEdgePen
 	getHotEdgePen
 	getDisabledEdgePen
+	getHighlightEdgePen
 	setViewBackgroundColor
 	setViewTextColor
 	setViewGridlinesColor
@@ -131,6 +133,7 @@ EXPORTS
 	enableSysLinkCtrlCtlColor
 	setDarkTitleBarEx
 	setDarkTitleBar
+	getDarkModeThemeName
 	setDarkThemeExperimentalEx
 	setDarkThemeExperimental
 	setDarkExplorerTheme

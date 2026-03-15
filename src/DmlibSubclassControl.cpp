@@ -33,6 +33,7 @@
 #include "DmlibHook.h"
 #include "DmlibPaintHelper.h"
 #include "DmlibSubclass.h"
+#include "DmlibWinApi.h"
 
 #if defined(__GNUC__)
 static constexpr int CP_DROPDOWNITEM = 9; // for some reason mingw use only enum up to 8
@@ -1509,7 +1510,7 @@ static void ncPaintCustomBorder(HWND hWnd, const dmlib_subclass::BorderMetricsDa
 		rcClient.bottom += borderMetricsData.m_yScroll;
 	}
 
-	HPEN hPen = ::CreatePen(PS_SOLID, 1, (::IsWindowEnabled(hWnd) == TRUE) ? DarkMode::getBackgroundColor() : DarkMode::getDlgBackgroundColor());
+	const HPEN hPen = ::CreatePen(PS_SOLID, 1, (::IsWindowEnabled(hWnd) == TRUE) ? DarkMode::getBackgroundColor() : DarkMode::getDlgBackgroundColor());
 	RECT rcInner{ rcClient };
 	::InflateRect(&rcInner, -1, -1);
 	dmlib_paint::paintFrameRect(hdc, rcInner, hPen);
@@ -1522,9 +1523,23 @@ static void ncPaintCustomBorder(HWND hWnd, const dmlib_subclass::BorderMetricsDa
 	const bool isHot = ::PtInRect(&rcClient, ptCursor) == TRUE;
 	const bool hasFocus = ::GetFocus() == hWnd;
 
-	HPEN hEnabledPen = ((borderMetricsData.m_isHot && isHot) || hasFocus ? DarkMode::getHotEdgePen() : DarkMode::getEdgePen());
+	const HPEN hEnabledPen = ((borderMetricsData.m_isHot && isHot) || hasFocus ? DarkMode::getHotEdgePen() : DarkMode::getEdgePen());
 
-	dmlib_paint::paintFrameRect(hdc, rcClient, (::IsWindowEnabled(hWnd) == TRUE) ? hEnabledPen : DarkMode::getDisabledEdgePen());
+	static const int roundness = DarkMode::isAtLeastWindows11() ? dmlib_paint::kWin11CornerRoundness : 0;
+	dmlib_paint::paintRoundRect(
+		hdc,
+		rcClient,
+		(::IsWindowEnabled(hWnd) == TRUE) ? hEnabledPen : DarkMode::getDisabledEdgePen(),
+		static_cast<HBRUSH>(::GetStockObject(NULL_BRUSH)),
+		roundness,
+		roundness
+	);
+
+	if (DarkMode::isAtLeastWindows11() && hasFocus)
+	{
+		const RECT rcHighliteBottomLine{ rcClient.left, rcClient.bottom - dmlib_dpi::scale(2, hWnd), rcClient.right, rcClient.bottom};
+		dmlib_paint::paintRoundRect(hdc, rcHighliteBottomLine, DarkMode::getHighlightEdgePen(), DarkMode::getHighlightEdgeBrush(), roundness, roundness);
+	}
 
 	::ReleaseDC(hWnd, hdc);
 }
@@ -3403,7 +3418,8 @@ LRESULT CALLBACK dmlib_subclass::HotKeySubclass(
 
 			RECT rcClient{};
 			::GetClientRect(hWnd, &rcClient);
-			::FillRect(reinterpret_cast<HDC>(wParam), &rcClient, DarkMode::getDlgBackgroundBrush());
+			::FillRect(reinterpret_cast<HDC>(wParam), &rcClient,
+				dmlib_win32api::IsDarkModeActive() ? DarkMode::getDlgBackgroundBrush() : ::GetSysColorBrush(COLOR_WINDOW));
 			return TRUE;
 		}
 

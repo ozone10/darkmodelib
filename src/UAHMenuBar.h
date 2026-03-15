@@ -53,7 +53,7 @@ typedef struct tagUAHMENU
 // menu items are always referred to by iPosition here
 typedef struct tagUAHMENUITEM
 {
-	int iPosition; // 0-based position of menu item in menubar
+	[[maybe_unused]] int iPosition; // 0-based position of menu item in menubar
 	UAHMENUITEMMETRICS umim;
 	UAHMENUPOPUPMETRICS umpm;
 } UAHMENUITEM;

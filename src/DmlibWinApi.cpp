@@ -99,9 +99,6 @@ using fnSetWindowCompositionAttribute = auto (WINAPI*)(HWND hWnd, WINDOWCOMPOSIT
 #endif
 
 // 1809 17763
-#if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
-using fnShouldAppsUseDarkMode = auto (WINAPI*)() -> bool; // ordinal 132, is not reliable on 1903+
-#endif
 using fnAllowDarkModeForWindow = auto (WINAPI*)(HWND hWnd, bool allow) -> bool; // ordinal 133
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 using fnAllowDarkModeForApp = auto (WINAPI*)(bool allow) -> bool; // ordinal 135, in 1809
@@ -118,7 +115,6 @@ using fnSetPreferredAppMode = auto (WINAPI*)(PreferredAppMode appMode)->Preferre
 
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
 static fnSetWindowCompositionAttribute pfSetWindowCompositionAttribute = nullptr;
-static fnShouldAppsUseDarkMode pfShouldAppsUseDarkMode = nullptr;
 #endif
 static fnAllowDarkModeForWindow pfAllowDarkModeForWindow = nullptr;
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
@@ -137,25 +133,6 @@ static fnSetPreferredAppMode pfSetPreferredAppMode = nullptr;
 static bool g_darkModeSupported = false;
 static bool g_darkModeActive = false;
 static DWORD g_buildNumber = 0;
-
-[[nodiscard]] static bool ShouldAppsUseDarkMode() noexcept
-{
-#if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
-	if (g_buildNumber < g_win10Build1903)
-	{
-		if (pfShouldAppsUseDarkMode == nullptr)
-		{
-			return false;
-		}
-		return pfShouldAppsUseDarkMode();
-	}
-	else
-#endif
-	{
-		return true;
-	}
-}
-
 
 /**
  * @brief Enables or disables dark mode support for a specific window.
@@ -214,9 +191,9 @@ static void SetTitleBarThemeColor(HWND hWnd, BOOL dark)
 void dmlib_win32api::RefreshTitleBarThemeColor(HWND hWnd)
 {
 	BOOL dark = FALSE;
-	if (pfIsDarkModeAllowedForWindow != nullptr && pfShouldAppsUseDarkMode != nullptr)
+	if (pfIsDarkModeAllowedForWindow != nullptr)
 	{
-		if (pfIsDarkModeAllowedForWindow(hWnd) && pfShouldAppsUseDarkMode() && !IsHighContrast())
+		if (pfIsDarkModeAllowedForWindow(hWnd) && !IsHighContrast())
 		{
 			dark = TRUE;
 		}
@@ -417,10 +394,8 @@ void dmlib_win32api::InitDarkMode() noexcept
 
 		bool ptrFnOrd135NotNullptr = false;
 #if defined(_DARKMODELIB_ALLOW_OLD_OS) && (_DARKMODELIB_ALLOW_OLD_OS > 0)
-		bool ptrFnOrd132NotNullptr = true;
 		if (g_buildNumber < g_win10Build1903)
 		{
-			ptrFnOrd132NotNullptr = LoadFn(hUxtheme, pfShouldAppsUseDarkMode, 132);
 			ptrFnOrd135NotNullptr = LoadFn(hUxtheme, pfAllowDarkModeForApp, 135);
 		}
 		else
@@ -481,6 +456,6 @@ void dmlib_win32api::SetDarkMode(bool useDark, [[maybe_unused]] bool applyScroll
 			dmlib_hook::fixDarkScrollBar();
 		}
 #endif
-		g_darkModeActive = useDark && ShouldAppsUseDarkMode() && !dmlib_win32api::IsHighContrast();
+		g_darkModeActive = useDark && !dmlib_win32api::IsHighContrast();
 	}
 }

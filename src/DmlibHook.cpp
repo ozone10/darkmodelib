@@ -356,7 +356,7 @@ void dmlib_hook::unhookSysColor() noexcept
 static HookData<fnGetThemeColor> g_hookDataGetThemeColor{};
 static HookData<fnDrawThemeBackgroundEx> g_hookDataDrawThemeBackgroundEx{};
 
-static constexpr COLORREF kMainInstructionTextClr = RGB(255, 255, 0);
+static constexpr COLORREF kMainInstructionTextClr = RGB(96, 205, 255);
 static constexpr COLORREF kOtherTextClr = RGB(255, 255, 255);
 
 static HTHEME g_hDarkTheme = nullptr;

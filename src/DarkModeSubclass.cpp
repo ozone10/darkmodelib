@@ -284,11 +284,13 @@ HBRUSH DarkMode::getErrorBackgroundBrush()      { return getTheme().getBrushes()
 HBRUSH DarkMode::getEdgeBrush()                 { return getTheme().getBrushes().m_edge; }
 HBRUSH DarkMode::getHotEdgeBrush()              { return getTheme().getBrushes().m_hotEdge; }
 HBRUSH DarkMode::getDisabledEdgeBrush()         { return getTheme().getBrushes().m_disabledEdge; }
+HBRUSH DarkMode::getHighlightEdgeBrush()        { return getTheme().getBrushes().m_highlightEdge; }
 
 HPEN DarkMode::getDarkerTextPen()               { return getTheme().getPens().m_darkerText; }
 HPEN DarkMode::getEdgePen()                     { return getTheme().getPens().m_edge; }
 HPEN DarkMode::getHotEdgePen()                  { return getTheme().getPens().m_hotEdge; }
 HPEN DarkMode::getDisabledEdgePen()             { return getTheme().getPens().m_disabledEdge; }
+HPEN DarkMode::getHighlightEdgePen()            { return getTheme().getPens().m_highlightEdge; }
 
 COLORREF DarkMode::setViewBackgroundColor(COLORREF clrNew)      { return getThemeView().setColorBackground(clrNew); }
 COLORREF DarkMode::setViewTextColor(COLORREF clrNew)            { return getThemeView().setColorText(clrNew); }
@@ -1134,7 +1136,6 @@ static void setBtnCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 void DarkMode::setUpDownCtrlSubclass(HWND hWnd)
 {
 	dmlib_subclass::SetSubclass<dmlib_subclass::UpDownData>(hWnd, dmlib_subclass::UpDownSubclass, dmlib_subclass::SubclassID::upDown, hWnd);
-	DarkMode::setDarkExplorerTheme(hWnd);
 }
 
 /**
@@ -1166,13 +1167,14 @@ void DarkMode::removeUpDownCtrlSubclass(HWND hWnd)
  */
 static void setUpDownCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 {
+	if (p.m_theme)
+	{
+		::SetWindowTheme(hWnd, p.m_themeClassName, nullptr);
+	}
+
 	if (p.m_subclass)
 	{
 		DarkMode::setUpDownCtrlSubclass(hWnd);
-	}
-	else if (p.m_theme)
-	{
-		::SetWindowTheme(hWnd, p.m_themeClassName, nullptr);
 	}
 }
 
@@ -1289,9 +1291,13 @@ static void setTabCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcept
 	if (p.m_theme)
 	{
 		DarkMode::setDarkTooltips(hWnd, static_cast<int>(DarkMode::ToolTipsType::tabbar));
+		if (isAtLeastWin11Ver25H2() && dmlib_subclass::isThemePrefered())
+		{
+			DarkMode::setDarkThemeTheme(hWnd);
+		}
 	}
 
-	if (p.m_subclass)
+	if (p.m_subclass && !dmlib_subclass::isThemePrefered())
 	{
 		DarkMode::setTabCtrlSubclass(hWnd);
 	}
@@ -1354,7 +1360,14 @@ static void setCustomBorderForListBoxOrEditCtrlSubclassAndTheme(HWND hWnd, DarkM
 		&& !isListBox
 		&& !hasScrollBar)
 	{
-		DarkMode::setDarkThemeExperimentalEx(hWnd, L"CFD");
+		if (isAtLeastWin11Ver25H2())
+		{
+			DarkMode::setDarkThemeTheme(hWnd);
+		}
+		else
+		{
+			DarkMode::setDarkThemeExperimentalEx(hWnd, L"CFD");
+		}
 	}
 	else
 	{
@@ -1466,7 +1479,7 @@ static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 			}
 
 			// dark scroll bar for list box of combo box
-			::SetWindowTheme(cbi.hwndList, p.m_themeClassName, nullptr);
+			::SetWindowTheme(cbi.hwndList, DarkMode::getDarkModeThemeName(), nullptr);
 		}
 
 		if (!dmlib_subclass::isThemePrefered() && p.m_subclass)
@@ -1481,7 +1494,14 @@ static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 
 		if (p.m_theme) // for light dropdown arrow in dark mode
 		{
-			DarkMode::setDarkThemeExperimentalEx(hWnd, L"CFD");
+			if (isAtLeastWin11Ver25H2())
+			{
+				DarkMode::setDarkThemeTheme(hWnd);
+			}
+			else
+			{
+				DarkMode::setDarkThemeExperimentalEx(hWnd, L"CFD");
+			}
 
 			if (!isCbList)
 			{
@@ -1604,7 +1624,14 @@ static void setListViewCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p) noexcep
 
 		if (dmlib_subclass::isThemePrefered())
 		{
-			DarkMode::setDarkThemeExperimentalEx(hHeader, L"ItemsView");
+			if (isAtLeastWin11Ver25H2())
+			{
+				DarkMode::setDarkThemeTheme(hHeader);
+			}
+			else
+			{
+				DarkMode::setDarkThemeExperimentalEx(hHeader, L"ItemsView");
+			}
 		}
 	}
 
@@ -1701,7 +1728,13 @@ void DarkMode::removeStatusBarCtrlSubclass(HWND hWnd)
  */
 static void setStatusBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
-	if (p.m_subclass)
+	if (p.m_theme
+		&& dmlib_subclass::isThemePrefered()
+		&& isAtLeastWin11Ver25H2())
+	{
+		DarkMode::setDarkThemeTheme(hWnd);
+	}
+	else if (p.m_subclass)
 	{
 		DarkMode::setStatusBarCtrlSubclass(hWnd);
 	}
@@ -1759,9 +1792,16 @@ void DarkMode::removeProgressBarCtrlSubclass(HWND hWnd)
 static void setProgressBarCtrlSubclass(HWND hWnd, DarkModeParams p) noexcept
 {
 	const auto nStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
-	if (p.m_theme && (nStyle & PBS_MARQUEE) == PBS_MARQUEE)
+	if (p.m_theme)
 	{
-		DarkMode::setProgressBarClassicTheme(hWnd);
+		if ((nStyle & PBS_MARQUEE) == PBS_MARQUEE)
+		{
+			DarkMode::setProgressBarClassicTheme(hWnd);
+		}
+		else if (isAtLeastWin11Ver25H2())
+		{
+			::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? L"DarkMode_CopyEngine" : nullptr, nullptr);
+		}
 	}
 	else if (p.m_subclass)
 	{
@@ -2592,6 +2632,26 @@ void DarkMode::setDarkTitleBar(HWND hWnd)
 }
 
 /**
+ * @brief Get dark mode theme name.
+ *
+ * @return "DarkMode_DarkTheme" on Windows 11 25H2+
+ * @return "DarkMode_Explorer" on Windows 10+
+ * @return nullptr if not on supported OS
+ */
+const wchar_t* DarkMode::getDarkModeThemeName()
+{
+	if (isAtLeastWin11Ver25H2())
+	{
+		return L"DarkMode_DarkTheme";
+	}
+	if (DarkMode::isAtLeastWindows10())
+	{
+		return L"DarkMode_Explorer";
+	}
+	return nullptr;
+}
+
+/**
  * @brief Applies an experimental visual style to the specified window, if supported.
  *
  * When experimental features are supported and active,
@@ -2746,8 +2806,7 @@ void DarkMode::setDarkTooltips(HWND hWnd, int tooltipType)
  */
 void DarkMode::setDarkThemeTheme(HWND hWnd)
 {
-	static const wchar_t* themeName = isAtLeastWin11Ver25H2() ? L"DarkMode_DarkTheme" : L"DarkMode_Explorer";
-	::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? themeName : nullptr, nullptr);
+	::SetWindowTheme(hWnd, DarkMode::isExperimentalActive() ? DarkMode::getDarkModeThemeName() : nullptr, nullptr);
 }
 
 /**
@@ -3448,7 +3507,9 @@ void DarkMode::setProgressBarClassicTheme(HWND hWnd)
 		::SendMessage(hWnd, PBM_SETBKCOLOR, 0, static_cast<LPARAM>(DarkMode::getCtrlBackgroundColor()));
 		static constexpr COLORREF greenLight = dmlib_color::HEXRGB(0x06B025);
 		static constexpr COLORREF greenDark = dmlib_color::HEXRGB(0x0F7B0F);
-		::SendMessage(hWnd, PBM_SETBARCOLOR, 0, static_cast<LPARAM>(DarkMode::isExperimentalActive() ? greenDark : greenLight));
+		static constexpr COLORREF azureDark = dmlib_color::HEXRGB(0x60CDFF);
+		static const auto clrDark = isAtLeastWin11Ver25H2() ? azureDark : greenDark;
+		::SendMessage(hWnd, PBM_SETBARCOLOR, 0, static_cast<LPARAM>(DarkMode::isExperimentalActive() ? clrDark : greenLight));
 	}
 }
 
