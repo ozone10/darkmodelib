@@ -535,8 +535,10 @@ namespace DarkMode
 	DMLIB_API void setDarkListViewCheckboxes(HWND hWnd);
 	/// Replaces default tree view checkboxes with themed dark-mode versions on Windows 11.
 	DMLIB_API void setDarkTreeViewCheckboxes(HWND hWnd);
-	/// Sets colors and edges for a RichEdit control.
+	/// Sets colors and edges for a rich edt control.
 	DMLIB_API void setDarkRichEdit(HWND hWnd);
+	/// Sets colors for a month calendar control.
+	DMLIB_API void setDarkMonthCalendar(HWND hWnd);
 
 	/// Applies visual styles; ctl color message and child controls subclassings to a window safely.
 	DMLIB_API void setDarkWndSafeEx(HWND hWnd, bool useWin11Features);

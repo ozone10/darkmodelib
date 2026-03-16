@@ -2137,6 +2137,22 @@ static void setRichEditCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
 }
 
 /**
+ * @brief Applies theming to a month calendar control.
+ *
+ * @param[in]   hWnd    Handle to the month calendar control.
+ * @param[in]   p       Parameters controlling whether to apply theming.
+ *
+ * @see DarkMode::setDarkMonthCalendar()
+ */
+static void setMonthCalendarCtrlTheme(HWND hWnd, DarkModeParams p) noexcept
+{
+	if (p.m_theme)
+	{
+		DarkMode::setDarkMonthCalendar(hWnd);
+	}
+}
+
+/**
  * @brief Callback function used to enumerate and apply theming/subclassing to child controls.
  *
  * Called in `setChildCtrlsSubclassAndTheme()` and `setChildCtrlsTheme()`
@@ -2304,6 +2320,12 @@ static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 		return TRUE;
 	}
 
+	if (className == MONTHCAL_CLASS) // month calendar
+	{
+		setMonthCalendarCtrlTheme(hWnd, p);
+		return TRUE;
+	}
+
 #if 0 // for debugging
 	if (className == L"#32770") // dialog
 	{
@@ -2311,11 +2333,6 @@ static BOOL CALLBACK DarkEnumChildProc(HWND hWnd, LPARAM lParam)
 	}
 
 	if (className == DATETIMEPICK_CLASS) // date and time picker
-	{
-		return TRUE;
-	}
-
-	if (className == MONTHCAL_CLASS) // month calendar
 	{
 		return TRUE;
 	}
@@ -2890,8 +2907,6 @@ void DarkMode::setDarkListView(HWND hWnd)
 	DarkMode::setDarkThemeExperimental(hWnd);
 }
 
-
-
 /**
  * @brief Replaces list view or tree view image list checkbox state images with themed dark mode versions on Windows 11.
  *
@@ -3065,7 +3080,7 @@ void DarkMode::setDarkTreeViewCheckboxes(HWND hWnd)
 }
 
 /**
- * @brief Sets colors and edges for a RichEdit control.
+ * @brief Sets colors and edges for a rich edit control.
  *
  * Determines if the control has `WS_BORDER` or `WS_EX_STATICEDGE`, and sets the background
  * accordingly: uses control background color when edged, otherwise dialog background.
@@ -3078,7 +3093,7 @@ void DarkMode::setDarkTreeViewCheckboxes(HWND hWnd)
  * When not in dark mode, restores default visual styles and coloring.
  * Also conditionally swaps `WS_BORDER` and `WS_EX_CLIENTEDGE`.
  *
- * @param[in] hWnd Handle to the RichEdit control.
+ * @param[in] hWnd Handle to the rich edit control.
  *
  * @see DarkMode::setWindowStyle()
  * @see DarkMode::setWindowExStyle()
@@ -3118,6 +3133,31 @@ void DarkMode::setDarkRichEdit(HWND hWnd)
 
 	DarkMode::setWindowStyle(hWnd, DarkMode::isEnabled() || !hasClientEdge, WS_BORDER);
 	DarkMode::setWindowExStyle(hWnd, !DarkMode::isEnabled() || !hasBorder, WS_EX_CLIENTEDGE);
+}
+
+/**
+ * @brief Sets colors for month calendar control.
+ *
+ * To set colors visual style needs to be disabled.
+ * Title background and header day text use same color #0078D7 Windows accent blue.
+ *
+ * @param[in] hWnd Handle to the month calendar control.
+ *
+ * @see DarkMode::disableVisualStyle()
+ */
+void DarkMode::setDarkMonthCalendar(HWND hWnd)
+{
+	DarkMode::disableVisualStyle(hWnd, DarkMode::isEnabled());
+	MonthCal_SetColor(hWnd, MCSC_BACKGROUND, DarkMode::isEnabled() ? DarkMode::getBackgroundColor() : ::GetSysColor(COLOR_3DFACE));
+	if (DarkMode::isEnabled())
+	{
+		MonthCal_SetColor(hWnd, MCSC_MONTHBK, DarkMode::getCtrlBackgroundColor());
+		MonthCal_SetColor(hWnd, MCSC_TEXT, DarkMode::getTextColor());
+		static constexpr COLORREF accentBlue = dmlib_color::HEXRGB(0x0078D7);
+		MonthCal_SetColor(hWnd, MCSC_TITLEBK, accentBlue);
+		MonthCal_SetColor(hWnd, MCSC_TITLETEXT, DarkMode::getTextColor());
+		MonthCal_SetColor(hWnd, MCSC_TRAILINGTEXT, DarkMode::getDisabledTextColor());
+	}
 }
 
 /**
@@ -3614,8 +3654,9 @@ void DarkMode::replaceClientEdgeWithBorderSafe(HWND hWnd)
  *
  * When dark mode is enabled, applies `WS_BORDER`, removes visual styles
  * to allow to set custom background and fill colors using:
- * - Background: `DarkMode::getBackgroundColor()`
- * - Fill: Hardcoded green `0x06B025` via `PBM_SETBARCOLOR`
+ * - Background: `DarkMode::getCtrlBackgroundColor()`
+ * - Fill: Hardcoded light green #06B025, dark green #0F7B0F,
+ *   or azure #60CDFF via `PBM_SETBARCOLOR`
  *
  * Typically used for marquee style progress bar.
  *

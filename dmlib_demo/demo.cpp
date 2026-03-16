@@ -214,7 +214,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, HWND& hMain)
 	g_hInst = hInstance; // Store instance handle in our global variable
 
 	hMain = CreateWindowExW(0, g_szWindowClass.c_str(), g_szTitle.c_str(), WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, Scale(970), Scale(550), nullptr, nullptr, hInstance, nullptr);
+		CW_USEDEFAULT, 0, Scale(1040), Scale(550), nullptr, nullptr, hInstance, nullptr);
 
 	if (hMain == nullptr)
 	{
@@ -246,11 +246,11 @@ enum class IdCtrl : WORD
 	checkCheckedDisabled,
 	triState,
 	triStateDisabled,
-	progressNormal = 1023,
+	progressNormal = triStateDisabled + 901,
 	progressError,
 	progressPaused,
 	progressMarquee,
-	radioUnset = 127,
+	radioUnset = progressMarquee - 899,
 	radioUnsetDisabled,
 	radioSet,
 	radioSetDisabled,
@@ -262,10 +262,10 @@ enum class IdCtrl : WORD
 	comboDropDisabled,
 	comboList,
 	comboListDisabled,
-	syslink = 1039,
-	upDownEdit = 140,
-	upDown = 1041,
-	trackbar = 142,
+	syslink = comboListDisabled + 901,
+	upDownEdit = syslink - 899,
+	upDown = upDownEdit + 901,
+	trackbar = upDown - 899,
 	tabcontrol,
 	listbox,
 	ipAddress,
@@ -274,7 +274,8 @@ enum class IdCtrl : WORD
 	treeview,
 	hotkey,
 	richEdit,
-	scrollH = 1049,
+	monthCal,
+	scrollH = monthCal + 901,
 	scrollV,
 	statusbar
 };
@@ -465,7 +466,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int heightListBox = Scale(100);
 			static const int heightListView = Scale(98);
 			static const int heightTreeView = Scale(90);
-			static const int heightRichEdit = Scale(98);
+			static const int heightRichEdit = Scale(95);
+			static const int heightMonthCal = Scale(168);
 
 			static const int xPos1stCol = 10;
 			static const int xPos1stColCtrl = xPos1stCol + xPosCtrl;
@@ -474,7 +476,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int wGroup2ndCol = Scale(160);
 			static const int wGroup3rdCol = Scale(160);
 			static const int wGroup4thCol = Scale(160);
-			static const int wGroup5thCol = Scale(160);
+			static const int wGroup5thCol = Scale(230);
 
 			static const int wBtn = (wGroup1stCol - (2 * xPosCtrl) - xGap) / 2;
 			static const int wCheck = wBtn * 2;
@@ -526,6 +528,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static const int ySTTreeView = ySTListView + yPosCtrl + ((heightListView + yPosCtrlEnd) * 2) + yGap;
 
 			static const int yGBRichEdit = yRow + heightGBHotKey + yGap;
+			static const int ySTMonthCal = yGBRichEdit + heightGBRichEdit + yGap;
 
 			static const int xPosSplit = xPos1stColCtrl + xGap + wBtn;
 
@@ -588,6 +591,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			static const int yHotKey = yRow + yPosCtrl + ((heightCtrl + heightEditGap) * 0);
 			static const int yRichEdit = yGBRichEdit + yPosCtrl + ((heightRichEdit + heightEditGap) * 0);
+			static const int yMonthCal = ySTMonthCal + yPosCtrl;
 
 			static const int xToolbar = Scale(100);
 			static const int wToolbar = xToolbar;
@@ -995,6 +999,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				createCtrl(MSFTEDIT_CLASS, richEditText.c_str(), ES_CENTER | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | WS_BORDER,
 					xPos5thColCtrl, yRichEdit, wCtrl5thCol, heightRichEdit, IdCtrl::richEdit, WS_EX_CLIENTEDGE);
 			}
+
+			// --- Month Calendar ---
+			createCtrl(WC_STATIC, L"Month Calendar:", SS_LEFT,
+				xPos5thCol, ySTMonthCal, wGroup5thCol, heightCtrl);
+
+			createCtrl(MONTHCAL_CLASS, nullptr, 0,
+				xPos5thCol, yMonthCal, wGroup5thCol, heightMonthCal, IdCtrl::monthCal);
 
 			// --- Scroll Bars ---
 			// Horizontal scroll bar

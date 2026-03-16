@@ -360,6 +360,7 @@ namespace DarkMode
 	inline void DummySetDarkTreeViewCheckboxes(HWND) {}
 
 	inline void DummySetDarkRichEdit(HWND) {}
+	inline void DummySetDarkMonthCalendar(HWND) {}
 
 	inline void DummySetDarkWndSafeEx(HWND, bool) {}
 	inline void DummySetDarkWndSafe(HWND) {}
@@ -824,6 +825,9 @@ namespace DarkMode
 
 	using fnSetDarkRichEdit = void (*)(HWND hWnd);
 	inline fnSetDarkRichEdit setDarkRichEdit = nullptr;
+
+	using fnSetDarkMonthCalendar = void (*)(HWND hWnd);
+	inline fnSetDarkMonthCalendar setDarkMonthCalendar = nullptr;
 
 	using fnSetDarkWndSafeEx = void (*)(HWND hWnd, bool useWin11Features);
 	inline fnSetDarkWndSafeEx setDarkWndSafeEx = nullptr;
