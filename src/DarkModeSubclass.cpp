@@ -1510,7 +1510,7 @@ static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 			}
 
 			// dark scroll bar for list box of combo box
-			::SetWindowTheme(cbi.hwndList, DarkMode::getDarkModeThemeName(), nullptr);
+			::SetWindowTheme(cbi.hwndList, p.m_themeClassName, nullptr);
 		}
 
 		if (!dmlib_subclass::isThemePrefered() && p.m_subclass)
@@ -1525,7 +1525,10 @@ static void setComboBoxCtrlSubclassAndTheme(HWND hWnd, DarkModeParams p)
 
 		if (p.m_theme) // for light dropdown arrow in dark mode
 		{
-			if (doesWin11SupportDarkThemeStyle())
+			if (HWND hParent = ::GetParent(hWnd);
+				doesWin11SupportDarkThemeStyle()
+				&& (hParent == nullptr
+					|| dmlib_subclass::getWndClassName(hParent) != WC_COMBOBOXEX))
 			{
 				DarkMode::setDarkThemeTheme(hWnd);
 			}
